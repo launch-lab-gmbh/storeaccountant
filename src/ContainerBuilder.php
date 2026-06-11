@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace StoreAccountant;
 
 use League\Container\Container;
+use League\Container\Definition\DefinitionAggregate;
+use League\Container\Inflector\InflectorAggregate;
+use League\Container\ServiceProvider\ServiceProviderAggregate;
 use Symfony\Component\Messenger\Handler\HandlersLocator;
 use Symfony\Component\Messenger\Handler\HandlersLocatorInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -229,7 +232,11 @@ final readonly class ContainerBuilder {
 	 * Builds the configured container.
 	 */
 	public function build(): Container {
-		$container = ( new Container() )->defaultToShared();
+		$container = ( new Container(
+			new DefinitionAggregate(),
+			new ServiceProviderAggregate(),
+			new InflectorAggregate()
+		) )->defaultToShared();
 
 		$this->register_services( $container );
 

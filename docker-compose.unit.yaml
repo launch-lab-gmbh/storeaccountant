@@ -1,5 +1,6 @@
 services:
   php:
+    image: storeaccountant-unit-php:${PHP_VERSION:-8.2}
     build:
       context: .
       dockerfile: Dockerfile-unit
