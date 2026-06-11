@@ -23,6 +23,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: vendor-php82
+          path: vendor
 
       - name: Verify vendor exists
         run: test -f vendor/autoload.php
