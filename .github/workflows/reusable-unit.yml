@@ -36,5 +36,8 @@ jobs:
       - name: Check platform requirements
         run: composer check-platform-reqs
 
+      - name: Fix vendor binary permissions
+        run: chmod +x vendor/bin/*
+
       - name: Run unit tests
         run: composer test-ci
