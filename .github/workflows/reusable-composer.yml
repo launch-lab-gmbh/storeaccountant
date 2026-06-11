@@ -41,5 +41,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vendor-php82
-          path: vendor
+          path: vendor/**
           retention-days: 1
