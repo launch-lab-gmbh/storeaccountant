@@ -13,12 +13,12 @@ on:
 
 jobs:
   install:
-    uses: ./.github/workflows/reusable/composer.yml
+    uses: ./.github/workflows/reusable-composer.yml
 
   lint:
     needs: install
-    uses: ./.github/workflows/reusable/lint.yml
+    uses: ./.github/workflows/reusable-lint.yml
 
   unit:
     needs: install
-    uses: ./.github/workflows/reusable/unit.yml
+    uses: ./.github/workflows/reusable-unit.yml
