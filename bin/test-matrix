@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+for version in 8.2 8.3 8.4 8.5; do
+  echo "Testing PHP $version"
+
+  PHP_VERSION=$version \
+  docker compose \
+    -f docker-compose.unit.yaml \
+    run --rm php composer test-ci
+done

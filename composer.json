@@ -1,0 +1,61 @@
+{
+	"name": "launchlab/storeaccountant",
+	"version": "1.0.0",
+	"description": "Accounting workflow plugin for WooCommerce.",
+	"type": "wordpress-plugin",
+	"license": "GPL-3.0-or-later",
+	"authors": [
+		{
+			"name": "LaunchLab GmbH",
+			"email": "info@launch-lab.de"
+		}
+	],
+	"require": {
+		"php": "^8.2",
+		"openspout/openspout": "^4.28.5 <4.29",
+		"league/container": "^5.2",
+		"league/flysystem": "^3.34",
+		"league/flysystem-ziparchive": "^3.29",
+		"symfony/serializer": "^7.3",
+		"symfony/messenger": "^7.3",
+		"symfony/property-info": "^7.3",
+		"symfony/property-access": "^7.3"
+	},
+	"config": {
+		"platform": {
+			"php": "8.2.0"
+		},
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"autoload": {
+		"psr-4": {
+			"StoreAccountant\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"StoreAccountant\\Tests\\": "tests/"
+		}
+	},
+	"require-dev": {
+		"squizlabs/php_codesniffer": "^3.13",
+		"wp-coding-standards/wpcs": "^3.3",
+		"phpstan/phpstan": "^2.2",
+		"phpunit/phpunit": "^11.5",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.2",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"yoast/phpunit-polyfills": "^4.0",
+		"brain/monkey": "^2.7",
+		"php-coveralls/php-coveralls": "^2.9"
+	},
+	"scripts": {
+		"lint": "phpcs",
+		"lint-ci": "phpcs --report=full",
+		"fix": "phpcbf",
+		"test": "phpunit --testdox --display-deprecations --display-phpunit-deprecations",
+		"test-ci": "phpunit --display-deprecations --display-phpunit-deprecations",
+		"coverage": "XDEBUG_MODE=coverage phpunit --coverage-text --coverage-clover coverage.xml"
+	}
+}

@@ -1,0 +1,10 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile-unit
+      args:
+        PHP_VERSION: ${PHP_VERSION:-8.2}
+    volumes:
+      - .:/app
+    working_dir: /app

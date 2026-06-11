@@ -1,0 +1,189 @@
+<?php
+/**
+ * StoreAccountant
+ * Export plugin for WooCommerce accounting workflows.
+ *
+ * @copyright   LaunchLab GmbH
+ * @author      thomas.baier@launch-lab.de
+ * @author-uri  https://launch-lab.de
+ * @license     GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace StoreAccountant\Tests\Unit\Export\Queue;
+
+use Brain\Monkey;
+use Brain\Monkey\Functions;
+use PHPUnit\Framework\TestCase;
+use StoreAccountant\Export\Attachment\ExportAttachment;
+use StoreAccountant\Export\Dataset\ExportDataset;
+use StoreAccountant\Export\Dataset\ExportRecord;
+use StoreAccountant\Export\Field\Field;
+use StoreAccountant\Export\Field\FieldCollection;
+use StoreAccountant\Export\Field\FieldValue;
+use StoreAccountant\Export\Field\Type\NumberFieldType;
+use StoreAccountant\Export\Queue\BatchExportStore;
+use WP_Error;
+
+/**
+ * Tests temporary queued export batch storage.
+ */
+final class BatchExportStoreTest extends TestCase {
+	private string $tmp_dir;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		Monkey\setUp();
+
+		$this->tmp_dir = sys_get_temp_dir() . '/storeaccountant-batch-test-' . bin2hex( random_bytes( 4 ) );
+		mkdir( $this->tmp_dir, 0777, true );
+
+		$GLOBALS['wp_filesystem'] = new class() {
+			public function put_contents( string $path, string $contents ): bool {
+				return false !== file_put_contents( $path, $contents );
+			}
+
+			public function get_contents( string $path ): string|false {
+				return file_get_contents( $path );
+			}
+
+			public function rmdir( string $path ): bool {
+				return @rmdir( $path );
+			}
+		};
+
+		Functions\when( '__' )->alias( static fn ( string $text ): string => $text );
+		Functions\when( 'is_wp_error' )->alias( static fn ( mixed $value ): bool => $value instanceof WP_Error );
+		Functions\when( 'wp_upload_dir' )->alias( fn (): array => [ 'basedir' => $this->tmp_dir ] );
+		Functions\when( 'get_temp_dir' )->alias( fn (): string => $this->tmp_dir );
+		Functions\when( 'trailingslashit' )->alias( static fn ( string $path ): string => rtrim( $path, '/\\' ) . '/' );
+		Functions\when( 'wp_mkdir_p' )->alias( static fn ( string $path ): bool => is_dir( $path ) || mkdir( $path, 0777, true ) );
+		Functions\when( 'wp_json_encode' )->alias( static fn ( mixed $value ): string|false => json_encode( $value ) );
+		Functions\when( 'WP_Filesystem' )->alias( static fn (): bool => true );
+		Functions\when( 'wp_delete_file' )->alias(
+			static function ( string $path ): void {
+				if ( is_file( $path ) ) {
+					unlink( $path );
+				}
+			}
+		);
+	}
+
+	protected function tearDown(): void {
+		$this->remove_directory( $this->tmp_dir );
+		unset( $GLOBALS['wp_filesystem'] );
+
+		Monkey\tearDown();
+
+		parent::tearDown();
+	}
+
+	public function test_save_batch_persists_dataset_under_export_id_and_batch_index(): void {
+		$result = ( new BatchExportStore() )->save_batch( 123, 2, $this->dataset( 'second', 'B' ) );
+
+		self::assertTrue( $result );
+		$path = $this->tmp_dir . '/storeaccountant/tmp/exports/123/batch-00002.dat';
+		self::assertFileExists( $path );
+		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/exports/index.html' );
+		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/exports/.htaccess' );
+
+		$stored = json_decode( (string) file_get_contents( $path ), true );
+		self::assertSame( 'total', $stored['fields'][0]['id'] );
+		self::assertSame( NumberFieldType::FORMAT_DECIMAL, $stored['fields'][0]['type'] );
+		self::assertSame( 'second', $stored['records'][0]['id'] );
+		self::assertSame( 'B', $stored['records'][0]['values'][0]['value'] );
+	}
+
+	public function test_load_dataset_reads_fragments_in_order_and_reconstructs_dataset(): void {
+		$store = new BatchExportStore();
+
+		self::assertTrue( $store->save_batch( 123, 2, $this->dataset( 'second', 'B' ) ) );
+		self::assertTrue( $store->save_batch( 123, 1, $this->dataset( 'first', 'A' ) ) );
+
+		$dataset = $store->load_dataset( 123 );
+
+		self::assertInstanceOf( ExportDataset::class, $dataset );
+		self::assertSame( [ 'total' ], $dataset->fields->ids() );
+		self::assertSame( [ 'first', 'second' ], array_map( static fn ( ExportRecord $record ): string => (string) $record->id, iterator_to_array( $dataset->records ) ) );
+	}
+
+	public function test_load_dataset_returns_error_for_missing_or_invalid_fragments(): void {
+		$store = new BatchExportStore();
+
+		self::assertInstanceOf( WP_Error::class, $store->load_dataset( 404 ) );
+
+		$directory = $this->tmp_dir . '/storeaccountant/tmp/exports/123';
+		mkdir( $directory, 0777, true );
+		file_put_contents( $directory . '/batch-00001.dat', 'not-json' );
+
+		$error = $store->load_dataset( 123 );
+
+		self::assertInstanceOf( WP_Error::class, $error );
+		self::assertSame( 'storeaccountant_export_batch_invalid', $error->get_error_code() );
+	}
+
+	public function test_delete_export_removes_all_batch_files_for_export(): void {
+		$store = new BatchExportStore();
+		self::assertTrue( $store->save_batch( 123, 1, $this->dataset( 'first', 'A' ) ) );
+
+		$directory = $this->tmp_dir . '/storeaccountant/tmp/exports/123';
+		self::assertDirectoryExists( $directory );
+
+		$store->delete_export( 123 );
+
+		self::assertDirectoryDoesNotExist( $directory );
+	}
+
+	private function dataset( string $record_id, string $value ): ExportDataset {
+		return new ExportDataset(
+			new FieldCollection(
+				[
+					new Field( 'total', 'Total', new NumberFieldType( NumberFieldType::FORMAT_DECIMAL ) ),
+				]
+			),
+			[
+				new ExportRecord(
+					$record_id,
+					[
+						new FieldValue( 'total', $value ),
+					]
+				),
+			],
+			[
+				new ExportAttachment( fopen( 'php://temp', 'rb+' ), 'empty.txt', 'text/plain', 'attachments/empty.txt' ),
+			],
+			[ 'source' => 'unit-test' ]
+		);
+	}
+
+	private function remove_directory( string $path ): void {
+		if ( ! is_dir( $path ) ) {
+			return;
+		}
+
+		$items = scandir( $path );
+
+		if ( false === $items ) {
+			return;
+		}
+
+		foreach ( $items as $item ) {
+			if ( '.' === $item || '..' === $item ) {
+				continue;
+			}
+
+			$item_path = $path . DIRECTORY_SEPARATOR . $item;
+
+			if ( is_dir( $item_path ) ) {
+				$this->remove_directory( $item_path );
+				continue;
+			}
+
+			unlink( $item_path );
+		}
+
+		rmdir( $path );
+	}
+}

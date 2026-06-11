@@ -1,0 +1,13 @@
+*:Zone.Identifier
+*| sort
+
+/.idea
+/.todo
+/coverage
+/docs/dist
+/vendor
+
+/.phpcs.xml
+/.phpunit.result.cache
+/coverage.xml
+/phpunit.xml

@@ -1,0 +1,626 @@
+<?php
+/**
+ * StoreAccountant
+ * Export plugin for WooCommerce accounting workflows.
+ *
+ * @copyright   LaunchLab GmbH
+ * @author      thomas.baier@launch-lab.de
+ * @author-uri  https://launch-lab.de
+ * @license     GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace StoreAccountant\Export\Admin;
+
+use Throwable;
+use WP_Error;
+use Symfony\Component\Messenger\MessageBusInterface;
+use StoreAccountant\Admin\AccountingHeaderBar;
+use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
+use StoreAccountant\Export\ExportAdapterRegistry;
+use StoreAccountant\Export\Download\DownloadPasswordManager;
+use StoreAccountant\Export\Event\ExportEventDispatcher;
+use StoreAccountant\Export\Event\ExportEvents;
+use StoreAccountant\Export\ExportRendererRegistry;
+use StoreAccountant\Export\Queue\Message\StartExportMessage;
+use StoreAccountant\Queue\Loopback\QueueLoopbackDispatcher;
+use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
+use StoreAccountant\Export\Filter\ExportFilterFieldProviderRegistry;
+use StoreAccountant\Export\Filter\ExportFilterSelection;
+use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
+use StoreAccountant\Export\Filter\ExportFilterSnapshotter;
+use StoreAccountant\Export\Renderer\CsvExportRenderer;
+use StoreAccountant\Export\ExportPostType;
+use StoreAccountant\Export\ExportRepository;
+use StoreAccountant\Contract\WordPress\Request;
+use StoreAccountant\Contract\HookRegistrarInterface;
+use StoreAccountant\Security\Permission\PermissionActionIds;
+use StoreAccountant\Security\Permission\PermissionChecker;
+use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
+use StoreAccountant\Storage\StorageAdapterRegistry;
+use function is_numeric;
+use function sprintf;
+use function str_starts_with;
+use function str_contains;
+use function substr;
+use function trim;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Registers and renders the accounting export page.
+ */
+final readonly class AccountingExportPage implements HookRegistrarInterface {
+	public const PAGE_SLUG = 'storeaccountant-export-create';
+
+	/**
+	 * Initializes the page.
+	 *
+	 * @param AccountingExportPageForm          $form                   Export form renderer.
+	 * @param ExportRepository                  $repository             Export repository.
+	 * @param MessageBusInterface               $message_bus            Message bus.
+	 * @param StorageAdapterRegistry            $storage_adapters        storage adapter registry.
+	 * @param ExportAdapterRegistry             $export_adapters        Export adapter registry.
+	 * @param ExportRendererRegistry            $export_writers         Export writer registry.
+	 * @param ExportFilterFieldProviderRegistry $filter_field_providers Export filter field providers.
+	 * @param ExportFilterSelectionSerializer   $filter_serializer      Filter selection serializer.
+	 * @param ExportFilterSnapshotter           $filter_snapshotter     Filter snapshotter.
+	 * @param AccountingHeaderBar               $header_bar             Accounting header bar.
+	 * @param PermissionChecker                 $permissions            Permission checker.
+	 * @param QueueLoopbackDispatcher           $loopback_dispatcher    Queue loopback dispatcher.
+	 * @param DownloadPasswordManager           $passwords              Download password manager.
+	 */
+	public function __construct(
+		private AccountingExportPageForm $form,
+		private ExportRepository $repository,
+		private MessageBusInterface $message_bus,
+		private StorageAdapterRegistry $storage_adapters,
+		private ExportAdapterRegistry $export_adapters,
+		private ExportRendererRegistry $export_writers,
+		private ExportFilterFieldProviderRegistry $filter_field_providers,
+		private ExportFilterSelectionSerializer $filter_serializer,
+		private ExportFilterSnapshotter $filter_snapshotter,
+		private AccountingHeaderBar $header_bar,
+		private PermissionChecker $permissions,
+		private QueueLoopbackDispatcher $loopback_dispatcher,
+		private DownloadPasswordManager $passwords
+	) {}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function register(): void {
+		add_action( 'admin_menu', [ $this, 'add_submenu_page' ] );
+		add_action( 'admin_head', [ $this, 'remove_hidden_submenu_page' ] );
+		add_action( 'admin_post_storeaccountant_start_export', [ $this, 'handle_start_export' ] );
+		add_action( 'admin_post_storeaccountant_start_export_from_overview', [ $this, 'handle_start_export_from_overview' ] );
+		add_filter( 'parent_file', [ $this, 'filter_parent_file' ] );
+		add_filter( 'submenu_file', [ $this, 'filter_submenu_file' ] );
+	}
+
+	/**
+	 * Adds hidden plugin pages used by the export list action buttons.
+	 */
+	public function add_submenu_page(): void {
+		add_submenu_page(
+			AccountingMenu::MENU_SLUG,
+			__( 'Create New Export', 'storeaccountant' ),
+			__( 'Create New Export', 'storeaccountant' ),
+			$this->permissions->get_capability( PermissionActionIds::EXPORT_CREATE, StoreAccountantCapabilities::CREATE_EXPORTS ),
+			self::PAGE_SLUG,
+			[ $this, 'render' ]
+		);
+	}
+
+	/**
+	 * Removes hidden plugin pages from the visible accounting submenu after access checks.
+	 */
+	public function remove_hidden_submenu_page(): void {
+		remove_submenu_page( AccountingMenu::MENU_SLUG, self::PAGE_SLUG );
+	}
+
+	/**
+	 * Renders the initial accounting export admin page.
+	 */
+	public function render(): void {
+		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
+			wp_die( esc_html__( 'You are not allowed to start accounting exports.', 'storeaccountant' ) );
+		}
+
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( $this->get_page_title() ); ?></h1>
+			<?php $this->render_notice(); ?>
+			<?php $this->header_bar->render_detail_actions(); ?>
+
+			<?php $this->form->render(); ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Handles the export form submission.
+	 */
+	public function handle_start_export(): void {
+		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
+			wp_die( esc_html__( 'You are not allowed to start accounting exports.', 'storeaccountant' ) );
+		}
+
+		check_admin_referer( 'storeaccountant_start_export', 'storeaccountant_export_nonce' );
+
+		$is_quick_export = '1' === Request::post_key( 'storeaccountant_quick_export' );
+
+		if ( $is_quick_export ) {
+			$this->handle_quick_export();
+		}
+
+		$this->redirect_with_error();
+	}
+
+	/**
+	 * Handles export creation requests from the export overview selector.
+	 */
+	public function handle_start_export_from_overview(): void {
+		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
+			wp_die( esc_html__( 'You are not allowed to start accounting exports.', 'storeaccountant' ) );
+		}
+
+		check_admin_referer( 'storeaccountant_start_export_from_overview', 'storeaccountant_export_overview_nonce' );
+
+		$selection = Request::post_text( 'storeaccountant_export_create_selection', 'quick' );
+
+		if ( 'quick' === $selection ) {
+				wp_safe_redirect(
+					add_query_arg(
+						[
+							'page' => self::PAGE_SLUG,
+						],
+						admin_url( 'admin.php' )
+					)
+				);
+			exit;
+		}
+
+		if ( ! str_starts_with( $selection, 'configuration:' ) ) {
+			$this->redirect_overview_with_error();
+		}
+
+		$configuration_id = absint( substr( $selection, 14 ) );
+		$title            = trim( Request::post_text( 'storeaccountant_export_title' ) );
+
+		if ( '' === $title ) {
+			$this->redirect_overview_with_error( 'missing_title' );
+		}
+
+		if ( $this->repository->exists_with_title( $title ) ) {
+			$this->redirect_overview_with_error( 'duplicate_title' );
+		}
+
+		$password = $this->passwords->reveal_configuration_password( $configuration_id );
+
+		if ( is_wp_error( $password ) ) {
+			$this->redirect_overview_with_error();
+		}
+
+		if ( str_contains( $title, $password ) ) {
+			$this->redirect_overview_with_error( 'title_contains_password' );
+		}
+
+		$this->handle_configuration_export( $configuration_id, $title );
+	}
+
+	/**
+	 * Creates and runs an export from a saved configuration.
+	 *
+	 * @param int    $configuration_id Export configuration post ID.
+	 * @param string $title            Export title.
+	 */
+	private function handle_configuration_export( int $configuration_id, string $title ): void {
+		$configuration = get_post( $configuration_id );
+
+		if ( ! $configuration || ExportConfigurationPostType::POST_TYPE !== $configuration->post_type || 'publish' !== $configuration->post_status ) {
+			$this->redirect_overview_with_error();
+		}
+
+		$filters            = $this->filter_serializer->decode( (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_FILTERS, true ) );
+		$storage_engine     = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_STORAGE_ENGINE, true );
+			$export_adapter = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_EXPORT_ADAPTER, true );
+			$export_writer  = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_EXPORT_WRITER, true );
+			$batch_size     = $this->get_batch_size_from_configuration( $configuration_id );
+
+		if ( '' === $export_adapter ) {
+			$export_adapter = OrderExportAdapter::ADAPTER_ID;
+		}
+
+		$filters = $this->filter_snapshotter->snapshot( $filters );
+
+		if ( is_wp_error( $filters ) || ! $this->storage_adapters->is_enabled( $storage_engine ) ) {
+			$this->redirect_overview_with_error();
+		}
+
+		$export_adapter_instance = $this->export_adapters->get( $export_adapter );
+		$export_writer_instance  = $this->export_writers->get( $export_writer );
+
+		if ( null === $export_adapter_instance || null === $export_writer_instance ) {
+			$this->redirect_overview_with_error();
+		}
+
+			$post_id = $this->repository->create(
+				$title,
+				$filters,
+				$storage_engine,
+				$export_adapter_instance,
+				$export_writer_instance,
+				get_current_user_id(),
+				$configuration_id,
+				$batch_size
+			);
+
+		if ( is_wp_error( $post_id ) || $post_id <= 0 ) {
+			$this->redirect_overview_with_error();
+		}
+
+		try {
+			$this->repository->mark_queued( $post_id );
+			$this->message_bus->dispatch( new StartExportMessage( $post_id, $export_writer ) );
+				ExportEventDispatcher::dispatch(
+					ExportEvents::QUEUED,
+					$post_id,
+					[
+						'action'           => 'storeaccountant_start_export_from_overview',
+						'export_id'        => $post_id,
+						'configuration_id' => $configuration_id,
+						'renderer_id'      => $export_writer,
+					]
+				);
+			$this->loopback_dispatcher->maybe_dispatch_for_manual_export( $post_id );
+		} catch ( Throwable $exception ) {
+			$this->repository->mark_failed(
+				$post_id,
+				__( 'The accounting export could not be queued.', 'storeaccountant' ),
+				$exception,
+				[
+					'action'      => 'storeaccountant_start_export_from_overview',
+					'export_id'   => $post_id,
+					'log_message' => 'The accounting export could not be queued.',
+				]
+			);
+			$this->redirect_overview_with_error();
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'post_type'                      => ExportPostType::POST_TYPE,
+					'storeaccountant_export_created' => (string) $post_id,
+				],
+				admin_url( 'edit.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Handles quick export form submissions.
+	 */
+	private function handle_quick_export(): void {
+		check_admin_referer( 'storeaccountant_start_export', 'storeaccountant_export_nonce' );
+
+		$request        = Request::post_data();
+		$title          = trim( Request::post_text( 'storeaccountant_export_title' ) );
+		$storage_engine = Request::post_key( 'storeaccountant_storage_engine' );
+		$export_adapter = Request::post_key( 'storeaccountant_export_adapter', OrderExportAdapter::ADAPTER_ID );
+		$export_writer  = Request::post_key( 'storeaccountant_export_writer', CsvExportRenderer::RENDERER_ID );
+		$batch_size     = $this->get_batch_size_from_request( $request );
+		$password       = Request::post_text( 'storeaccountant_export_download_password' );
+		$filters        = $this->get_filter_selections_from_request( $export_adapter, $request );
+
+		if ( is_wp_error( $batch_size ) ) {
+			$this->redirect_with_error( 'invalid_batch_size' );
+		}
+
+		if ( is_wp_error( $filters ) || ! $this->storage_adapters->is_enabled( $storage_engine ) ) {
+			$this->redirect_with_error();
+		}
+
+		$export_adapter_instance = $this->export_adapters->get( $export_adapter );
+		$export_writer_instance  = $this->export_writers->get( $export_writer );
+
+		if ( null === $export_adapter_instance || null === $export_writer_instance ) {
+			$this->redirect_with_error();
+		}
+
+		if ( '' === $title ) {
+			$this->redirect_with_error( 'missing_title' );
+		}
+
+		if ( $this->repository->exists_with_title( $title ) ) {
+			$this->redirect_with_error( 'duplicate_title' );
+		}
+
+		$effective_password = $this->passwords->get_password_for_submission( $password );
+
+		if ( is_wp_error( $effective_password ) ) {
+			$this->redirect_with_error();
+		}
+
+		if ( str_contains( $title, $effective_password ) ) {
+			$this->redirect_with_error( 'title_contains_password' );
+		}
+
+		$password_snapshot = $this->passwords->get_snapshot_for_submission( $password );
+
+		if ( is_wp_error( $password_snapshot ) ) {
+			$this->redirect_with_error();
+		}
+
+		$post_id = $this->repository->create(
+			$title,
+			$filters,
+			$storage_engine,
+			$export_adapter_instance,
+			$export_writer_instance,
+			get_current_user_id(),
+			null,
+			$batch_size,
+			$password_snapshot
+		);
+
+		if ( is_wp_error( $post_id ) || $post_id <= 0 ) {
+			$this->redirect_with_error();
+		}
+
+		try {
+			$this->repository->mark_queued( $post_id );
+			$this->message_bus->dispatch( new StartExportMessage( $post_id, $export_writer ) );
+				ExportEventDispatcher::dispatch(
+					ExportEvents::QUEUED,
+					$post_id,
+					[
+						'action'      => 'storeaccountant_start_export',
+						'export_id'   => $post_id,
+						'renderer_id' => $export_writer,
+					]
+				);
+			$this->loopback_dispatcher->maybe_dispatch_for_manual_export( $post_id );
+		} catch ( Throwable $exception ) {
+			$this->repository->mark_failed(
+				$post_id,
+				__( 'The accounting export could not be queued.', 'storeaccountant' ),
+				$exception,
+				[
+					'action'      => 'storeaccountant_start_export',
+					'export_id'   => $post_id,
+					'log_message' => 'The accounting export could not be queued.',
+				]
+			);
+			$this->redirect_with_error();
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'post_type'                      => ExportPostType::POST_TYPE,
+					'storeaccountant_export_created' => (string) $post_id,
+				],
+				admin_url( 'edit.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Gets export filter selections from request data and snapshots dynamic values.
+	 *
+	 * @param string               $export_type Export adapter identifier.
+	 * @param array<string, mixed> $request     Request data.
+	 *
+	 * @return array<int, ExportFilterSelection>|WP_Error
+	 */
+	private function get_filter_selections_from_request( string $export_type, array $request ): array|WP_Error {
+		$filters = [];
+
+		foreach ( $this->filter_field_providers->get_providers( $export_type ) as $provider ) {
+			$selection = $provider->get_selection_from_request( $request );
+
+			if ( is_wp_error( $selection ) ) {
+				return $selection;
+			}
+
+			$filters[] = $selection;
+		}
+
+		return $this->filter_snapshotter->snapshot( $filters );
+	}
+
+	/**
+	 * Gets the batch size from request data.
+	 *
+	 * @param array<string, mixed> $request Request data.
+	 */
+	private function get_batch_size_from_request( array $request ): int|WP_Error {
+		$raw_batch_size = isset( $request['storeaccountant_export_batch_size'] )
+			? wp_unslash( $request['storeaccountant_export_batch_size'] )
+			: ExportPostType::DEFAULT_BATCH_SIZE;
+
+		if ( ! is_numeric( $raw_batch_size ) ) {
+			return new WP_Error(
+				'storeaccountant_export_batch_size_invalid',
+				__( 'Enter a numeric batch size of at least 10.', 'storeaccountant' )
+			);
+		}
+
+		$batch_size = absint( $raw_batch_size );
+
+		if ( $batch_size < ExportPostType::MIN_BATCH_SIZE ) {
+			return new WP_Error(
+				'storeaccountant_export_batch_size_too_small',
+				__( 'Enter a numeric batch size of at least 10.', 'storeaccountant' )
+			);
+		}
+
+		return $batch_size;
+	}
+
+	/**
+	 * Gets the batch size stored on an export configuration.
+	 *
+	 * @param int $configuration_id Export configuration post ID.
+	 */
+	private function get_batch_size_from_configuration( int $configuration_id ): int {
+		$batch_size = (int) get_post_meta( $configuration_id, ExportConfigurationPostType::META_BATCH_SIZE, true );
+
+		return $batch_size >= ExportPostType::MIN_BATCH_SIZE ? $batch_size : ExportPostType::DEFAULT_BATCH_SIZE;
+	}
+
+	/**
+	 * Renders admin notices for export form submissions.
+	 */
+	private function render_notice(): void {
+		$export_notice = $this->get_export_notice();
+
+		if ( 'created' === $export_notice ) {
+			?>
+			<div class="notice notice-success is-dismissible">
+				<p><?php esc_html_e( 'The accounting export was saved and queued.', 'storeaccountant' ); ?></p>
+			</div>
+			<?php
+			return;
+		}
+
+		if ( '' !== $export_notice ) {
+			$message = __( 'The accounting export could not be saved.', 'storeaccountant' );
+
+			if ( 'duplicate_title' === $export_notice ) {
+				$message = __( 'An accounting export with this title already exists. Choose a unique export title.', 'storeaccountant' );
+			}
+
+			if ( 'missing_title' === $export_notice ) {
+				$message = __( 'Enter an export title before starting the export.', 'storeaccountant' );
+			}
+
+			if ( 'invalid_batch_size' === $export_notice ) {
+				$message = __( 'Enter a numeric batch size of at least 10.', 'storeaccountant' );
+			}
+
+			if ( 'title_contains_password' === $export_notice ) {
+				$message = __( 'The export title must not contain the download password.', 'storeaccountant' );
+			}
+			?>
+			<div class="notice notice-error is-dismissible">
+				<p><?php echo esc_html( $message ); ?></p>
+			</div>
+			<?php
+		}
+
+		foreach ( $this->storage_adapters->get_enabled() as $storage_engine ) {
+			$storage_result = $storage_engine->ensure();
+
+			if ( ! is_wp_error( $storage_result ) ) {
+				continue;
+			}
+			?>
+			<div class="notice notice-error">
+				<p>
+					<?php
+					echo esc_html(
+						__( 'StoreAccountant could not prepare the selected storage location. Please check the storage permissions and configuration.', 'storeaccountant' )
+					);
+					?>
+				</p>
+			</div>
+			<?php
+		}
+	}
+
+	/**
+	 * Redirects back to the form with an error notice.
+	 */
+	private function redirect_with_error( string $error = '1' ): void {
+			wp_safe_redirect(
+				add_query_arg(
+					[
+						'page'                         => self::PAGE_SLUG,
+						'storeaccountant_export_error' => $error,
+					],
+					admin_url( 'admin.php' )
+				)
+			);
+		exit;
+	}
+
+	/**
+	 * Redirects back to the export overview with an error notice.
+	 */
+	private function redirect_overview_with_error( string $error = '1' ): void {
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'post_type'                    => ExportPostType::POST_TYPE,
+					'storeaccountant_export_error' => $error,
+				],
+				admin_url( 'edit.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Highlights StoreAccountant while rendering hidden StoreAccountant pages.
+	 *
+	 * @param string $parent_file Parent file.
+	 */
+	public function filter_parent_file( ?string $parent_file ): string {
+		if ( ! $this->is_current_plugin_page() ) {
+			return (string) $parent_file;
+		}
+
+		return AccountingMenu::MENU_SLUG;
+	}
+
+	/**
+	 * Highlights the accounting exports submenu while rendering hidden StoreAccountant pages.
+	 *
+	 * @param string $submenu_file Submenu file.
+	 */
+	public function filter_submenu_file( ?string $submenu_file ): string {
+		if ( ! $this->is_current_plugin_page() ) {
+			return (string) $submenu_file;
+		}
+
+		return 'edit.php?post_type=' . ExportPostType::POST_TYPE;
+	}
+
+	/**
+	 * Checks whether the current admin page belongs to StoreAccountant.
+	 */
+	private function is_current_plugin_page(): bool {
+		return self::PAGE_SLUG === Request::get_key( 'page' );
+	}
+
+	/**
+	 * Gets the current redirect notice code.
+	 */
+	private function get_export_notice(): string {
+		if ( Request::has_get( 'storeaccountant_export_created' ) ) {
+			return 'created';
+		}
+
+		if ( ! Request::has_get( 'storeaccountant_export_error' ) ) {
+			return '';
+		}
+
+		return Request::get_key( 'storeaccountant_export_error' );
+	}
+
+	/**
+	 * Gets the current hidden page title.
+	 */
+	private function get_page_title(): string {
+		return __( 'Create New Export', 'storeaccountant' );
+	}
+}

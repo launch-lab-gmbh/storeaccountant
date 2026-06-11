@@ -1,0 +1,434 @@
+.storeaccountant-headerbar {
+	align-items: center;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	box-sizing: border-box;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 10px 0 18px;
+	padding: 12px 16px;
+	width: 100%;
+}
+
+.storeaccountant-export-create-form {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.storeaccountant-export-create-form select {
+	max-width: 320px;
+	min-width: 220px;
+}
+
+.storeaccountant-export-create-form .storeaccountant-export-create-title {
+	max-width: 320px;
+	min-width: 220px;
+}
+
+.storeaccountant-global-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin: 10px 0;
+}
+
+.storeaccountant-list-tabs {
+	margin-bottom: 0;
+	margin-top: 10px;
+}
+
+.storeaccountant-tab-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-top: 0;
+	box-sizing: border-box;
+	margin-top: 0;
+	padding: 16px;
+	width: 100%;
+}
+
+.storeaccountant-tab-panel .form-table {
+	margin-top: 0;
+}
+
+.storeaccountant-content-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	box-sizing: border-box;
+	margin: 10px 0 18px;
+	padding: 16px;
+	width: 100%;
+}
+
+.storeaccountant-content-panel .form-table {
+	margin-top: 0;
+}
+
+.storeaccountant-export-raw-data pre {
+	margin: 0;
+	white-space: pre-wrap;
+}
+
+.storeaccountant-export-log {
+	table-layout: fixed;
+}
+
+.storeaccountant-export-log th:nth-child(1),
+.storeaccountant-export-log td:nth-child(1) {
+	width: 150px;
+}
+
+.storeaccountant-export-log th:nth-child(2),
+.storeaccountant-export-log td:nth-child(2) {
+	width: 80px;
+}
+
+.storeaccountant-export-log th:nth-child(3),
+.storeaccountant-export-log td:nth-child(3) {
+	width: 220px;
+}
+
+.storeaccountant-export-log-details-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+.storeaccountant-log-level {
+	background: #e0f0ff;
+	border-radius: 999px;
+	color: #0a4b78;
+	display: inline-flex;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+	padding: 2px 8px;
+	white-space: nowrap;
+}
+
+.storeaccountant-log-level--error {
+	background: #fcf0f1;
+	color: #b32d2e;
+}
+
+.storeaccountant-log-level--success {
+	background: #edfaef;
+	color: #008a20;
+}
+
+.storeaccountant-export-log-details pre {
+	margin: 0;
+	white-space: pre;
+}
+
+.storeaccountant-export-tabs {
+	margin-top: 18px;
+}
+
+.storeaccountant-export-configuration-tabs {
+	margin-top: 18px;
+}
+
+.storeaccountant-field-mapping-table {
+	table-layout: auto;
+	margin-bottom: 16px;
+}
+
+.storeaccountant-field-mapping-sort-column {
+	text-align: center;
+	width: 44px;
+}
+
+.storeaccountant-field-mapping-handle {
+	color: #646970;
+	cursor: grab;
+	display: inline-flex;
+	padding: 4px;
+	touch-action: none;
+	user-select: none;
+	-webkit-user-drag: element;
+}
+
+.storeaccountant-field-mapping-handle:hover,
+.storeaccountant-field-mapping-handle:focus {
+	color: #135e96;
+}
+
+.storeaccountant-field-mapping-handle:active {
+	cursor: grabbing;
+}
+
+.storeaccountant-field-mapping-handle .dashicons {
+	font-size: 20px;
+	height: 20px;
+	width: 20px;
+}
+
+.storeaccountant-field-mapping-table tr.ui-sortable-helper {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+.storeaccountant-field-mapping-row-dragging {
+	background: #fff;
+	box-shadow: 0 0 0 1px #72aee6, 0 3px 10px rgb(0 0 0 / 14%);
+	opacity: 0.65;
+	position: relative;
+	z-index: 2;
+}
+
+.storeaccountant-field-mapping-placeholder {
+	background: #f0f6fc;
+	height: 48px;
+}
+
+.storeaccountant-field-mapping-table th:nth-child(2),
+.storeaccountant-field-mapping-table td:nth-child(2),
+.storeaccountant-field-mapping-table th:nth-child(3),
+.storeaccountant-field-mapping-table td:nth-child(3),
+.storeaccountant-field-mapping-table th:nth-child(4),
+.storeaccountant-field-mapping-table td:nth-child(4) {
+	white-space: nowrap;
+	width: 1%;
+}
+
+.storeaccountant-field-mapping-label-column {
+	padding-right: 6px;
+	white-space: nowrap;
+	width: 1%;
+}
+
+.storeaccountant-field-mapping-label-column .regular-text {
+	width: 25em;
+}
+
+.storeaccountant-field-mapping-options-column {
+	padding-left: 0;
+	text-align: left;
+	width: auto;
+}
+
+.storeaccountant-field-mapping-options-column select {
+	max-width: 100%;
+}
+
+.storeaccountant-inline-notice {
+	margin: 8px 0 0;
+	max-width: 560px;
+}
+
+.storeaccountant-headerbar .dashicons,
+.storeaccountant-settings-submit .dashicons {
+	font-size: 16px;
+	height: 16px;
+	line-height: 1.4;
+	width: 16px;
+}
+
+.storeaccountant-settings-submit {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+}
+
+.storeaccountant-settings-submit .dashicons:first-child {
+	margin: 2px 4px 0 -2px;
+}
+
+.storeaccountant-headerbar .dashicons:first-child {
+	margin: 2px 4px 0 -2px;
+}
+
+.storeaccountant-headerbar .dashicons:last-child,
+.storeaccountant-settings-submit .dashicons {
+	margin: 2px -2px 0 4px;
+}
+
+.storeaccountant-is-hidden {
+	display: none;
+}
+
+.storeaccountant-export-status {
+	border-radius: 999px;
+	display: inline-flex;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+	padding: 2px 8px;
+	white-space: nowrap;
+}
+
+.storeaccountant-export-status--scheduled,
+.storeaccountant-export-status--queued {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.storeaccountant-export-status--processing {
+	background: #e0f0ff;
+	color: #0a4b78;
+}
+
+.storeaccountant-export-status--completed {
+	background: #edfaef;
+	color: #008a20;
+}
+
+.storeaccountant-export-status--failed {
+	background: #fcf0f1;
+	color: #b32d2e;
+}
+
+.storeaccountant-export-status-progress {
+	color: #646970;
+	display: block;
+	font-size: 12px;
+	margin-top: 4px;
+}
+
+.storeaccountant-customer-country-token-field-enhanced,
+.storeaccountant-order-status-token-field-enhanced,
+.storeaccountant-permission-role-token-field-enhanced {
+	max-width: 520px;
+}
+
+.storeaccountant-customer-country-token-field .components-form-token-field__input-container,
+.storeaccountant-order-status-token-field .components-form-token-field__input-container,
+.storeaccountant-permission-role-token-field .components-form-token-field__input-container {
+	background: #fff;
+}
+
+.storeaccountant-customer-country-token-field .components-form-token-field__label,
+.storeaccountant-order-status-token-field .components-form-token-field__label,
+.storeaccountant-permission-role-token-field .components-form-token-field__label {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+}
+
+.storeaccountant-tab-panel .form-table td.storeaccountant-permissions-table-cell {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.storeaccountant-permissions-table {
+	border-collapse: separate;
+	border-spacing: 0;
+	margin-bottom: 8px;
+	margin-left: 0;
+	width: 100%;
+}
+
+.storeaccountant-permissions-table tbody tr:not(.storeaccountant-permissions-group-row) th,
+.storeaccountant-permissions-table tbody tr:not(.storeaccountant-permissions-group-row) td {
+	background: #fff;
+	border-top: 1px solid #f0f0f1;
+}
+
+.storeaccountant-permissions-group.is-collapsed .storeaccountant-permissions-action-row {
+	display: none;
+}
+
+.storeaccountant-permissions-table th:first-child {
+	padding-left: 12px;
+	width: 34%;
+}
+
+.storeaccountant-permissions-table td:first-child {
+	padding-left: 12px;
+}
+
+.storeaccountant-permissions-group-row th {
+	background: #f0f0f1;
+	border-top: 1px solid #c3c4c7;
+	color: #1d2327;
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	padding-bottom: 10px;
+	padding-top: 10px;
+}
+
+.storeaccountant-permissions-group-toggle {
+	align-items: center;
+	background: transparent;
+	border: 0;
+	color: inherit;
+	cursor: pointer;
+	display: flex;
+	font: inherit;
+	font-weight: 700;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	text-align: left;
+	width: 100%;
+}
+
+.storeaccountant-permissions-group-toggle .dashicons {
+	font-size: 16px;
+	height: 16px;
+	width: 16px;
+}
+
+.storeaccountant-permissions-group:not(.is-collapsed) .storeaccountant-permissions-group-toggle .dashicons {
+	transform: rotate(90deg);
+}
+
+.storeaccountant-permissions-group-count {
+	color: #646970;
+	font-weight: 400;
+	margin-left: auto;
+}
+
+.storeaccountant-permission-action-label {
+	display: block;
+	margin-bottom: 4px;
+}
+
+.storeaccountant-locked-admin-role {
+	align-items: center;
+	display: inline-flex;
+	gap: 4px;
+	margin-bottom: 8px;
+}
+
+.storeaccountant-disabled-download {
+	cursor: help;
+	display: inline-block;
+}
+
+.storeaccountant-deleted-configuration {
+	color: #646970;
+	cursor: help;
+	display: inline-block;
+	opacity: 0.62;
+	position: relative;
+}
+
+.storeaccountant-deleted-configuration:focus::after,
+.storeaccountant-deleted-configuration:hover::after {
+	background: #1d2327;
+	border-radius: 3px;
+	box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+	color: #fff;
+	content: attr(data-tooltip);
+	font-size: 12px;
+	font-weight: 400;
+	left: 0;
+	line-height: 1.4;
+	max-width: 240px;
+	padding: 6px 8px;
+	position: absolute;
+	top: calc(100% + 6px);
+	width: max-content;
+	z-index: 20;
+}

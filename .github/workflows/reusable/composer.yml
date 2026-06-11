@@ -1,0 +1,45 @@
+name: Reusable Composer
+
+on:
+  workflow_call:
+
+jobs:
+  install:
+    name: Install dependencies on PHP 8.2
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-php82-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-php82-${{ runner.os }}-
+
+      - name: Validate composer
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Upload vendor
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendor-php82
+          path: vendor
+          retention-days: 1

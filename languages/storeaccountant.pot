@@ -1,0 +1,1876 @@
+# Copyright (C) 2026 LaunchLab GmbH
+# This file is distributed under the GPL v3 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: StoreAccountant 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/storeaccountant\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-06-04T18:15:03+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: storeaccountant\n"
+
+#. Plugin Name of the plugin
+#: storeaccountant.php
+msgid "StoreAccountant"
+msgstr ""
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+#: storeaccountant.php
+msgid "https://launch-lab.de"
+msgstr ""
+
+#. Description of the plugin
+#: storeaccountant.php
+msgid "Accounting workflow plugin for WooCommerce."
+msgstr ""
+
+#. Author of the plugin
+#: storeaccountant.php
+msgid "LaunchLab GmbH"
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:107
+#: src/Admin/AccountingExportPage.php:108
+#: src/Admin/AccountingExportPage.php:626
+#: src/Admin/AccountingHeaderBar.php:67
+msgid "Create New Export"
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:127
+#: src/Admin/AccountingExportPage.php:146
+#: src/Admin/AccountingExportPage.php:166
+#: src/Export/ExportPostType.php:784
+msgid "You are not allowed to start accounting exports."
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:282
+#: src/Admin/AccountingExportPage.php:395
+#: src/Export/ExportPostType.php:807
+msgid "The accounting export could not be queued."
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:455
+#: src/Admin/AccountingExportPage.php:464
+#: src/Admin/AccountingExportPage.php:509
+#: src/Admin/ExportConfigurationPage.php:404
+#: src/Admin/ExportConfigurationPage.php:413
+#: src/Admin/ExportConfigurationPage.php:477
+msgid "Enter a numeric batch size of at least 10."
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:491
+#: src/Export/ExportPostType.php:716
+msgid "The accounting export was saved and queued."
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:498
+#: src/Export/ExportPostType.php:727
+msgid "The accounting export could not be saved."
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:501
+#: src/Export/ExportPostType.php:730
+msgid "An accounting export with this title already exists. Choose a unique export title."
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:505
+#: src/Export/ExportPostType.php:734
+msgid "Enter an export title before starting the export."
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:513
+#: src/Export/ExportPostType.php:738
+msgid "The export title must not contain the download password."
+msgstr ""
+
+#: src/Admin/AccountingExportPage.php:533
+msgid "StoreAccountant could not prepare the selected storage location. Please check the storage permissions and configuration."
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:85
+#: src/Admin/ExportDetailsReadTabProvider.php:116
+#: src/Export/Configuration/ExportConfigurationPostType.php:146
+#: src/Export/ExportPostType.php:233
+msgid "Title"
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:100
+#: src/Admin/ExportConfigurationPageForm.php:120
+#: src/Admin/ExportDetailsReadTabProvider.php:128
+#: src/Export/Configuration/ExportConfigurationPostType.php:147
+#: src/Export/ExportPostType.php:236
+msgid "Export Type"
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:104
+msgid "No export adapters are available. Register at least one export adapter before starting an export."
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:121
+#: src/Admin/ExportConfigurationPageForm.php:150
+#: src/Admin/ExportDetailsReadTabProvider.php:129
+#: src/Export/Configuration/ExportConfigurationPostType.php:148
+#: src/Export/ExportPostType.php:237
+msgid "Export Format"
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:125
+msgid "No export formats are available. Register at least one export renderer before starting an export."
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:141
+#: src/Admin/ExportConfigurationPageForm.php:170
+#: src/Admin/ExportDetailsReadTabProvider.php:130
+#: src/Export/Configuration/ExportConfigurationPostType.php:149
+msgid "Storage Location"
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:145
+msgid "No storage locations are enabled. Enable at least one storage location before starting an export."
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:162
+#: src/Admin/ExportConfigurationPageForm.php:208
+msgid "Batch Size"
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:175
+#: src/Admin/ExportConfigurationPageForm.php:222
+msgid "StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 100."
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:181
+msgid "Start Quick Export"
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:204
+#: src/Admin/ExportConfigurationPageForm.php:244
+msgid "Download password"
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:208
+#: src/Admin/ExportConfigurationPageForm.php:248
+msgid "Download passwords are unavailable because this server provides neither Sodium nor OpenSSL encryption."
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:218
+msgid "Enter a download password for this export. Leave empty to store the current global download password."
+msgstr ""
+
+#: src/Admin/AccountingExportPageForm.php:223
+#: src/Admin/ExportConfigurationPageForm.php:272
+#: src/Admin/SecuritySettingsForm.php:68
+msgid "Current Download Password"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:47
+msgid "Select export to create"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:50
+#: src/Admin/ExportDetailsReadTabProvider.php:162
+#: src/Export/ExportPostType.php:310
+msgid "Quick Export"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:54
+#: src/Admin/AccountingHeaderBar.php:62
+msgid "Export Name"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:86
+msgid "Create New Export Configuration"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:102
+msgid "Configure Accounting Plugin"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:117
+msgid "Back to Accounting Overview"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:132
+msgid "Back to Export Configurations"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:136
+#: src/Export/Configuration/ExportConfigurationPostType.php:107
+msgid "Edit Export Configuration"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:225
+#: src/Admin/AccountingMenu.php:74
+#: src/Admin/AccountingMenu.php:75
+#: src/Export/ExportPostType.php:192
+#: src/Permission/CorePermissionActionProvider.php:86
+#: src/Permission/CorePermissionActionProvider.php:93
+#: src/Permission/CorePermissionActionProvider.php:100
+#: src/Permission/CorePermissionActionProvider.php:107
+#: src/Permission/CorePermissionActionProvider.php:114
+#: src/Permission/CorePermissionActionProvider.php:121
+msgid "Exports"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:229
+#: src/Export/Configuration/ExportConfigurationPostType.php:103
+#: src/Export/Configuration/ExportConfigurationPostType.php:105
+#: src/Permission/CorePermissionActionProvider.php:128
+#: src/Permission/CorePermissionActionProvider.php:135
+#: src/Permission/CorePermissionActionProvider.php:142
+#: src/Permission/CorePermissionActionProvider.php:149
+#: src/Permission/CorePermissionActionProvider.php:156
+#: src/Permission/CorePermissionActionProvider.php:163
+msgid "Export Configurations"
+msgstr ""
+
+#: src/Admin/AccountingHeaderBar.php:242
+msgid "Accounting navigation"
+msgstr ""
+
+#: src/Admin/AccountingMenu.php:62
+#: src/Admin/AccountingMenu.php:63
+#: src/Admin/AccountingMenu.php:95
+msgid "Accounting"
+msgstr ""
+
+#: src/Admin/AccountingMenu.php:97
+msgid "You do not have access to any StoreAccountant overview."
+msgstr ""
+
+#: src/Admin/CustomerCountryFilterFieldProvider.php:103
+msgid "Customer Country Field"
+msgstr ""
+
+#: src/Admin/CustomerCountryFilterFieldProvider.php:117
+#: src/Admin/CustomerCountryFilterFieldProvider.php:135
+msgid "Customer Countries"
+msgstr ""
+
+#: src/Admin/CustomerCountryFilterFieldProvider.php:123
+#: src/Admin/ExportDetailsReadTabProvider.php:143
+#: src/Admin/OrderStatusField.php:52
+msgid "Not set"
+msgstr ""
+
+#: src/Admin/CustomerCountryFilterFieldProvider.php:143
+#: src/Admin/CustomerCountryFilterFieldProvider.php:245
+#: src/Admin/CustomerCountryFilterFieldProvider.php:306
+msgid "All countries"
+msgstr ""
+
+#: src/Admin/CustomerCountryFilterFieldProvider.php:146
+#: src/Admin/CustomerCountryFilterFieldProvider.php:250
+#: src/Admin/CustomerCountryFilterFieldProvider.php:318
+msgid "Unassigned"
+msgstr ""
+
+#: src/Admin/CustomerCountryFilterFieldProvider.php:158
+msgid "Only countries with customer orders are shown."
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:110
+#: src/Admin/OrderFieldMappingTabProvider.php:120
+msgid "Field Mapping"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:136
+#: src/Admin/OrderFieldMappingTabProvider.php:146
+msgid "Sort"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:139
+#: src/Admin/OrderFieldMappingTabProvider.php:149
+msgid "Enabled"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:140
+#: src/Admin/ExportRawDataReadTabProvider.php:88
+#: src/Admin/OrderFieldMappingTabProvider.php:150
+msgid "Field"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:141
+#: src/Admin/OrderFieldMappingTabProvider.php:151
+msgid "Description"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:142
+#: src/Admin/OrderFieldMappingTabProvider.php:152
+msgid "Label"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:143
+#: src/Admin/OrderFieldMappingTabProvider.php:153
+msgid "Options"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:158
+#: src/Admin/OrderFieldMappingTabProvider.php:168
+msgid "Drag to sort this field"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:165
+#: src/Admin/OrderFieldMappingTabProvider.php:186
+msgid "Export this field"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:179
+#: src/Admin/CustomerFieldMappingTabProvider.php:316
+#: src/Admin/OrderFieldMappingTabProvider.php:209
+#: src/Admin/OrderFieldMappingTabProvider.php:378
+msgid "Full amount"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:182
+#: src/Admin/CustomerFieldMappingTabProvider.php:316
+#: src/Admin/OrderFieldMappingTabProvider.php:215
+#: src/Admin/OrderFieldMappingTabProvider.php:378
+msgid "Cents"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:202
+#: src/Admin/OrderFieldMappingTabProvider.php:238
+msgid "Save Field Mapping"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:213
+#: src/Admin/OrderFieldMappingTabProvider.php:249
+msgid "You are not allowed to save field mappings."
+msgstr ""
+
+#. translators: %s: WooCommerce customer meta key.
+#. translators: %s: WooCommerce order meta key.
+#: src/Admin/CustomerFieldMappingTabProvider.php:336
+#: src/Admin/OrderFieldMappingTabProvider.php:398
+#, php-format
+msgid "Custom field: %s"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:342
+#: src/Admin/OrderFieldMappingTabProvider.php:414
+msgid "customer_id"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:343
+msgid "username"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:344
+msgid "email"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:345
+msgid "first_name"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:346
+msgid "last_name"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:347
+msgid "display_name"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:348
+msgid "date_created"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:349
+msgid "date_modified"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:350
+msgid "order_count"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:351
+msgid "total_spent"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:352
+#: src/Admin/OrderFieldMappingTabProvider.php:415
+msgid "billing_first_name"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:353
+#: src/Admin/OrderFieldMappingTabProvider.php:416
+msgid "billing_last_name"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:354
+#: src/Admin/OrderFieldMappingTabProvider.php:417
+msgid "billing_company"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:355
+#: src/Admin/OrderFieldMappingTabProvider.php:418
+msgid "billing_street"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:356
+#: src/Admin/OrderFieldMappingTabProvider.php:419
+msgid "billing_house_number"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:357
+#: src/Admin/OrderFieldMappingTabProvider.php:420
+msgid "billing_address_1"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:358
+#: src/Admin/OrderFieldMappingTabProvider.php:421
+msgid "billing_address_2"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:359
+#: src/Admin/OrderFieldMappingTabProvider.php:422
+msgid "billing_postcode"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:360
+#: src/Admin/OrderFieldMappingTabProvider.php:423
+msgid "billing_city"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:361
+#: src/Admin/OrderFieldMappingTabProvider.php:424
+msgid "billing_state"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:362
+#: src/Admin/OrderFieldMappingTabProvider.php:425
+msgid "billing_country"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:363
+#: src/Admin/OrderFieldMappingTabProvider.php:426
+msgid "billing_email"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:364
+#: src/Admin/OrderFieldMappingTabProvider.php:427
+msgid "billing_phone"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:365
+#: src/Admin/OrderFieldMappingTabProvider.php:428
+msgid "shipping_first_name"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:366
+#: src/Admin/OrderFieldMappingTabProvider.php:429
+msgid "shipping_last_name"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:367
+#: src/Admin/OrderFieldMappingTabProvider.php:430
+msgid "shipping_company"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:368
+#: src/Admin/OrderFieldMappingTabProvider.php:431
+msgid "shipping_street"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:369
+#: src/Admin/OrderFieldMappingTabProvider.php:432
+msgid "shipping_house_number"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:370
+#: src/Admin/OrderFieldMappingTabProvider.php:433
+msgid "shipping_address_1"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:371
+#: src/Admin/OrderFieldMappingTabProvider.php:434
+msgid "shipping_address_2"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:372
+#: src/Admin/OrderFieldMappingTabProvider.php:435
+msgid "shipping_postcode"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:373
+#: src/Admin/OrderFieldMappingTabProvider.php:436
+msgid "shipping_city"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:374
+#: src/Admin/OrderFieldMappingTabProvider.php:437
+msgid "shipping_state"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:375
+#: src/Admin/OrderFieldMappingTabProvider.php:438
+msgid "shipping_country"
+msgstr ""
+
+#: src/Admin/CustomerFieldMappingTabProvider.php:376
+#: src/Admin/OrderFieldMappingTabProvider.php:439
+msgid "shipping_phone"
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:103
+#: src/Admin/ExportConfigurationPage.php:104
+#: src/Admin/ExportConfigurationPage.php:563
+msgid "Create Export Configuration"
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:127
+msgid "You are not allowed to create export configurations."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:131
+msgid "You are not allowed to view this export configuration."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:135
+#: src/Admin/ExportConfigurationPage.php:532
+msgid "You are not allowed to edit this export configuration."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:161
+msgid "You are not allowed to save export configurations."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:446
+#: src/Export/Configuration/ExportConfigurationPostType.php:346
+msgid "The export configuration was saved."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:455
+msgid "The field mapping was saved."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:464
+msgid "The field mapping could not be saved."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:474
+msgid "The export configuration could not be saved."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:481
+msgid "The configuration title must not contain the download password."
+msgstr ""
+
+#. translators: %s: export configuration title
+#: src/Admin/ExportConfigurationPage.php:568
+#, php-format
+msgid "Export Configuration \"%s\""
+msgstr ""
+
+#. translators: %s: export configuration title
+#: src/Admin/ExportConfigurationPage.php:568
+#, php-format
+msgid "Edit Export Configuration \"%s\""
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:612
+msgid "Export configuration sections"
+msgstr ""
+
+#: src/Admin/ExportConfigurationPage.php:656
+#: src/Admin/ExportDetailsReadTabProvider.php:158
+#: src/Export/ExportPostType.php:239
+msgid "Configuration"
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:104
+msgid "Configuration Title"
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:124
+msgid "No export adapters are available. Register at least one export adapter before saving a configuration."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:139
+msgid "The export adapter cannot be changed after the configuration has been created."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:154
+msgid "No export formats are available. Register at least one export renderer before saving a configuration."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:176
+msgid "No storage locations are enabled. Enable at least one storage location before saving a configuration."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:178
+msgid "Open storage settings"
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:230
+msgid "Update Configuration"
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:230
+msgid "Save Configuration"
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:256
+msgid "A download password is stored for this configuration."
+msgstr ""
+
+#: src/Admin/ExportConfigurationPageForm.php:267
+msgid "Enter a download password for this configuration. Leave empty to store the current global download password."
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:101
+msgid "Export Details"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:115
+msgid "Export ID"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:117
+msgid "Record Status"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:118
+msgid "Export Status"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:120
+msgid "Current Step"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:121
+msgid "Batches"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:122
+msgid "Items"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:123
+#: src/Export/ExportPostType.php:234
+msgid "Progress"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:124
+msgid "Started At"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:125
+msgid "Finished At"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:126
+msgid "Runtime"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:127
+#: src/Export/ExportPostType.php:235
+msgid "Exported At"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:131
+msgid "Storage Reference"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:132
+msgid "File Size"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:133
+#: src/Export/ExportPostType.php:238
+msgid "Triggered By"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:176
+#: src/Export/ExportPostType.php:320
+msgid "Deleted configuration"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:181
+#: src/Export/ExportPostType.php:326
+msgid "Untitled configuration"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:198
+#: src/Admin/ExportDetailsReadTabProvider.php:289
+#: src/Admin/ExportDetailsReadTabProvider.php:297
+#: src/Export/Admin/ExportListPollingResponseFactory.php:93
+#: src/Export/Download/ExportDownloadController.php:254
+#: src/Export/ExportPostType.php:1078
+#: src/Export/ExportPostType.php:1166
+msgid "Download"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:207
+#: src/Export/Download/ExportDownloadController.php:250
+msgid "Download Password"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:210
+msgid "Protected"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:214
+msgid "Unavailable"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:233
+msgid "Error Message"
+msgstr ""
+
+#. translators: %s: technical export log link
+#: src/Admin/ExportDetailsReadTabProvider.php:242
+#, php-format
+msgid "Additional technical details are available in the %s."
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:246
+msgid "export log"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:251
+msgid "An administrator with export log access can review additional technical details in the export log."
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:264
+#: src/Export/ExportPostType.php:1053
+msgid "The export failed before a file could be generated."
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:269
+#: src/Export/ExportPostType.php:1058
+msgid "No export file has been generated yet."
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:276
+#: src/Export/ExportPostType.php:1065
+msgid "The storage adapter for this export is unavailable."
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:281
+#: src/Export/ExportPostType.php:1070
+msgid "The export file no longer exists in storage."
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:400
+#: src/Export/Configuration/ExportConfigurationPostType.php:548
+#: src/Export/ExportPostType.php:297
+#: src/Export/ExportPostType.php:1036
+#: src/Export/ExportStatus.php:51
+msgid "Unknown"
+msgstr ""
+
+#: src/Admin/ExportDetailsReadTabProvider.php:440
+msgid "No items found for this export."
+msgstr ""
+
+#. translators: %d: runtime in seconds
+#: src/Admin/ExportDetailsReadTabProvider.php:469
+#, php-format
+msgid "%d second"
+msgid_plural "%d seconds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/ExportLogReadTabProvider.php:76
+msgid "Log"
+msgstr ""
+
+#: src/Admin/ExportLogReadTabProvider.php:92
+msgid "No export log entries are available."
+msgstr ""
+
+#: src/Admin/ExportLogReadTabProvider.php:99
+msgid "Time"
+msgstr ""
+
+#: src/Admin/ExportLogReadTabProvider.php:100
+msgid "Level"
+msgstr ""
+
+#: src/Admin/ExportLogReadTabProvider.php:101
+msgid "Message"
+msgstr ""
+
+#: src/Admin/ExportLogReadTabProvider.php:102
+msgid "Details"
+msgstr ""
+
+#: src/Admin/ExportLogReadTabProvider.php:145
+msgid "Error"
+msgstr ""
+
+#: src/Admin/ExportLogReadTabProvider.php:146
+msgid "Success"
+msgstr ""
+
+#: src/Admin/ExportLogReadTabProvider.php:147
+msgid "Info"
+msgstr ""
+
+#: src/Admin/ExportRawDataReadTabProvider.php:73
+msgid "Raw Data"
+msgstr ""
+
+#: src/Admin/ExportRawDataReadTabProvider.php:89
+msgid "Value"
+msgstr ""
+
+#: src/Admin/InvoicePluginForm.php:45
+msgid "No supported invoice plugin is currently active."
+msgstr ""
+
+#: src/Admin/InvoicePluginForm.php:68
+msgid "Enable this invoice provider for export fields."
+msgstr ""
+
+#: src/Admin/InvoicePluginForm.php:75
+msgid "Only one invoice provider can be enabled at a time."
+msgstr ""
+
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:82
+msgid "Month"
+msgstr ""
+
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:94
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:107
+msgid "This month"
+msgstr ""
+
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:97
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:110
+msgid "Last month"
+msgstr ""
+
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:100
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:104
+msgid "All time"
+msgstr ""
+
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:125
+msgid "Year"
+msgstr ""
+
+#: src/Admin/MonthYearExportPeriodFieldProvider.php:343
+#: src/Export/Filter/Period/MonthYearPeriodProvider.php:175
+#: src/Order/Export/Filter/OrderDateFilter.php:117
+msgid "The selected export period is invalid."
+msgstr ""
+
+#: src/Admin/OrderDateFilterFieldProvider.php:88
+msgid "Order Date Field"
+msgstr ""
+
+#: src/Admin/OrderDateFilterFieldProvider.php:98
+msgid "The selected period is applied to this WooCommerce order date property."
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:404
+msgid "order_id"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:405
+msgid "order_number"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:406
+msgid "invoice_number"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:407
+msgid "invoice_date"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:408
+msgid "invoice_file_name"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:409
+msgid "order_date"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:410
+msgid "order_status"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:411
+msgid "currency"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:412
+msgid "payment_method"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:413
+msgid "payment_method_title"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:440
+msgid "order_subtotal"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:441
+msgid "discount_total"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:442
+msgid "shipping_total"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:443
+msgid "fee_total"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:444
+msgid "order_total"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:445
+msgid "tax_items_total"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:446
+msgid "tax_shipping_total"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:473
+msgid "tax_rate_items_total"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:477
+msgid "tax_rate_shipping_total"
+msgstr ""
+
+#: src/Admin/OrderFieldMappingTabProvider.php:481
+msgid "tax_rate_total"
+msgstr ""
+
+#: src/Admin/OrderStatusField.php:45
+#: src/Admin/OrderStatusField.php:64
+#: src/Admin/OrderStatusField.php:70
+msgid "Order Statuses"
+msgstr ""
+
+#: src/Admin/OrderStatusField.php:48
+msgid "No WooCommerce order statuses are available."
+msgstr ""
+
+#: src/Admin/OrderStatusField.php:87
+msgid "Only orders with at least one selected status will be included."
+msgstr ""
+
+#: src/Admin/OrderStatusFilterFieldProvider.php:86
+#: src/Order/Export/Filter/OrderStatusFilter.php:84
+msgid "Select at least one order status."
+msgstr ""
+
+#: src/Admin/PermissionsSettingsForm.php:46
+msgid "Permission role assignments"
+msgstr ""
+
+#: src/Admin/PermissionsSettingsForm.php:47
+msgid "Assign backend roles to StoreAccountant actions. Administrators are always included and cannot be removed."
+msgstr ""
+
+#. translators: %d: number of permission actions in a group
+#: src/Admin/PermissionsSettingsForm.php:71
+#, php-format
+msgid "%d action"
+msgid_plural "%d actions"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/PermissionsSettingsForm.php:139
+msgid "Administrator"
+msgstr ""
+
+#: src/Admin/PermissionsSettingsForm.php:142
+msgid "This base access permission is granted automatically when a role receives any StoreAccountant action."
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:90
+#: src/Admin/PluginSettingsPage.php:91
+#: src/Admin/PluginSettingsPage.php:128
+msgid "StoreAccountant Settings"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:109
+msgid "Settings"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:122
+#: src/Admin/PluginSettingsPage.php:246
+msgid "You are not allowed to manage StoreAccountant settings."
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:131
+msgid "StoreAccountant settings were saved."
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:148
+msgid "Storage adapter configuration"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:149
+msgid "Choose which storage locations can be selected for new exports."
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:164
+msgid "Invoice provider configuration"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:165
+msgid "Choose which active invoice provider should add invoice fields to exports."
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:180
+msgid "Queue transport configuration"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:181
+msgid "Choose how StoreAccountant background jobs are transported before they are processed."
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:206
+msgid "Download security configuration"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:207
+msgid "Manage the global password used for password-protected export downloads."
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:221
+msgid "Back to Accounting"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:224
+msgid "Save Settings"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:243
+msgid "You are not allowed to manage StoreAccountant permissions."
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:385
+msgid "Storage Locations"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:386
+msgid "Invoice Providers"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:387
+msgid "Transports"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:391
+msgid "Permissions"
+msgstr ""
+
+#: src/Admin/PluginSettingsPage.php:395
+msgid "Security"
+msgstr ""
+
+#: src/Admin/QueueTransportsSettingsForm.php:49
+msgid "Use this queue transport."
+msgstr ""
+
+#: src/Admin/QueueTransportsSettingsForm.php:57
+msgid "No queue transports are registered."
+msgstr ""
+
+#: src/Admin/SecuritySettingsForm.php:47
+msgid "Global Download Password"
+msgstr ""
+
+#: src/Admin/SecuritySettingsForm.php:52
+msgid "Password-protected public export downloads are unavailable because this server provides neither Sodium nor OpenSSL encryption."
+msgstr ""
+
+#: src/Admin/SecuritySettingsForm.php:63
+msgid "Enter a new password to replace the current global export download password. Leave this field empty to keep the existing password."
+msgstr ""
+
+#: src/Admin/StorageLocationsForm.php:76
+msgid "Enable this storage location for exports."
+msgstr ""
+
+#: src/Admin/StorageLocationsForm.php:79
+msgid "This is the only available storage location and cannot be disabled."
+msgstr ""
+
+#: src/Customer/Export/Filter/CustomerCountryFilter.php:79
+msgid "The customer country filter requires a WooCommerce customer query."
+msgstr ""
+
+#: src/Customer/Export/Filter/CustomerCountryFilter.php:107
+msgid "Billing country"
+msgstr ""
+
+#: src/Customer/Export/Filter/CustomerCountryFilter.php:108
+msgid "Shipping country"
+msgstr ""
+
+#: src/Customer/Export/Filter/CustomerDateFilter.php:83
+msgid "The customer date filter requires a WooCommerce customer query."
+msgstr ""
+
+#: src/Customer/Export/Filter/CustomerDateFilter.php:119
+#: src/Export/Filter/ExportFilterSnapshotter.php:55
+#: src/Order/Export/Filter/OrderDateFilter.php:102
+msgid "The configured period provider is unavailable."
+msgstr ""
+
+#: src/Customer/Export/Query/CustomerQuery.php:274
+msgid "WooCommerce customers are unavailable."
+msgstr ""
+
+#: src/Export/Admin/ExportListPollingAjaxController.php:63
+#: src/Export/ExportPostType.php:583
+msgid "You are not allowed to view accounting exports."
+msgstr ""
+
+#. translators: %1$d: processed batches, %2$d: total batches, %3$d: processed items, %4$d: total items
+#: src/Export/Admin/ExportListPollingResponseFactory.php:139
+#: src/Export/ExportPostType.php:999
+#, php-format
+msgid "%1$d / %2$d batches, %3$d / %4$d items"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:104
+msgid "Export Configuration"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:106
+msgid "Add New Export Configuration"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:108
+msgid "View Export Configuration"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:109
+msgid "Search Export Configurations"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:110
+msgid "No export configurations found."
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:150
+msgid "Created At"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:151
+msgid "Created By"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:231
+msgid "Edit"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:239
+#: src/Export/ExportPostType.php:401
+msgid "View"
+msgstr ""
+
+#: src/Export/Configuration/ExportConfigurationPostType.php:377
+msgid "You are not allowed to view export configurations."
+msgstr ""
+
+#: src/Export/Download/DownloadPasswordManager.php:66
+#: src/Export/Download/DownloadPasswordManager.php:121
+#: src/Export/Download/DownloadPasswordManager.php:284
+#: src/Security/ReversibleCrypto.php:78
+#: src/Security/ReversibleCrypto.php:166
+msgid "Download password encryption is unavailable on this server."
+msgstr ""
+
+#: src/Export/Download/DownloadPasswordManager.php:194
+msgid "No usable download password is configured."
+msgstr ""
+
+#: src/Export/Download/DownloadPasswordManager.php:277
+msgid "Enter a download password."
+msgstr ""
+
+#: src/Export/Download/DownloadPasswordManager.php:307
+msgid "No download password is stored."
+msgstr ""
+
+#: src/Export/Download/ExportDownloadController.php:120
+msgid "The requested export is unavailable."
+msgstr ""
+
+#: src/Export/Download/ExportDownloadController.php:137
+msgid "The download request could not be verified."
+msgstr ""
+
+#: src/Export/Download/ExportDownloadController.php:148
+msgid "The entered password is incorrect."
+msgstr ""
+
+#: src/Export/Download/ExportDownloadController.php:182
+msgid "The requested export is not ready for download."
+msgstr ""
+
+#: src/Export/Download/ExportDownloadController.php:186
+msgid "This export cannot be downloaded because password protection is unavailable."
+msgstr ""
+
+#: src/Export/Download/ExportDownloadController.php:192
+#: src/Export/Download/ExportDownloadController.php:198
+#: src/Export/Download/ExportDownloadController.php:212
+#: src/Export/Download/ExportDownloadController.php:218
+#: src/Export/Download/StorageFileStreamer.php:46
+#: src/Export/ExportPostType.php:766
+msgid "The requested export file is unavailable."
+msgstr ""
+
+#: src/Export/Download/ExportDownloadController.php:231
+#: src/Export/ExportPostType.php:191
+msgid "Accounting Export"
+msgstr ""
+
+#: src/Export/Download/ExportDownloadController.php:277
+#: src/Export/Download/ExportDownloadController.php:282
+#: src/Export/Download/StorageFileStreamer.php:47
+msgid "Export Unavailable"
+msgstr ""
+
+#: src/Export/Exporter.php:70
+#: src/Export/Queue/QueuedExportFinalizer.php:75
+msgid "The configured export adapter is unavailable."
+msgstr ""
+
+#: src/Export/Exporter.php:79
+#: src/Export/Queue/QueuedExportFinalizer.php:84
+msgid "The configured export renderer is unavailable."
+msgstr ""
+
+#: src/Export/Exporter.php:89
+#: src/Export/Queue/QueuedExportFinalizer.php:94
+msgid "The configured storage adapter is unavailable."
+msgstr ""
+
+#: src/Export/ExportPostType.php:167
+#: src/Export/ExportPostType.php:168
+#: src/Export/ExportPostType.php:195
+msgid "View Accounting Export"
+msgstr ""
+
+#: src/Export/ExportPostType.php:190
+msgid "Accounting Exports"
+msgstr ""
+
+#: src/Export/ExportPostType.php:193
+msgid "Add New Accounting Export"
+msgstr ""
+
+#: src/Export/ExportPostType.php:194
+msgid "Edit Accounting Export"
+msgstr ""
+
+#: src/Export/ExportPostType.php:196
+msgid "Search Accounting Exports"
+msgstr ""
+
+#: src/Export/ExportPostType.php:197
+msgid "No accounting exports found."
+msgstr ""
+
+#: src/Export/ExportPostType.php:240
+msgid "Status / Download"
+msgstr ""
+
+#: src/Export/ExportPostType.php:319
+msgid "This export configuration has been deleted."
+msgstr ""
+
+#: src/Export/ExportPostType.php:411
+msgid "Retry"
+msgstr ""
+
+#. translators: %s: export title
+#: src/Export/ExportPostType.php:543
+#, php-format
+msgid "Accounting Export \"%s\""
+msgstr ""
+
+#: src/Export/ExportPostType.php:594
+#: src/Export/ExportPostType.php:754
+#: src/Export/ExportPostType.php:780
+msgid "The requested accounting export does not exist."
+msgstr ""
+
+#: src/Export/ExportPostType.php:600
+msgid "You are not allowed to view this accounting export."
+msgstr ""
+
+#: src/Export/ExportPostType.php:628
+msgid "Export sections"
+msgstr ""
+
+#: src/Export/ExportPostType.php:758
+msgid "You are not allowed to download accounting exports."
+msgstr ""
+
+#: src/Export/ExportPostType.php:838
+msgid "None"
+msgstr ""
+
+#. translators: %d: number of filters
+#: src/Export/ExportPostType.php:843
+#, php-format
+msgid "%d filter"
+msgid_plural "%d filters"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Export/ExportRepository.php:80
+msgid "An accounting export with this title already exists."
+msgstr ""
+
+#: src/Export/ExportRepository.php:105
+#: src/Export/ExportRepository.php:227
+#: src/Export/ExportRepository.php:274
+msgid "Waiting for queue worker."
+msgstr ""
+
+#: src/Export/ExportRepository.php:297
+msgid "Processing export batches."
+msgstr ""
+
+#: src/Export/ExportRepository.php:321
+msgid "Export file generated."
+msgstr ""
+
+#: src/Export/ExportRepository.php:337
+msgid "Export generation failed."
+msgstr ""
+
+#: src/Export/ExportStatus.php:46
+msgid "Scheduled"
+msgstr ""
+
+#: src/Export/ExportStatus.php:47
+msgid "Queued"
+msgstr ""
+
+#: src/Export/ExportStatus.php:48
+msgid "Processing"
+msgstr ""
+
+#: src/Export/ExportStatus.php:49
+msgid "Completed"
+msgstr ""
+
+#: src/Export/ExportStatus.php:50
+msgid "Failed"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:150
+msgid "Original value"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:151
+msgid "Date: 2026-05-24"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:152
+msgid "Date: 24.05.2026"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:153
+msgid "Date: 05/24/2026"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:154
+msgid "Date: 20260524"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:155
+msgid "Date/time: 2026-05-24 14:30:00"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:156
+msgid "Date/time: 24.05.2026 14:30"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:157
+msgid "Date/time: 24.05.2026 14:30:00"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:158
+msgid "Date/time: 2026-05-24T14:30"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:159
+msgid "Date/time: 2026-05-24T14:30:00+00:00"
+msgstr ""
+
+#: src/Export/Field/Mutator/DateMutator.php:160
+msgid "Unix timestamp"
+msgstr ""
+
+#: src/Export/Queue/BatchExportStore.php:94
+msgid "StoreAccountant could not write a temporary export attachment."
+msgstr ""
+
+#: src/Export/Queue/BatchExportStore.php:118
+msgid "StoreAccountant could not encode the temporary export batch."
+msgstr ""
+
+#: src/Export/Queue/BatchExportStore.php:127
+msgid "StoreAccountant could not write the temporary export batch."
+msgstr ""
+
+#: src/Export/Queue/BatchExportStore.php:147
+msgid "StoreAccountant could not find temporary export batches."
+msgstr ""
+
+#: src/Export/Queue/BatchExportStore.php:201
+msgid "StoreAccountant could not create the temporary export directory."
+msgstr ""
+
+#: src/Export/Queue/BatchExportStore.php:388
+msgid "StoreAccountant could not read a temporary export batch."
+msgstr ""
+
+#: src/Export/Queue/BatchExportStore.php:397
+#: src/Export/Queue/BatchExportStore.php:404
+msgid "StoreAccountant found an invalid temporary export batch."
+msgstr ""
+
+#: src/Export/Queue/ExportQueueCleanup.php:76
+msgid "The export queue job timed out."
+msgstr ""
+
+#: src/Export/Queue/Handler/FinalizeExportMessageHandler.php:46
+msgid "The queued accounting export finalization is invalid."
+msgstr ""
+
+#: src/Export/Queue/Handler/FinalizeExportMessageHandler.php:58
+msgid "Finalizing export file."
+msgstr ""
+
+#: src/Export/Queue/Handler/FinalizeExportMessageHandler.php:77
+msgid "Unexpected export finalization error."
+msgstr ""
+
+#: src/Export/Queue/Handler/FinalizeExportMessageHandler.php:89
+msgid "The accounting export could not be finalized."
+msgstr ""
+
+#: src/Export/Queue/Handler/ProcessExportBatchMessageHandler.php:61
+msgid "The queued accounting export batch is invalid."
+msgstr ""
+
+#: src/Export/Queue/Handler/ProcessExportBatchMessageHandler.php:86
+#: src/Export/Queue/Handler/StartExportMessageHandler.php:98
+msgid "The configured export adapter cannot process batches."
+msgstr ""
+
+#: src/Export/Queue/Handler/ProcessExportBatchMessageHandler.php:181
+msgid "Unexpected export batch error."
+msgstr ""
+
+#: src/Export/Queue/Handler/ProcessExportBatchMessageHandler.php:195
+msgid "The accounting export batch could not be processed."
+msgstr ""
+
+#: src/Export/Queue/Handler/StartExportMessageHandler.php:72
+msgid "The queued accounting export is invalid."
+msgstr ""
+
+#: src/Export/Queue/Handler/StartExportMessageHandler.php:90
+msgid "Preparing export batches."
+msgstr ""
+
+#: src/Export/Queue/Handler/StartExportMessageHandler.php:217
+msgid "Unexpected export generation error."
+msgstr ""
+
+#: src/Export/Queue/Handler/StartExportMessageHandler.php:229
+msgid "The accounting export could not be generated."
+msgstr ""
+
+#: src/Export/Renderer/CsvExportRenderer.php:93
+msgid "StoreAccountant could not create a temporary CSV export file."
+msgstr ""
+
+#: src/Export/Renderer/CsvExportRenderer.php:115
+msgid "StoreAccountant could not write the CSV export."
+msgstr ""
+
+#: src/Export/Renderer/SerializerExportRenderer.php:94
+msgid "StoreAccountant could not create a temporary serialized export file."
+msgstr ""
+
+#: src/Export/Renderer/SerializerExportRenderer.php:113
+msgid "StoreAccountant could not serialize the export data."
+msgstr ""
+
+#: src/Export/Renderer/SerializerExportRenderer.php:131
+msgid "StoreAccountant could not write the serialized export."
+msgstr ""
+
+#: src/I18n.php:38
+msgid "export_adapter_orders"
+msgstr ""
+
+#: src/I18n.php:39
+msgid "export_adapter_customers"
+msgstr ""
+
+#: src/I18n.php:40
+msgid "exporter_csv"
+msgstr ""
+
+#: src/I18n.php:41
+msgid "exporter_json"
+msgstr ""
+
+#: src/I18n.php:42
+msgid "invoice_plugin_woocommerce-pdf-invoices-packing-slips"
+msgstr ""
+
+#: src/I18n.php:43
+msgid "storage_adapter_local"
+msgstr ""
+
+#: src/Invoice/Export/Order/Attachment/InvoiceAttachmentProvider.php:86
+msgid "Invoices"
+msgstr ""
+
+#: src/Invoice/Export/Order/Configuration/InvoiceAttachmentConfigurationFieldProvider.php:91
+msgid "Invoice Files"
+msgstr ""
+
+#: src/Invoice/Export/Order/Configuration/InvoiceAttachmentConfigurationFieldProvider.php:94
+msgid "Invoice file types"
+msgstr ""
+
+#: src/Invoice/Export/Order/Configuration/InvoiceAttachmentConfigurationFieldProvider.php:109
+msgid "Selected invoice files are stored in the export ZIP and listed by file name in the export rows."
+msgstr ""
+
+#: src/Invoice/Export/Order/Configuration/InvoiceAttachmentConfigurationFieldProvider.php:144
+msgid "Export PDF invoice as attachment."
+msgstr ""
+
+#: src/Invoice/Export/Order/Configuration/InvoiceAttachmentConfigurationFieldProvider.php:145
+msgid "Export e-invoice as attachment."
+msgstr ""
+
+#. translators: %s: Invoice file type label.
+#: src/Invoice/Export/Order/Configuration/InvoiceAttachmentConfigurationFieldProvider.php:148
+#, php-format
+msgid "Export %s as attachment."
+msgstr ""
+
+#: src/Invoice/Plugin/WooCommercePdfInvoicesPackingSlipsPlugin.php:122
+msgid "PDF"
+msgstr ""
+
+#: src/Invoice/Plugin/WooCommercePdfInvoicesPackingSlipsPlugin.php:126
+msgid "E-Invoice (XML)"
+msgstr ""
+
+#: src/Order/Export/Filter/OrderDateFilter.php:88
+msgid "The order date filter requires a WooCommerce order query."
+msgstr ""
+
+#: src/Order/Export/Filter/OrderDateFilter.php:132
+msgid "Created date"
+msgstr ""
+
+#: src/Order/Export/Filter/OrderDateFilter.php:133
+msgid "Modified date"
+msgstr ""
+
+#: src/Order/Export/Filter/OrderDateFilter.php:134
+msgid "Completed date"
+msgstr ""
+
+#: src/Order/Export/Filter/OrderDateFilter.php:135
+msgid "Paid date"
+msgstr ""
+
+#: src/Order/Export/Filter/OrderStatusFilter.php:78
+msgid "The order status filter requires a WooCommerce order query."
+msgstr ""
+
+#: src/Order/Export/Query/OrderQuery.php:141
+msgid "WooCommerce orders are unavailable."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:57
+msgid "Access StoreAccountant admin area"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:58
+#: src/Permission/CorePermissionActionProvider.php:65
+#: src/Permission/CorePermissionActionProvider.php:72
+#: src/Permission/CorePermissionActionProvider.php:79
+msgid "Administration"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:60
+msgid "Allows the role to open StoreAccountant admin screens."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:64
+msgid "Manage plugin settings"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:67
+msgid "Allows changes to storage and invoice provider settings."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:71
+msgid "View download passwords"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:74
+msgid "Allows revealing stored export download passwords in the backend."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:78
+msgid "Manage permissions"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:81
+msgid "Allows changing StoreAccountant role permissions."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:85
+msgid "View export overview"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:88
+msgid "Allows access to the accounting export list."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:92
+msgid "View export details"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:95
+msgid "Allows opening saved export detail views."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:99
+msgid "Create exports"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:102
+msgid "Allows starting quick exports and exports from configurations."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:106
+msgid "Download export files"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:109
+msgid "Allows downloading generated export archives."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:113
+msgid "View export logs"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:116
+msgid "Allows viewing technical export logs. These logs can contain sensitive data such as server paths, exception messages, and stack traces. Grant this permission only to trusted administrators."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:120
+msgid "Delete exports"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:123
+msgid "Allows moving saved export records to trash or deleting them permanently."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:127
+msgid "View configuration overview"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:130
+msgid "Allows access to the export configuration list."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:134
+msgid "View configurations"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:137
+msgid "Allows opening saved configuration detail views."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:141
+msgid "Create configurations"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:144
+msgid "Allows creating reusable export configurations."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:148
+msgid "Edit configurations"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:151
+msgid "Allows changing saved export configurations."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:155
+msgid "Delete configurations"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:158
+msgid "Allows moving export configurations to trash or deleting them permanently."
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:162
+msgid "Edit field mappings"
+msgstr ""
+
+#: src/Permission/CorePermissionActionProvider.php:165
+msgid "Allows changing field mappings on export configurations."
+msgstr ""
+
+#. translators: 1: required PHP version, 2: current PHP version
+#: src/PluginActivator.php:46
+#, php-format
+msgid "StoreAccountant requires PHP %1$s or higher. Your server is running PHP %2$s."
+msgstr ""
+
+#: src/PluginActivator.php:50
+msgid "StoreAccountant activation failed"
+msgstr ""
+
+#: src/PluginActivator.php:63
+msgid "StoreAccountant was activated, but the local storage location could not be prepared. Please check the upload directory permissions."
+msgstr ""
+
+#: src/Queue/Loopback/ActionSchedulerLoopbackRunner.php:110
+msgid "The accounting export queue runner failed."
+msgstr ""
+
+#: src/Queue/Transport/ActionSchedulerTransportProvider.php:59
+msgid "Action Scheduler"
+msgstr ""
+
+#: src/Queue/Transport/ActionSchedulerTransportProvider.php:66
+msgid "Uses WooCommerce Action Scheduler to process StoreAccountant queue jobs in the background. This is recommended for larger exports."
+msgstr ""
+
+#: src/Queue/Transport/SyncTransportProvider.php:68
+msgid "Synchronous"
+msgstr ""
+
+#: src/Queue/Transport/SyncTransportProvider.php:75
+msgid "Processes StoreAccountant queue jobs immediately in the current request or cron run. This is useful for small exports, but large exports can take a long time. Use the Action Scheduler transport for larger exports."
+msgstr ""
+
+#: src/Security/ReversibleCrypto.php:96
+#: src/Security/ReversibleCrypto.php:145
+#: src/Security/ReversibleCrypto.php:211
+msgid "The stored download password cannot be read."
+msgstr ""
+
+#: src/Security/ReversibleCrypto.php:105
+#: src/Security/ReversibleCrypto.php:135
+#: src/Security/ReversibleCrypto.php:200
+msgid "The stored download password uses an unavailable encryption provider."
+msgstr ""
+
+#: src/Security/ReversibleCrypto.php:153
+#: src/Security/ReversibleCrypto.php:219
+msgid "The stored download password could not be decrypted."
+msgstr ""
+
+#: src/Security/ReversibleCrypto.php:177
+msgid "The download password could not be encrypted."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageAdapter.php:109
+msgid "StoreAccountant could not read the generated export file for storage."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageAdapter.php:129
+msgid "StoreAccountant could not persist the generated export file."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageAdapter.php:252
+#: src/Storage/Adapter/LocalStorageAdapter.php:261
+msgid "StoreAccountant could not read the stored export file."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageAdapter.php:349
+msgid "StoreAccountant could not read the stored file visibility."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageAdapter.php:383
+msgid "StoreAccountant could not read the stored file MIME type."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageAdapter.php:408
+msgid "StoreAccountant could not read when the stored file was last modified."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageAdapter.php:433
+msgid "StoreAccountant could not read the stored file size."
+msgstr ""
+
+#. translators: %s: storage directory path
+#: src/Storage/Adapter/LocalStorageAdapter.php:511
+#, php-format
+msgid "StoreAccountant could not create the local storage directory at %s."
+msgstr ""
+
+#. translators: %s: storage directory path
+#: src/Storage/Adapter/LocalStorageAdapter.php:522
+#, php-format
+msgid "StoreAccountant local storage directory exists but is not writable: %s."
+msgstr ""
+
+#. translators: %s: storage directory path
+#: src/Storage/Adapter/LocalStorageAdapter.php:602
+#, php-format
+msgid "StoreAccountant could not create the index file in %s."
+msgstr ""
+
+#. translators: %s: storage directory path
+#: src/Storage/Adapter/LocalStorageAdapter.php:613
+#, php-format
+msgid "StoreAccountant could not create the access protection file in %s."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageConfiguration.php:67
+msgid "StoreAccountant local storage root is not configured."
+msgstr ""
+
+#: src/Storage/Adapter/LocalStorageConfiguration.php:98
+msgid "StoreAccountant could not create the local archive directory."
+msgstr ""
+
+#: src/Tax/Admin/OrderTaxFieldProviderField.php:47
+msgid "Tax Fields"
+msgstr ""
+
+#: src/Tax/Field/Provider/ExtendedOrderTaxFieldProvider.php:97
+msgid "Extended tax fields"
+msgstr ""
+
+#: src/Tax/Field/Provider/SimpleOrderTaxFieldProvider.php:83
+msgid "Simple tax fields"
+msgstr ""

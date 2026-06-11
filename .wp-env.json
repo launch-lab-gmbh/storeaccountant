@@ -1,0 +1,14 @@
+{
+  "core": null,
+  "phpVersion": "8.2",
+  "testsEnvironment": false,
+  "port": 80,
+  "plugins": [
+    "https://downloads.wordpress.org/plugin/woocommerce.latest-stable.zip",
+    "https://github.com/woocommerce/wc-smooth-generator/releases/latest/download/wc-smooth-generator.zip"
+  ],
+  "mappings": {
+    "wp-content/plugins/storeaccountant": ".",
+    "wp-content/mu-plugins/storeaccountant-dev.php": "../dev-mu/storeaccountant-dev.php"
+  }
+}

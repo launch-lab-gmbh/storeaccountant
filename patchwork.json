@@ -1,0 +1,10 @@
+{
+	"redefinable-internals": [
+		"filter_input",
+		"filter_input_array",
+		"fclose",
+		"fpassthru",
+		"header",
+		"ob_get_level"
+	]
+}

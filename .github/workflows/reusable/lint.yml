@@ -1,0 +1,31 @@
+name: Reusable Lint
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Download vendor
+        uses: actions/download-artifact@v4
+        with:
+          name: vendor-php82
+
+      - name: Verify vendor exists
+        run: test -f vendor/autoload.php
+
+      - name: Run lint
+        run: composer lint-ci

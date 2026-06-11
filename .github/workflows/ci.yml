@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  install:
+    uses: ./.github/workflows/reusable/composer.yml
+
+  lint:
+    needs: install
+    uses: ./.github/workflows/reusable/lint.yml
+
+  unit:
+    needs: install
+    uses: ./.github/workflows/reusable/unit.yml
