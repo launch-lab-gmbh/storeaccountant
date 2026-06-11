@@ -17,6 +17,10 @@ changing the core admin pages.
 
 Homepage: [storeaccountant.launch-lab.de](https://storeaccountant.launch-lab.de)
 
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md)
+
 
 
 
