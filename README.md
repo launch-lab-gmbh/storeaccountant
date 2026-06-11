@@ -156,6 +156,7 @@ wp-env run cli composer --version
 # Run against the plugin directory
 wp-env run cli composer install --working-dir=/var/www/html/wp-content/plugins/storeaccountant
 wp-env run cli composer install --no-dev --optimize-autoloader --classmap-authoritative --working-dir=/var/www/html/wp-content/plugins/storeaccountant
+wp-env run cli composer install --working-dir=/var/www/html/wp-content/plugins/storeaccountant
 ```
 
 ### Run tests
