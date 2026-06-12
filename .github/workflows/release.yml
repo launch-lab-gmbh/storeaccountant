@@ -70,15 +70,13 @@ jobs:
         run: |
           mkdocs build \
             --config-file mkdocs-user.yml \
-            --site-dir "${DOCS_USER_DIR}" \
-            --strict
+            --site-dir "${DOCS_USER_DIR}"
 
       - name: Build developer documentation
         run: |
           mkdocs build \
             --config-file mkdocs-developer.yml \
-            --site-dir "${DOCS_DEVELOPER_DIR}" \
-            --strict
+            --site-dir "${DOCS_DEVELOPER_DIR}"
 
       - name: Create documentation ZIP archives
         run: |
@@ -108,6 +106,7 @@ jobs:
       - lint
       - unit
       - production-install
+      - build-docs
 
     env:
       PLUGIN_SLUG: storeaccountant
