@@ -2,6 +2,15 @@ name: Reusable Composer
 
 on:
   workflow_call:
+    inputs:
+      production:
+        required: false
+        type: boolean
+        default: false
+      artifact-name:
+        required: false
+        type: string
+        default: vendor-php82
 
 jobs:
   install:
@@ -35,11 +44,16 @@ jobs:
         run: composer validate --strict
 
       - name: Install dependencies
+        if: ${{ !inputs.production }}
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install production dependencies
+        if: ${{ inputs.production }}
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
 
       - name: Upload vendor
         uses: actions/upload-artifact@v4
         with:
-          name: vendor-php82
+          name: ${{ inputs.artifact-name }}
           path: vendor/**
           retention-days: 1
