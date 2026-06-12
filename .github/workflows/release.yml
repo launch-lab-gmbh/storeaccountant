@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Check out source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download production vendor
         uses: actions/download-artifact@v4
@@ -62,7 +62,7 @@ jobs:
           mkdir -p "build/${PLUGIN_SLUG}"
 
           cp "${MAIN_PLUGIN_FILE}" "build/${PLUGIN_SLUG}/"
-          cp readme.txt "build/${PLUGIN_SLUG}/"
+          cp readme.txt composer.json LICENSE "build/${PLUGIN_SLUG}/"
 
           cp -R src "build/${PLUGIN_SLUG}/"
           cp -R assets "build/${PLUGIN_SLUG}/"
@@ -71,22 +71,21 @@ jobs:
 
       - name: Create ZIP archive
         run: |
-          VERSION="${GITHUB_REF_NAME}"
-
           cd build
-          zip -r "${PLUGIN_SLUG}-${VERSION}.zip" "${PLUGIN_SLUG}"
+          zip -r "${PLUGIN_SLUG}.zip" "${PLUGIN_SLUG}"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.PLUGIN_SLUG }}-${{ github.ref_name }}
-          path: build/${{ env.PLUGIN_SLUG }}-${{ github.ref_name }}.zip
+          name: ${{ env.PLUGIN_SLUG }}
+          path: build/${{ env.PLUGIN_SLUG }}.zip
           retention-days: 30
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/${{ env.PLUGIN_SLUG }}-${{ github.ref_name }}.zip
+          name: StoreAccountant ${{ github.ref_name }}
+          files: build/${{ env.PLUGIN_SLUG }}.zip
           generate_release_notes: true
 
 #  wordpress-org-deploy:
@@ -102,7 +101,7 @@ jobs:
 #
 #    steps:
 #      - name: Check out source code
-#        uses: actions/checkout@v4
+#        uses: actions/checkout@v5
 #
 #      - name: Download production vendor
 #        uses: actions/download-artifact@v4
