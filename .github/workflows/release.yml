@@ -9,8 +9,10 @@ permissions:
   contents: write
 
 jobs:
-  install:
+  dev-install:
     uses: ./.github/workflows/reusable-composer.yml
+    with:
+      artifact-name: vendor-dev-php82
 
   production-install:
     uses: ./.github/workflows/reusable-composer.yml
@@ -19,17 +21,18 @@ jobs:
       artifact-name: vendor-prod-php82
 
   lint:
-    needs: install
+    needs: dev-install
     uses: ./.github/workflows/reusable-lint.yml
 
   unit:
-    needs: install
+    needs: dev-install
     uses: ./.github/workflows/reusable-unit.yml
 
   build-release:
     name: Build GitHub Release
     runs-on: ubuntu-latest
     needs:
+      - lint
       - unit
       - production-install
 
