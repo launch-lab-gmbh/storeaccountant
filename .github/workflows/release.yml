@@ -41,9 +41,9 @@ jobs:
     with:
       artifact_name: vendor-dev-php82
 
-  ########################
-  # Build documentations #
-  ########################
+  ###################################
+  # Build and deploy documentations #
+  ###################################
 
   build-docs:
     name: Build HTML documentation
@@ -84,6 +84,62 @@ jobs:
             --config-file mkdocs-developer.yml \
             --site-dir "${DOCS_DEVELOPER_DIR}"
 
+      - name: Prepare documentation deploy directories
+        run: |
+          rm -rf deploy-docs
+          mkdir -p deploy-docs/user-de
+          mkdir -p deploy-docs/user-en
+          mkdir -p deploy-docs/developer
+
+          rsync -a --delete --exclude='en/' "${DOCS_USER_DIR}/" deploy-docs/user-de/
+          rsync -a --delete "${DOCS_USER_DIR}/en/" deploy-docs/user-en/
+          rsync -a --delete "${DOCS_DEVELOPER_DIR}/" deploy-docs/developer/
+
+      - name: Deploy German user documentation via SFTP
+        uses: pressidium/lftp-mirror-action@v1
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          user: ${{ secrets.SFTP_USER }}
+          pass: ${{ secrets.SFTP_PASSWORD }}
+          localDir: ./deploy-docs/user-de
+          remoteDir: ${{ secrets.SFTP_PATH_DOCUMENTATION_USER_DE }}
+          reverse: true
+          onlyNewer: true
+          options: >-
+            --delete
+            --verbose
+
+      - name: Deploy English user documentation via SFTP
+        uses: pressidium/lftp-mirror-action@v1
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          user: ${{ secrets.SFTP_USER }}
+          pass: ${{ secrets.SFTP_PASSWORD }}
+          localDir: ./deploy-docs/user-en
+          remoteDir: ${{ secrets.SFTP_PATH_DOCUMENTATION_USER_EN }}
+          reverse: true
+          onlyNewer: true
+          options: >-
+            --delete
+            --verbose
+
+      - name: Deploy developer documentation via SFTP
+        uses: pressidium/lftp-mirror-action@v1
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          user: ${{ secrets.SFTP_USER }}
+          pass: ${{ secrets.SFTP_PASSWORD }}
+          localDir: ./deploy-docs/developer
+          remoteDir: ${{ secrets.SFTP_PATH_DOCUMENTATION_DEVELOPER }}
+          reverse: true
+          onlyNewer: true
+          options: >-
+            --delete
+            --verbose
+
       - name: Create documentation ZIP archives
         run: |
           cd "${DOCS_USER_DIR}"
@@ -100,6 +156,10 @@ jobs:
             storeaccountant-documentation-user.zip
             storeaccountant-documentation-developer.zip
           retention-days: 30
+
+  #########################
+  # Deploy documentations #
+  #########################
 
   #########################
   # Build release package #
