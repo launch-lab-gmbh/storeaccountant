@@ -12,21 +12,25 @@ jobs:
   dev-install:
     uses: ./.github/workflows/reusable-composer.yml
     with:
-      artifact-name: vendor-dev-php82
+      artifact_name: vendor-dev-php82
 
   production-install:
     uses: ./.github/workflows/reusable-composer.yml
     with:
       production: true
-      artifact-name: vendor-prod-php82
+      artifact_name: vendor-prod-php82
 
   lint:
     needs: dev-install
     uses: ./.github/workflows/reusable-lint.yml
+    with:
+      artifact_name: vendor-dev-php82
 
   unit:
     needs: dev-install
     uses: ./.github/workflows/reusable-unit.yml
+    with:
+      artifact_name: vendor-dev-php82
 
   build-release:
     name: Build GitHub Release
