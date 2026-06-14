@@ -46,7 +46,7 @@ jobs:
   ###################################
 
   build-docs:
-    name: Build HTML documentation
+    name: Build and deploy HTML documentation
     runs-on: ubuntu-latest
     needs:
       - lint
@@ -158,10 +158,6 @@ jobs:
           retention-days: 30
 
   #########################
-  # Deploy documentations #
-  #########################
-
-  #########################
   # Build release package #
   #########################
 
@@ -202,6 +198,29 @@ jobs:
           cp -R assets "build/${PLUGIN_SLUG}/"
           cp -R vendor "build/${PLUGIN_SLUG}/"
           cp -R languages "build/${PLUGIN_SLUG}/"
+          
+          find "build/${PLUGIN_SLUG}/vendor" -type d \( \
+            -name ".git" -o \
+            -name ".github" -o \
+            -name "test" -o \
+            -name "tests" -o \
+            -name "Tests" -o \
+            -name "docs" -o \
+            -name "doc" -o \
+            -name "examples" -o \
+            -name "example" -o \
+            -name "demo" \
+            \) -prune -exec rm -rf {} +
+            
+            find "build/${PLUGIN_SLUG}/vendor" -type f \( \
+            -name ".gitignore" -o \
+            -name ".gitattributes" -o \
+            -name "phpunit.xml" -o \
+            -name "phpunit.xml.dist" -o \
+            -name "phpstan.neon" -o \
+            -name "psalm.xml" -o \
+            -name "composer.lock" \
+            \) -delete
 
       - name: Create ZIP archive
         run: |
