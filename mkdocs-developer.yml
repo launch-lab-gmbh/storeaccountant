@@ -1,5 +1,5 @@
 site_name: StoreAccountant Developer Documentation
-site_url: https://docs.example.com/developer/
+site_url: https://storeaccountant.launch-lab.de/en/documentation-developer/
 docs_dir: docs/developer
 site_description: Flexible accounting features for WooCommerce. Exports for orders and customers.
 site_author: LaunchLab GmbH
@@ -22,26 +22,24 @@ copyright: |
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
-
   - pymdownx.inlinehilite
-
   - pymdownx.superfences
 
 plugins:
   - search
   - awesome-pages
-# - git-revision-date-localized:
-#     enable_creation_date: true
-#     type: date
-#     locale: en
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: date
+      locale: en
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/LaunchLab-GmbH/storeaccountant
+      link: https://github.com/launch-lab-gmbh/storeaccountant
     - icon: fontawesome/solid/globe
       link: https://launch-lab.de
       name: LaunchLab Website
     - icon: fontawesome/solid/envelope
-      link: mailto:support@storeaccountant.io
+      link: mailto:storeaccountant@launch-lab.de
       name: Support

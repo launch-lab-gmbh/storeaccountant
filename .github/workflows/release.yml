@@ -116,7 +116,7 @@ jobs:
           fi
 
           {
-            echo "## Release version validation passed"
+            echo "## Release version validation passed :rocket:"
             echo ""
             echo "All checked versions match: \`$EXPECTED_VERSION\`"
           } >> "$GITHUB_STEP_SUMMARY"
