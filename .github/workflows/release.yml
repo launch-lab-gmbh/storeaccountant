@@ -168,7 +168,8 @@ jobs:
       - unit
 
     env:
-      DOCS_USER_DIR: site-user
+      DOCS_USER_DE_DIR: site-user-de
+      DOCS_USER_EN_DIR: site-user-en
       DOCS_DEVELOPER_DIR: site-developer
 
     steps:
@@ -187,11 +188,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-docs.txt
 
-      - name: Build user documentation
+      - name: Build German user documentation
         run: |
           mkdocs build \
-            --config-file mkdocs-user.yml \
-            --site-dir "${DOCS_USER_DIR}"
+            --config-file mkdocs-user-de.yml \
+            --site-dir "${DOCS_USER_DE_DIR}"
+
+      - name: Build English user documentation
+        run: |
+          mkdocs build \
+            --config-file mkdocs-user-en.yml \
+            --site-dir "${DOCS_USER_EN_DIR}"
 
       - name: Build developer documentation
         run: |
@@ -206,8 +213,8 @@ jobs:
           mkdir -p deploy-docs/user-en
           mkdir -p deploy-docs/developer
 
-          rsync -a --delete --exclude='en/' "${DOCS_USER_DIR}/" deploy-docs/user-de/
-          rsync -a --delete "${DOCS_USER_DIR}/en/" deploy-docs/user-en/
+          rsync -a --delete "${DOCS_USER_DE_DIR}/" deploy-docs/user-de/
+          rsync -a --delete "${DOCS_USER_EN_DIR}/" deploy-docs/user-en/
           rsync -a --delete "${DOCS_DEVELOPER_DIR}/" deploy-docs/developer/
 
       - name: Deploy German user documentation via SFTP
@@ -257,7 +264,14 @@ jobs:
 
       - name: Create documentation ZIP archives
         run: |
-          cd "${DOCS_USER_DIR}"
+          rm -rf documentation-user-archive
+          mkdir -p documentation-user-archive/de/anleitungen
+          mkdir -p documentation-user-archive/en/documentation
+
+          rsync -a --delete deploy-docs/user-de/ documentation-user-archive/de/anleitungen/
+          rsync -a --delete deploy-docs/user-en/ documentation-user-archive/en/documentation/
+
+          cd documentation-user-archive
           zip -r "../storeaccountant-documentation-user.zip" .
 
           cd "../${DOCS_DEVELOPER_DIR}"

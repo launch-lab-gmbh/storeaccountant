@@ -1,0 +1,69 @@
+site_name: StoreAccountant Guide
+site_author: LaunchLab GmbH
+site_url: https://storeaccountant.launch-lab.de/en/documentation/
+docs_dir: docs/user
+site_dir: docs/dist/user-en
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - search.highlight
+
+copyright: |
+  © LaunchLab GmbH · StoreAccountant
+
+plugins:
+  - search
+  - awesome-pages
+  - i18n:
+      build_only_locale: en
+      docs_structure: folder
+      fallback_to_default: true
+      reconfigure_material: false
+      reconfigure_search: true
+      languages:
+        - locale: de
+          name: Deutsch
+          build: true
+          site_name: StoreAccountant Anleitungen
+          site_url: https://storeaccountant.launch-lab.de/de/anleitungen/
+          fixed_link: /de/anleitungen/
+        - locale: en
+          name: English
+          build: true
+          default: true
+          site_url: https://storeaccountant.launch-lab.de/en/documentation/
+          fixed_link: /en/documentation/
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: date
+      locale: en
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+
+extra:
+  alternate:
+    - name: Deutsch
+      link: /de/anleitungen/
+      lang: de
+    - name: English
+      link: /en/documentation/
+      lang: en
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/launch-lab-gmbh/storeaccountant
+    - icon: fontawesome/solid/globe
+      link: https://launch-lab.de
+      name: LaunchLab Website
+    - icon: fontawesome/solid/envelope
+      link: mailto:storeaccountant@launch-lab.de
+      name: Support
