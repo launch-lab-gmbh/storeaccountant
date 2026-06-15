@@ -10,6 +10,119 @@ permissions:
 
 jobs:
 
+  ################################
+  # Validate version constraints #
+  ################################
+
+  validate-version:
+    name: Validate release version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v5
+
+      - name: Validate plugin versions against Git tag
+        shell: bash
+        run: |
+          set -u -o pipefail
+
+          EXPECTED_VERSION="${GITHUB_REF_NAME}"
+
+          errors=()
+
+          add_error() {
+            local message="$1"
+            errors+=("$message")
+            echo "::error::$message"
+          }
+
+          check_equals() {
+            local label="$1"
+            local actual="$2"
+
+            if [[ -z "$actual" ]]; then
+              add_error "$label was not found. Expected: $EXPECTED_VERSION"
+            elif [[ "$actual" != "$EXPECTED_VERSION" ]]; then
+              add_error "$label is '$actual', expected '$EXPECTED_VERSION'"
+            else
+              echo "OK: $label = $actual"
+            fi
+          }
+
+          echo "Validating plugin versions against Git tag: $EXPECTED_VERSION"
+
+          #
+          # 1. readme.txt - Stable tag
+          #
+          if [[ ! -f "readme.txt" ]]; then
+            add_error "readme.txt was not found."
+          else
+            README_STABLE_TAG="$(
+              grep -m1 -E '^[[:space:]]*Stable tag:[[:space:]]*' readme.txt \
+                | sed -E 's/^[[:space:]]*Stable tag:[[:space:]]*//; s/[[:space:]]+$//' \
+                || true
+            )"
+
+            check_equals "readme.txt Stable tag" "$README_STABLE_TAG"
+          fi
+
+          #
+          # 2. storeaccountant.php - WordPress plugin header version
+          #
+          if [[ ! -f "storeaccountant.php" ]]; then
+            add_error "storeaccountant.php was not found."
+          else
+            PLUGIN_HEADER_VERSION="$(
+              grep -m1 -E '^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*' storeaccountant.php \
+                | sed -E 's/^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*//; s/[[:space:]]+$//' \
+                || true
+            )"
+
+            check_equals "storeaccountant.php plugin header Version" "$PLUGIN_HEADER_VERSION"
+
+            #
+            # 2.1 storeaccountant.php - public const PLUGIN_VERSION
+            #
+            PLUGIN_CONST_VERSION="$(
+              sed -nE "s/^[[:space:]]*public[[:space:]]+const[[:space:]]+PLUGIN_VERSION[[:space:]]*=[[:space:]]*['\"]([^'\"]+)['\"][[:space:]]*;.*/\1/p" storeaccountant.php \
+                | head -n1 \
+                || true
+            )"
+
+            check_equals "storeaccountant.php public const PLUGIN_VERSION" "$PLUGIN_CONST_VERSION"
+          fi
+          
+          # Fail at the end with a collected error summary          
+          if (( ${#errors[@]} > 0 )); then
+            {
+              echo "## Release version validation failed"
+              echo ""
+              echo "Expected version from Git tag: \`$EXPECTED_VERSION\`"
+              echo ""
+              echo "### Errors"
+              for error in "${errors[@]}"; do
+                echo "- $error"
+              done
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            echo ""
+            echo "Release version validation failed:"
+            for error in "${errors[@]}"; do
+              echo "- $error"
+            done
+
+            exit 1
+          fi
+
+          {
+            echo "## Release version validation passed"
+            echo ""
+            echo "All checked versions match: \`$EXPECTED_VERSION\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "Release version validation passed. All versions match $EXPECTED_VERSION."
+
   #####################
   # QA and Unit tests #
   #####################
@@ -211,7 +324,7 @@ jobs:
             -name "example" -o \
             -name "demo" \
             \) -prune -exec rm -rf {} +
-            
+          
             find "build/${PLUGIN_SLUG}/vendor" -type f \( \
             -name ".gitignore" -o \
             -name ".gitattributes" -o \
