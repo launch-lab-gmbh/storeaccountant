@@ -264,7 +264,7 @@ jobs:
           zip -r "../storeaccountant-documentation-developer.zip" .
 
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: storeaccountant-docs
           path: |
@@ -343,7 +343,7 @@ jobs:
           zip -r "${PLUGIN_SLUG}.zip" "${PLUGIN_SLUG}"
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PLUGIN_SLUG }}
           path: build/${{ env.PLUGIN_SLUG }}.zip

@@ -33,7 +33,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Composer downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: composer-php82-${{ runner.os }}-${{ hashFiles('composer.lock') }}
@@ -52,7 +52,7 @@ jobs:
         run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
 
       - name: Upload vendor
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.artifact_name }}
           path: vendor/**
