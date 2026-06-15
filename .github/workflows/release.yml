@@ -130,12 +130,14 @@ jobs:
   dev-install:
     name: Install Composer development dependencies
     uses: ./.github/workflows/reusable-composer.yml
+    needs: validate-version
     with:
       artifact_name: vendor-dev-php82
 
   production-install:
     name: Install Composer production dependencies
     uses: ./.github/workflows/reusable-composer.yml
+    needs: validate-version
     with:
       production: true
       artifact_name: vendor-prod-php82
