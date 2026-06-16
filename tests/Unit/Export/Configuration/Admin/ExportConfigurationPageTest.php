@@ -193,6 +193,7 @@ final class ExportConfigurationPageTest extends TestCase {
 		Functions\when( 'add_query_arg' )->alias( static fn ( array $args, string $url ): string => $url . '?' . http_build_query( $args ) );
 		Functions\when( 'wp_salt' )->returnArg( 1 );
 		Functions\when( 'wp_json_encode' )->alias( static fn ( mixed $value ): string|false => json_encode( $value ) );
+		Functions\when( 'wp_trigger_error' )->justReturn( null );
 		Functions\when( 'get_option' )->alias( static fn ( string $option, mixed $default = false ): mixed => $default );
 		Functions\when( 'current_user_can' )->alias(
 			static fn ( string $capability ): bool => in_array(

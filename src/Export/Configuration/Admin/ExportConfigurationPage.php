@@ -41,11 +41,14 @@ use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use function array_key_first;
 use function array_merge;
+use function is_array;
 use function is_numeric;
 use function sprintf;
 use function str_contains;
 use function str_replace;
 use function trim;
+use function wp_json_encode;
+use function wp_trigger_error;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -196,7 +199,8 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		$stored_tax_provider_id  = '';
 		$batch_size              = $this->get_batch_size_from_request( $request );
 		$password                = Request::post_text( 'storeaccountant_configuration_download_password' );
-		$redirect_with_error     = function ( string $error = '1' ) use ( $configuration_id ): void {
+		$redirect_with_error     = function ( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [] ) use ( $configuration_id ): void {
+			$this->log_save_error( $reason, $configuration_id, $wp_error, $context );
 			$this->redirect_with_error( $error, $configuration_id );
 		};
 
@@ -204,7 +208,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			$configuration = get_post( $configuration_id );
 
 			if ( ! $configuration || ExportConfigurationPostType::POST_TYPE !== $configuration->post_type || ! $this->permissions->can( PermissionActionIds::CONFIGURATION_EDIT, $configuration_id ) ) {
-				$redirect_with_error();
+				$redirect_with_error( '1', 'invalid_or_unauthorized_configuration' );
 			}
 
 			$export_adapter         = $this->get_stored_export_adapter( $configuration_id );
@@ -218,7 +222,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			$additional_settings    = $this->get_additional_settings( $export_adapter, $request );
 		} else {
 			if ( ! $this->permissions->can( PermissionActionIds::CONFIGURATION_CREATE ) ) {
-				$redirect_with_error();
+				$redirect_with_error( '1', 'missing_create_permission' );
 			}
 
 			$export_writer  = $this->get_default_export_writer();
@@ -227,45 +231,45 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		}
 
 		if ( '' === $title ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'missing_title' );
 		}
 
 		$configuration_password = $this->passwords->get_configuration_password_for_submission( $password );
 
 		if ( is_wp_error( $configuration_password ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'configuration_password_submission_failed', $configuration_password );
 		}
 
 		if ( str_contains( $title, $configuration_password ) ) {
-			$redirect_with_error( 'title_contains_password' );
+			$redirect_with_error( 'title_contains_password', 'title_contains_password' );
 		}
 
 		if ( is_wp_error( $batch_size ) ) {
-			$redirect_with_error( 'invalid_batch_size' );
+			$redirect_with_error( 'invalid_batch_size', 'invalid_batch_size', $batch_size );
 		}
 
 		if ( is_wp_error( $filters ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'invalid_filters', $filters, [ 'export_adapter' => $export_adapter ] );
 		}
 
 		if ( OrderExportAdapter::ADAPTER_ID === $export_adapter && '' === $tax_provider_id ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'missing_tax_provider', null, [ 'export_adapter' => $export_adapter ] );
 		}
 
 		if ( null === $this->export_adapters->get( $export_adapter ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'unknown_export_adapter', null, [ 'export_adapter' => $export_adapter ] );
 		}
 
 		if ( null === $this->export_writers->get( $export_writer ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'unknown_export_writer', null, [ 'export_writer' => $export_writer ] );
 		}
 
 		if ( ! $this->storage_adapters->is_enabled( $storage_engine ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'storage_adapter_not_enabled', null, [ 'storage_engine' => $storage_engine ] );
 		}
 
 		if ( is_wp_error( $additional_settings ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'invalid_additional_settings', $additional_settings, [ 'export_adapter' => $export_adapter ] );
 		}
 
 		if ( $configuration_id > 0 ) {
@@ -292,7 +296,12 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		}
 
 		if ( is_wp_error( $post_id ) || $post_id <= 0 ) {
-			$redirect_with_error();
+			$redirect_with_error(
+				'1',
+				'configuration_persistence_failed',
+				is_wp_error( $post_id ) ? $post_id : null,
+				[ 'post_id' => is_wp_error( $post_id ) ? 0 : $post_id ]
+			);
 		}
 
 		if ( OrderExportAdapter::ADAPTER_ID === $export_adapter ) {
@@ -312,7 +321,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		$result = $this->passwords->save_configuration_password( $post_id, $password );
 
 		if ( is_wp_error( $result ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'configuration_password_save_failed', $result, [ 'post_id' => $post_id ] );
 		}
 
 		wp_safe_redirect(
@@ -504,6 +513,51 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			<p><?php echo esc_html( $message ); ?></p>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Logs the concrete save failure reason for WP debug.log troubleshooting.
+	 *
+	 * @param string               $reason           Internal failure reason.
+	 * @param int                  $configuration_id Export configuration post ID.
+	 * @param WP_Error|null        $wp_error         Optional WordPress error.
+	 * @param array<string, mixed> $context          Additional safe diagnostic context.
+	 */
+	private function log_save_error( string $reason, int $configuration_id, ?WP_Error $wp_error = null, array $context = [] ): void {
+		$details = [
+			'reason'           => $reason,
+			'configuration_id' => $configuration_id,
+		];
+
+		if ( [] !== $context ) {
+			$details['context'] = $context;
+		}
+
+		if ( null !== $wp_error ) {
+			$error_code = $wp_error->get_error_code();
+
+			$details['wp_error'] = [
+				'code'    => $error_code,
+				'message' => $wp_error->get_error_message( $error_code ),
+				'data'    => $wp_error->get_error_data( $error_code ),
+			];
+		}
+
+		$message = wp_json_encode( $details );
+
+		if ( false === $message ) {
+			$message = sprintf(
+				'{"reason":"%1$s","configuration_id":%2$d}',
+				$reason,
+				$configuration_id
+			);
+		}
+
+		wp_trigger_error(
+			__METHOD__,
+			sprintf( 'Export configuration could not be saved. %s', $message ),
+			E_USER_WARNING
+		);
 	}
 
 	/**

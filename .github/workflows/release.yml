@@ -349,6 +349,7 @@ jobs:
             -name "phpstan.neon" -o \
             -name "psalm.xml" -o \
             -name "composer.lock" \
+            -name "LICENSE-for-cc42c1d" \
             \) -delete
 
       - name: Create ZIP archive

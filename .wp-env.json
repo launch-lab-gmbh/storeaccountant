@@ -3,6 +3,12 @@
   "phpVersion": "8.2",
   "testsEnvironment": false,
   "port": 80,
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "WP_DEBUG_DISPLAY": false,
+    "SCRIPT_DEBUG": true
+  },
   "plugins": [
     "https://downloads.wordpress.org/plugin/woocommerce.latest-stable.zip",
     "https://github.com/woocommerce/wc-smooth-generator/releases/latest/download/wc-smooth-generator.zip"
