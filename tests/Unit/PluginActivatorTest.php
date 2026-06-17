@@ -97,6 +97,9 @@ final class PluginActivatorTest extends TestCase {
 		self::assertDirectoryExists( $storage_root );
 		self::assertFileExists( $storage_root . '/index.html' );
 		self::assertFileExists( $storage_root . '/.htaccess' );
+		self::assertDirectoryExists( $storage_root . '/logging' );
+		self::assertFileExists( $storage_root . '/logging/index.html' );
+		self::assertFileExists( $storage_root . '/logging/.htaccess' );
 	}
 
 	private function remove_directory( string $path ): void {

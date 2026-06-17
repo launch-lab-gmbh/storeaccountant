@@ -27,6 +27,8 @@ final class PermissionActionIdsTest extends TestCase {
 				'ACCESS_ADMIN'                     => 'admin.access',
 				'MANAGE_SETTINGS'                  => 'settings.manage',
 				'VIEW_DOWNLOAD_PASSWORDS'          => 'settings.view_download_passwords',
+				'DIAGNOSTIC_LOGGING_MANAGE'        => 'settings.diagnostic_logging_manage',
+				'DIAGNOSTIC_PACKAGE_DOWNLOAD'      => 'settings.diagnostic_package_download',
 				'MANAGE_PERMISSIONS'               => 'permissions.manage',
 				'EXPORT_LIST'                      => 'export.list',
 				'EXPORT_VIEW'                      => 'export.view',

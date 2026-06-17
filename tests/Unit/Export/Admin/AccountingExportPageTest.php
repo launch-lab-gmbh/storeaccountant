@@ -19,6 +19,10 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Admin\AccountingExportPage;
 use StoreAccountant\Export\Admin\AccountingExportPageForm;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
@@ -37,6 +41,7 @@ use StoreAccountant\Security\Permission\PermissionActionRegistry;
 use StoreAccountant\Security\Permission\PermissionChecker;
 use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Security\ReversibleCrypto;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use Symfony\Component\Messenger\MessageBusInterface;
 
@@ -163,7 +168,14 @@ final class AccountingExportPageTest extends TestCase {
 			new AccountingHeaderBar( $permissions ),
 			$permissions,
 			new QueueLoopbackDispatcher( new QueueTransportRegistry() ),
-			$passwords
+			$passwords,
+			new DiagnosticIncidentLogger(
+				new DiagnosticSettings(),
+				new DiagnosticIncidentRepository(
+					new DiagnosticLogConfiguration( '', 'wp-content/uploads/storeaccountant/logging' ),
+					new ProtectedUploadDirectory()
+				)
+			)
 		);
 	}
 
@@ -187,6 +199,7 @@ final class AccountingExportPageTest extends TestCase {
 			static fn ( int $type ): array => INPUT_POST === $type ? $_POST : $_GET
 		);
 		Functions\when( 'is_wp_error' )->alias( static fn ( mixed $value ): bool => $value instanceof \WP_Error );
+		Functions\when( 'get_option' )->alias( static fn ( string $option, mixed $default = false ): mixed => $default );
 		Functions\when( 'admin_url' )->alias( static fn ( string $path = '' ): string => 'https://example.test/wp-admin/' . ltrim( $path, '/' ) );
 		Functions\when( 'add_query_arg' )->alias( static fn ( array $args, string $url ): string => $url . '?' . http_build_query( $args ) );
 		Functions\when( 'current_user_can' )->alias(

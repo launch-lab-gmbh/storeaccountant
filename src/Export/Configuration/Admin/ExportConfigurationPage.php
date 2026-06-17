@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 namespace StoreAccountant\Export\Configuration\Admin;
 
+use Throwable;
 use WP_Error;
 use WP_Post;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Diagnostic\Admin\DiagnosticIncidentDownloadController;
+use StoreAccountant\Diagnostic\DiagnosticIncident;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\Configuration\ExportConfigurationRepository;
@@ -47,8 +51,6 @@ use function sprintf;
 use function str_contains;
 use function str_replace;
 use function trim;
-use function wp_json_encode;
-use function wp_trigger_error;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -73,6 +75,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	 * @param OrderTaxFieldProviderField                   $tax_field_provider_field Order tax provider field.
 	 * @param PermissionChecker                            $permissions     Permission checker.
 	 * @param DownloadPasswordManager                      $passwords       Download password manager.
+	 * @param DiagnosticIncidentLogger                     $diagnostics     Diagnostic incident logger.
 	 */
 	public function __construct(
 		private ExportConfigurationPageForm $form,
@@ -86,7 +89,8 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		private ExportConfigurationTabProviderRegistry $tab_providers,
 		private OrderTaxFieldProviderField $tax_field_provider_field,
 		private PermissionChecker $permissions,
-		private DownloadPasswordManager $passwords
+		private DownloadPasswordManager $passwords,
+		private DiagnosticIncidentLogger $diagnostics
 	) {}
 
 	/**
@@ -200,8 +204,8 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		$batch_size              = $this->get_batch_size_from_request( $request );
 		$password                = Request::post_text( 'storeaccountant_configuration_download_password' );
 		$redirect_with_error     = function ( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [] ) use ( $configuration_id ): void {
-			$this->log_save_error( $reason, $configuration_id, $wp_error, $context );
-			$this->redirect_with_error( $error, $configuration_id );
+			$incident = $this->log_save_error( $reason, $configuration_id, $wp_error, $context );
+			$this->redirect_with_error( $error, $configuration_id, $incident );
 		};
 
 		if ( $configuration_id > 0 ) {
@@ -490,6 +494,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			?>
 			<div class="notice notice-error is-dismissible">
 				<p><?php esc_html_e( 'The field mapping could not be saved.', 'storeaccountant' ); ?></p>
+				<?php $this->render_diagnostic_notice(); ?>
 			</div>
 			<?php
 			return;
@@ -511,7 +516,35 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		?>
 		<div class="notice notice-error is-dismissible">
 			<p><?php echo esc_html( $message ); ?></p>
+			<?php $this->render_diagnostic_notice(); ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Renders the diagnostic package hint when an incident was logged.
+	 */
+	private function render_diagnostic_notice(): void {
+		$support_id = Request::get_key( 'storeaccountant_diagnostic_support_id' );
+
+		if ( '' === $support_id || ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_PACKAGE_DOWNLOAD ) ) {
+			return;
+		}
+		?>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %s: diagnostic support ID */
+					__( 'StoreAccountant logged this error with support ID %s.', 'storeaccountant' ),
+					$support_id
+				)
+			);
+			?>
+			<a href="<?php echo esc_url( $this->get_diagnostic_download_url( $support_id ) ); ?>">
+				<?php esc_html_e( 'Download diagnostic package', 'storeaccountant' ); ?>
+			</a>
+		</p>
 		<?php
 	}
 
@@ -522,8 +555,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	 * @param int                  $configuration_id Export configuration post ID.
 	 * @param WP_Error|null        $wp_error         Optional WordPress error.
 	 * @param array<string, mixed> $context          Additional safe diagnostic context.
+	 * @param Throwable|null       $throwable        Optional throwable.
 	 */
-	private function log_save_error( string $reason, int $configuration_id, ?WP_Error $wp_error = null, array $context = [] ): void {
+	private function log_save_error( string $reason, int $configuration_id, ?WP_Error $wp_error = null, array $context = [], ?Throwable $throwable = null ): ?DiagnosticIncident {
 		$details = [
 			'reason'           => $reason,
 			'configuration_id' => $configuration_id,
@@ -543,27 +577,19 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			];
 		}
 
-		$message = wp_json_encode( $details );
-
-		if ( false === $message ) {
-			$message = sprintf(
-				'{"reason":"%1$s","configuration_id":%2$d}',
-				$reason,
-				$configuration_id
-			);
-		}
-
-		wp_trigger_error(
-			__METHOD__,
-			sprintf( 'Export configuration could not be saved. %s', $message ),
-			E_USER_WARNING
+		return $this->diagnostics->error(
+			'export_configuration',
+			__( 'The export configuration could not be saved.', 'storeaccountant' ),
+			$details,
+			$wp_error,
+			$throwable
 		);
 	}
 
 	/**
 	 * Redirects back to the form with an error notice.
 	 */
-	private function redirect_with_error( string $error = '1', int $configuration_id = 0 ): void {
+	private function redirect_with_error( string $error = '1', int $configuration_id = 0, ?DiagnosticIncident $incident = null ): void {
 		$args = [
 			'page'                                       => 'storeaccountant-export-configuration',
 			'storeaccountant_export_configuration_error' => $error,
@@ -573,6 +599,10 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			$args['configuration_id'] = (string) $configuration_id;
 		}
 
+		if ( null !== $incident ) {
+			$args['storeaccountant_diagnostic_support_id'] = $incident->support_id;
+		}
+
 		wp_safe_redirect(
 			add_query_arg(
 				$args,
@@ -580,6 +610,22 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Gets the authorized diagnostic package download URL.
+	 */
+	private function get_diagnostic_download_url( string $support_id ): string {
+		return wp_nonce_url(
+			add_query_arg(
+				[
+					'action'     => DiagnosticIncidentDownloadController::ACTION,
+					'support_id' => $support_id,
+				],
+				admin_url( 'admin-post.php' )
+			),
+			DiagnosticIncidentDownloadController::ACTION
+		);
 	}
 
 	/**

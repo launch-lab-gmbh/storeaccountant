@@ -25,6 +25,8 @@ final class PermissionActionIds {
 	public const ACCESS_ADMIN                     = 'admin.access';
 	public const MANAGE_SETTINGS                  = 'settings.manage';
 	public const VIEW_DOWNLOAD_PASSWORDS          = 'settings.view_download_passwords';
+	public const DIAGNOSTIC_LOGGING_MANAGE        = 'settings.diagnostic_logging_manage';
+	public const DIAGNOSTIC_PACKAGE_DOWNLOAD      = 'settings.diagnostic_package_download';
 	public const MANAGE_PERMISSIONS               = 'permissions.manage';
 	public const EXPORT_LIST                      = 'export.list';
 	public const EXPORT_VIEW                      = 'export.view';

@@ -8,6 +8,7 @@
 - Main
     - [Architecture](architecture.md)
     - [Development Notes](development-notes.md)
+    - [Diagnostic Logging](diagnostic.md)
     - [Events](events.md)
     - [Extension Points](extension-points.md)
 

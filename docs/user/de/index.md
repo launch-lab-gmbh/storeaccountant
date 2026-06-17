@@ -27,7 +27,12 @@ Zu den wichtigsten Funktionen gehören:
 * Individuell konfigurierbare Spalten
 * Anpassung von Exportwerten durch Mutatoren
 * Passwortgeschützte Downloads
+* Diagnosepakete für Supportfälle
 * Erweiterbare Architektur für individuelle Anforderungen
 
 Diese Dokumentation begleitet Sie von der Einrichtung bis zur Erstellung eigener Exportkonfigurationen und hilft Ihnen
 dabei, StoreAccountant optimal für Ihre Geschäftsprozesse einzusetzen.
+
+## Weitere Informationen
+
+* [Diagnosepakete](Diagnostik.md)

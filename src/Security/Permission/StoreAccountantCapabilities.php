@@ -25,6 +25,8 @@ final class StoreAccountantCapabilities {
 	public const ACCESS_ADMIN            = 'storeaccountant_access_admin';
 	public const MANAGE_SETTINGS         = 'storeaccountant_manage_settings';
 	public const VIEW_DOWNLOAD_PASSWORDS = 'storeaccountant_view_download_passwords';
+	public const MANAGE_DIAGNOSTICS      = 'storeaccountant_manage_diagnostics';
+	public const DOWNLOAD_DIAGNOSTICS    = 'storeaccountant_download_diagnostics';
 	public const MANAGE_PERMISSIONS      = 'storeaccountant_manage_permissions';
 	public const READ_EXPORTS            = 'storeaccountant_read_exports';
 	public const CREATE_EXPORTS          = 'storeaccountant_create_exports';
