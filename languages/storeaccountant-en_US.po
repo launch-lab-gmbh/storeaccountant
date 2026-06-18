@@ -118,6 +118,10 @@ msgstr "Export Type"
 msgid "No export adapters are available. Register at least one export adapter before starting an export."
 msgstr "No export adapters are available. Register at least one export adapter before starting an export."
 
+#: src/Export/Admin/AccountingExportPageForm.php:127
+msgid "The export type cannot be changed after the quick export details have been started."
+msgstr "The export type cannot be changed after the quick export details have been started."
+
 #: src/Export/Admin/AccountingExportPageForm.php:120
 #: src/Export/Admin/ExportDetailsReadTabProvider.php:129
 #: src/Export/Configuration/Admin/ExportConfigurationPageForm.php:150
@@ -154,6 +158,10 @@ msgstr "StoreAccountant automatically splits the export into batches. This value
 #: src/Export/Admin/AccountingExportPageForm.php:180
 msgid "Start Quick Export"
 msgstr "Start Quick Export"
+
+#: src/Export/Admin/AccountingExportPageForm.php:210
+msgid "Continue"
+msgstr "Continue"
 
 #: src/Admin/AccountingHeaderBar.php:47
 msgid "Select export to create"

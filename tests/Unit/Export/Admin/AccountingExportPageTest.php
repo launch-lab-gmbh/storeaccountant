@@ -25,6 +25,7 @@ use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
 use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Admin\AccountingExportPage;
 use StoreAccountant\Export\Admin\AccountingExportPageForm;
+use StoreAccountant\Export\Contract\ExportAdapterInterface;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
 use StoreAccountant\Export\ExportAdapterRegistry;
 use StoreAccountant\Export\ExportRendererRegistry;
@@ -35,6 +36,7 @@ use StoreAccountant\Export\Filter\ExportFilterSnapshotter;
 use StoreAccountant\Export\Filter\Period\PeriodProviderRegistry;
 use StoreAccountant\Queue\Loopback\QueueLoopbackDispatcher;
 use StoreAccountant\Queue\QueueTransportRegistry;
+use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
 use StoreAccountant\Security\Permission\PermissionAction;
 use StoreAccountant\Security\Permission\PermissionActionIds;
 use StoreAccountant\Security\Permission\PermissionActionRegistry;
@@ -49,6 +51,16 @@ use Symfony\Component\Messenger\MessageBusInterface;
  * Tests accounting export admin page guards and hook registration.
  */
 final class AccountingExportPageTest extends TestCase {
+	/**
+	 * @var array<string, mixed>
+	 */
+	private array $user_meta = [];
+
+	/**
+	 * @var array<int, string>
+	 */
+	private array $existing_export_titles = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -57,11 +69,15 @@ final class AccountingExportPageTest extends TestCase {
 			define( 'StoreAccountant\\Queue\\Loopback\\MINUTE_IN_SECONDS', 60 );
 		}
 		$_POST = [];
+		$_GET  = [];
+		$this->user_meta = [];
+		$this->existing_export_titles = [];
 		$this->mock_wordpress_functions();
 	}
 
 	protected function tearDown(): void {
 		$_POST = [];
+		$_GET  = [];
 
 		Monkey\tearDown();
 
@@ -103,11 +119,15 @@ final class AccountingExportPageTest extends TestCase {
 	}
 
 	public function test_handle_start_export_redirects_invalid_quick_export_batch_size(): void {
+		$this->user_meta['_storeaccountant_quick_export_draft'] = [
+			'title'          => 'May Export',
+			'export_adapter' => OrderExportAdapter::ADAPTER_ID,
+		];
+
 		$_POST = [
 			'storeaccountant_quick_export'      => '1',
-			'storeaccountant_export_title'      => 'May Export',
+			'storeaccountant_export_title'      => 'Edited May Export',
 			'storeaccountant_storage_engine'    => 'local',
-			'storeaccountant_export_adapter'    => 'orders',
 			'storeaccountant_export_writer'     => 'csv',
 			'storeaccountant_export_batch_size' => '5',
 		];
@@ -117,13 +137,65 @@ final class AccountingExportPageTest extends TestCase {
 			->with( 'storeaccountant_start_export', 'storeaccountant_export_nonce' );
 		Functions\expect( 'wp_safe_redirect' )
 			->once()
-			->with( 'https://example.test/wp-admin/admin.php?page=storeaccountant-export-create&storeaccountant_export_error=invalid_batch_size' )
+			->with( 'https://example.test/wp-admin/admin.php?page=storeaccountant-export-create&storeaccountant_export_error=invalid_batch_size&storeaccountant_quick_export_step=details' )
 			->andThrow( new RuntimeException( 'redirect_invalid_batch_size' ) );
 
 		$this->expectExceptionMessage( 'redirect_invalid_batch_size' );
 
 		$this->page()->handle_start_export();
 	}
+
+	public function test_handle_start_export_prepare_stores_draft_and_redirects_to_details_step(): void {
+		$_POST = [
+			'storeaccountant_quick_export_prepare' => '1',
+			'storeaccountant_export_title'         => 'May Export',
+			'storeaccountant_export_adapter'       => OrderExportAdapter::ADAPTER_ID,
+		];
+
+		Functions\expect( 'check_admin_referer' )
+			->once()
+			->with( 'storeaccountant_start_export', 'storeaccountant_export_nonce' );
+		Functions\expect( 'wp_safe_redirect' )
+			->once()
+			->with( 'https://example.test/wp-admin/admin.php?page=storeaccountant-export-create&storeaccountant_quick_export_step=details' )
+			->andThrow( new RuntimeException( 'redirect_details_step' ) );
+
+		$this->expectExceptionMessage( 'redirect_details_step' );
+
+		try {
+			$this->page()->handle_start_export();
+		} finally {
+			self::assertSame(
+				[
+					'title'          => 'May Export',
+					'export_adapter' => OrderExportAdapter::ADAPTER_ID,
+				],
+				$this->user_meta['_storeaccountant_quick_export_draft'] ?? null
+			);
+		}
+	}
+
+	public function test_handle_start_export_prepare_rejects_duplicate_title(): void {
+		$this->existing_export_titles = [ 'May Export' ];
+		$_POST                       = [
+			'storeaccountant_quick_export_prepare' => '1',
+			'storeaccountant_export_title'         => 'May Export',
+			'storeaccountant_export_adapter'       => OrderExportAdapter::ADAPTER_ID,
+		];
+
+		Functions\expect( 'check_admin_referer' )
+			->once()
+			->with( 'storeaccountant_start_export', 'storeaccountant_export_nonce' );
+		Functions\expect( 'wp_safe_redirect' )
+			->once()
+			->with( 'https://example.test/wp-admin/admin.php?page=storeaccountant-export-create&storeaccountant_export_error=duplicate_title' )
+			->andThrow( new RuntimeException( 'redirect_duplicate_title' ) );
+
+		$this->expectExceptionMessage( 'redirect_duplicate_title' );
+
+		$this->page()->handle_start_export();
+	}
+
 
 	public function test_handle_start_export_from_overview_requires_title_for_configuration_export(): void {
 		$_POST = [
@@ -186,6 +258,27 @@ final class AccountingExportPageTest extends TestCase {
 		Functions\when( 'sanitize_key' )->alias( static fn ( string $key ): string => strtolower( preg_replace( '/[^a-z0-9_\\-]/i', '', $key ) ?? '' ) );
 		Functions\when( 'sanitize_text_field' )->returnArg( 1 );
 		Functions\when( 'absint' )->alias( static fn ( mixed $value ): int => abs( (int) $value ) );
+		Functions\when( 'get_current_user_id' )->alias( static fn (): int => 7 );
+		Functions\when( 'get_posts' )->alias(
+			fn ( array $args ): array => in_array( (string) ( $args['title'] ?? '' ), $this->existing_export_titles, true ) ? [ 123 ] : []
+		);
+		Functions\when( 'get_user_meta' )->alias(
+			fn ( int $user_id, string $key, bool $single = false ): mixed => $this->user_meta[ $key ] ?? ''
+		);
+		Functions\when( 'update_user_meta' )->alias(
+			function ( int $user_id, string $key, mixed $value ): int|bool {
+				$this->user_meta[ $key ] = $value;
+
+				return true;
+			}
+		);
+		Functions\when( 'delete_user_meta' )->alias(
+			function ( int $user_id, string $key ): bool {
+				unset( $this->user_meta[ $key ] );
+
+				return true;
+			}
+		);
 		Functions\when( 'filter_input' )->alias(
 			static fn ( int $type, string $name, int $filter = FILTER_DEFAULT ): mixed => INPUT_POST === $type ? ( $_POST[ $name ] ?? null ) : ( $_GET[ $name ] ?? null )
 		);
@@ -210,11 +303,20 @@ final class AccountingExportPageTest extends TestCase {
 			)
 		);
 		Functions\when( 'apply_filters' )->alias(
-			static fn ( string $hook, mixed $value ): mixed => 'storeaccountant_permission_action' === $hook
-				? [
+			fn ( string $hook, mixed $value ): mixed => match ( $hook ) {
+				'storeaccountant_export_adapter' => [ $this->export_adapter( OrderExportAdapter::ADAPTER_ID ) ],
+				'storeaccountant_permission_action' => [
 					new PermissionAction( PermissionActionIds::EXPORT_CREATE, 'Create exports', 'Exports', StoreAccountantCapabilities::CREATE_EXPORTS ),
-				]
-				: $value
+				],
+				default => $value,
+			}
 		);
+	}
+
+	private function export_adapter( string $id ): ExportAdapterInterface {
+		$adapter = $this->createMock( ExportAdapterInterface::class );
+		$adapter->method( 'get_id' )->willReturn( $id );
+
+		return $adapter;
 	}
 }

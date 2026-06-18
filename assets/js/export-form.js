@@ -29,34 +29,6 @@
 		toggleYearField();
 	});
 
-	document.querySelectorAll('[data-storeaccountant-export-adapter-select]').forEach((select) => {
-		const form = select.closest('form');
-
-		if (!form) {
-			return;
-		}
-
-		function toggleFilterGroups() {
-			const activeExportType = select.value;
-
-			form.querySelectorAll('[data-storeaccountant-export-filter-group]').forEach((row) => {
-				const active = row.dataset.storeaccountantExportType === activeExportType;
-
-				row.classList.toggle('storeaccountant-is-hidden', !active);
-				row.querySelectorAll('input, select, textarea, button').forEach((field) => {
-					field.disabled = !active;
-				});
-			});
-
-			form.querySelectorAll('[data-storeaccountant-export-filter-group]:not(.storeaccountant-is-hidden) [data-storeaccountant-period-month]').forEach((monthField) => {
-				monthField.dispatchEvent(new Event('change'));
-			});
-		}
-
-		select.addEventListener('change', toggleFilterGroups);
-		toggleFilterGroups();
-	});
-
 	document.querySelectorAll('#storeaccountant-export-create-selection').forEach((select) => {
 		const form = select.closest('form');
 		const titleField = form?.querySelector('[data-storeaccountant-configuration-export-title]');

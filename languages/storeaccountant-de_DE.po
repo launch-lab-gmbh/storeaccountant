@@ -534,6 +534,10 @@ msgstr "Es sind keine Speicherorte aktiviert. Aktiviere mindestens einen Speiche
 msgid "Start Quick Export"
 msgstr "Schnellexport starten"
 
+#: src/Export/Admin/AccountingExportPageForm.php:210
+msgid "Continue"
+msgstr "Weiter"
+
 #: src/Export/Admin/Period/MonthYearExportPeriodFieldProvider.php:96
 #: src/Export/Admin/Period/MonthYearExportPeriodFieldProvider.php:109
 msgid "This month"
@@ -852,6 +856,10 @@ msgstr "Exporttyp"
 #: src/Export/Admin/AccountingExportPageForm.php:103
 msgid "No export adapters are available. Register at least one export adapter before starting an export."
 msgstr "Es sind keine Export-Adapter verfügbar. Registriere mindestens einen Export-Adapter, bevor du einen Export startest."
+
+#: src/Export/Admin/AccountingExportPageForm.php:127
+msgid "The export type cannot be changed after the quick export details have been started."
+msgstr "Der Exporttyp kann nicht mehr geändert werden, nachdem die Schnellexport-Details begonnen wurden."
 
 #: src/Export/Admin/AccountingExportPageForm.php:124
 msgid "No export formats are available. Register at least one export renderer before starting an export."

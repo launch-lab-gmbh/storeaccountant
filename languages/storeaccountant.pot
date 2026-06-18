@@ -558,6 +558,10 @@ msgstr ""
 msgid "No export adapters are available. Register at least one export adapter before starting an export."
 msgstr ""
 
+#: src/Export/Admin/AccountingExportPageForm.php:127
+msgid "The export type cannot be changed after the quick export details have been started."
+msgstr ""
+
 #: src/Export/Admin/AccountingExportPageForm.php:120
 #: src/Export/Admin/ExportDetailsReadTabProvider.php:129
 #: src/Export/Configuration/Admin/ExportConfigurationPageForm.php:150
@@ -593,6 +597,10 @@ msgstr ""
 
 #: src/Export/Admin/AccountingExportPageForm.php:180
 msgid "Start Quick Export"
+msgstr ""
+
+#: src/Export/Admin/AccountingExportPageForm.php:210
+msgid "Continue"
 msgstr ""
 
 #: src/Export/Admin/AccountingExportPageForm.php:192

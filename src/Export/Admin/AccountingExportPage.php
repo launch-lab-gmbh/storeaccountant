@@ -43,6 +43,7 @@ use StoreAccountant\Security\Permission\PermissionActionIds;
 use StoreAccountant\Security\Permission\PermissionChecker;
 use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Storage\StorageAdapterRegistry;
+use function is_array;
 use function is_numeric;
 use function sprintf;
 use function str_starts_with;
@@ -59,6 +60,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final readonly class AccountingExportPage implements HookRegistrarInterface {
 	public const PAGE_SLUG = 'storeaccountant-export-create';
+
+	private const QUICK_EXPORT_DRAFT_META_KEY = '_storeaccountant_quick_export_draft';
+
+	private const QUICK_EXPORT_DETAILS_STEP = 'details';
 
 	/**
 	 * Initializes the page.
@@ -142,7 +147,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			<?php $this->render_notice(); ?>
 			<?php $this->header_bar->render_detail_actions(); ?>
 
-			<?php $this->form->render(); ?>
+			<?php $this->form->render( $this->get_quick_export_draft_for_render() ); ?>
 		</div>
 		<?php
 	}
@@ -157,13 +162,39 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 		check_admin_referer( 'storeaccountant_start_export', 'storeaccountant_export_nonce' );
 
-		$is_quick_export = '1' === Request::post_key( 'storeaccountant_quick_export' );
+		$is_quick_export_prepare = '1' === Request::post_key( 'storeaccountant_quick_export_prepare' );
+		$is_quick_export         = '1' === Request::post_key( 'storeaccountant_quick_export' );
+
+		if ( $is_quick_export_prepare ) {
+			$this->handle_quick_export_prepare();
+		}
 
 		if ( $is_quick_export ) {
 			$this->handle_quick_export();
 		}
 
 		$this->redirect_with_error( '1', 'non_quick_export_submission' );
+	}
+
+	/**
+	 * Handles the first quick export step.
+	 */
+	private function handle_quick_export_prepare(): void {
+		$title          = trim( Request::post_text( 'storeaccountant_export_title' ) );
+		$export_adapter = Request::post_key( 'storeaccountant_export_adapter', OrderExportAdapter::ADAPTER_ID );
+
+		$this->validate_export_title(
+			$title,
+			fn ( string $error, string $reason ): never => $this->redirect_with_error( $error, $reason )
+		);
+
+		if ( null === $this->export_adapters->get( $export_adapter ) ) {
+			$this->redirect_with_error( '1', 'quick_export_adapter_missing', null, [ 'export_adapter' => $export_adapter ] );
+		}
+
+		$this->save_quick_export_draft( $title, $export_adapter );
+
+		$this->redirect_to_quick_export_details();
 	}
 
 	/**
@@ -197,13 +228,10 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		$configuration_id = absint( substr( $selection, 14 ) );
 		$title            = trim( Request::post_text( 'storeaccountant_export_title' ) );
 
-		if ( '' === $title ) {
-			$this->redirect_overview_with_error( 'missing_title', 'missing_title' );
-		}
-
-		if ( $this->repository->exists_with_title( $title ) ) {
-			$this->redirect_overview_with_error( 'duplicate_title', 'duplicate_title' );
-		}
+		$this->validate_export_title(
+			$title,
+			fn ( string $error, string $reason ): never => $this->redirect_overview_with_error( $error, $reason )
+		);
 
 		$password = $this->passwords->reveal_configuration_password( $configuration_id );
 
@@ -340,17 +368,27 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	private function handle_quick_export(): void {
 		check_admin_referer( 'storeaccountant_start_export', 'storeaccountant_export_nonce' );
 
+		$draft = $this->get_quick_export_draft();
+
+		if ( null === $draft ) {
+			$this->redirect_to_quick_export_start();
+		}
+
 		$request        = Request::post_data();
 		$title          = trim( Request::post_text( 'storeaccountant_export_title' ) );
 		$storage_engine = Request::post_key( 'storeaccountant_storage_engine' );
-		$export_adapter = Request::post_key( 'storeaccountant_export_adapter', OrderExportAdapter::ADAPTER_ID );
+		$export_adapter = $draft['export_adapter'];
 		$export_writer  = Request::post_key( 'storeaccountant_export_writer', CsvExportRenderer::RENDERER_ID );
 		$batch_size     = $this->get_batch_size_from_request( $request );
 		$password       = Request::post_text( 'storeaccountant_export_download_password' );
 		$filters        = $this->get_filter_selections_from_request( $export_adapter, $request );
 
+		if ( '' !== $title ) {
+			$this->save_quick_export_draft( $title, $export_adapter );
+		}
+
 		if ( is_wp_error( $batch_size ) ) {
-			$this->redirect_with_error( 'invalid_batch_size', 'invalid_batch_size', $batch_size );
+			$this->redirect_with_error( 'invalid_batch_size', 'invalid_batch_size', $batch_size, [], null, true );
 		}
 
 		if ( is_wp_error( $filters ) || ! $this->storage_adapters->is_enabled( $storage_engine ) ) {
@@ -358,7 +396,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 				'1',
 				is_wp_error( $filters ) ? 'quick_export_filters_invalid' : 'quick_export_storage_adapter_not_enabled',
 				is_wp_error( $filters ) ? $filters : null,
-				[ 'storage_engine' => $storage_engine ]
+				[ 'storage_engine' => $storage_engine ],
+				null,
+				true
 			);
 		}
 
@@ -373,32 +413,31 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 				[
 					'export_adapter' => $export_adapter,
 					'export_writer'  => $export_writer,
-				]
+				],
+				null,
+				true
 			);
 		}
 
-		if ( '' === $title ) {
-			$this->redirect_with_error( 'missing_title', 'missing_title' );
-		}
-
-		if ( $this->repository->exists_with_title( $title ) ) {
-			$this->redirect_with_error( 'duplicate_title', 'duplicate_title' );
-		}
+		$this->validate_export_title(
+			$title,
+			fn ( string $error, string $reason ): never => $this->redirect_with_error( $error, $reason, null, [], null, true )
+		);
 
 		$effective_password = $this->passwords->get_password_for_submission( $password );
 
 		if ( is_wp_error( $effective_password ) ) {
-			$this->redirect_with_error( '1', 'quick_export_password_submission_failed', $effective_password );
+			$this->redirect_with_error( '1', 'quick_export_password_submission_failed', $effective_password, [], null, true );
 		}
 
 		if ( str_contains( $title, $effective_password ) ) {
-			$this->redirect_with_error( 'title_contains_password', 'title_contains_password' );
+			$this->redirect_with_error( 'title_contains_password', 'title_contains_password', null, [], null, true );
 		}
 
 		$password_snapshot = $this->passwords->get_snapshot_for_submission( $password );
 
 		if ( is_wp_error( $password_snapshot ) ) {
-			$this->redirect_with_error( '1', 'quick_export_password_snapshot_failed', $password_snapshot );
+			$this->redirect_with_error( '1', 'quick_export_password_snapshot_failed', $password_snapshot, [], null, true );
 		}
 
 		$post_id = $this->repository->create(
@@ -418,9 +457,13 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 				'1',
 				'quick_export_persistence_failed',
 				is_wp_error( $post_id ) ? $post_id : null,
-				[ 'post_id' => is_wp_error( $post_id ) ? 0 : $post_id ]
+				[ 'post_id' => is_wp_error( $post_id ) ? 0 : $post_id ],
+				null,
+				true
 			);
 		}
+
+		$this->delete_quick_export_draft();
 
 		try {
 			$this->repository->mark_queued( $post_id );
@@ -459,6 +502,120 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Gets the current quick export draft when the details step should be rendered.
+	 *
+	 * @return array{title: string, export_adapter: string}|null
+	 */
+	private function get_quick_export_draft_for_render(): ?array {
+		if ( self::QUICK_EXPORT_DETAILS_STEP !== Request::get_key( 'storeaccountant_quick_export_step' ) ) {
+			return null;
+		}
+
+		$draft = $this->get_quick_export_draft();
+
+		if ( null === $draft ) {
+			$this->redirect_to_quick_export_start();
+		}
+
+		return $draft;
+	}
+
+	/**
+	 * Gets the current quick export draft.
+	 *
+	 * @return array{title: string, export_adapter: string}|null
+	 */
+	private function get_quick_export_draft(): ?array {
+		$draft = get_user_meta( get_current_user_id(), self::QUICK_EXPORT_DRAFT_META_KEY, true );
+
+		if ( ! is_array( $draft ) ) {
+			return null;
+		}
+
+		$title          = trim( (string) ( $draft['title'] ?? '' ) );
+		$export_adapter = (string) ( $draft['export_adapter'] ?? '' );
+
+		if ( '' === $title || '' === $export_adapter || null === $this->export_adapters->get( $export_adapter ) ) {
+			$this->delete_quick_export_draft();
+
+			return null;
+		}
+
+		return [
+			'title'          => $title,
+			'export_adapter' => $export_adapter,
+		];
+	}
+
+	/**
+	 * Saves the current user's quick export draft.
+	 */
+	private function save_quick_export_draft( string $title, string $export_adapter ): void {
+		update_user_meta(
+			get_current_user_id(),
+			self::QUICK_EXPORT_DRAFT_META_KEY,
+			[
+				'title'          => $title,
+				'export_adapter' => $export_adapter,
+			]
+		);
+	}
+
+	/**
+	 * Deletes the current user's quick export draft.
+	 */
+	private function delete_quick_export_draft(): void {
+		delete_user_meta( get_current_user_id(), self::QUICK_EXPORT_DRAFT_META_KEY );
+	}
+
+	/**
+	 * Redirects to the first quick export step.
+	 */
+	private function redirect_to_quick_export_start(): void {
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page' => self::PAGE_SLUG,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Redirects to the quick export details step.
+	 */
+	private function redirect_to_quick_export_details(): void {
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page'                              => self::PAGE_SLUG,
+					'storeaccountant_quick_export_step' => self::QUICK_EXPORT_DETAILS_STEP,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Validates an export title shared by quick exports and configuration-based exports.
+	 *
+	 * @param string   $title               Export title.
+	 * @param callable $redirect_with_error Error redirect callback.
+	 */
+	private function validate_export_title( string $title, callable $redirect_with_error ): void {
+		if ( '' === $title ) {
+			$redirect_with_error( 'missing_title', 'missing_title' );
+		}
+
+		if ( $this->repository->exists_with_title( $title ) ) {
+			$redirect_with_error( 'duplicate_title', 'duplicate_title' );
+		}
 	}
 
 	/**
@@ -589,12 +746,16 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	/**
 	 * Redirects back to the form with an error notice.
 	 */
-	private function redirect_with_error( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [], ?Throwable $throwable = null ): void {
+	private function redirect_with_error( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [], ?Throwable $throwable = null, bool $details_step = false ): void {
 		$incident = $this->log_error( 'quick_export', $reason, $wp_error, $context, $throwable );
 		$args     = [
 			'page'                         => self::PAGE_SLUG,
 			'storeaccountant_export_error' => $error,
 		];
+
+		if ( $details_step ) {
+			$args['storeaccountant_quick_export_step'] = self::QUICK_EXPORT_DETAILS_STEP;
+		}
 
 		if ( null !== $incident ) {
 			$args['storeaccountant_diagnostic_support_id'] = $incident->support_id;
