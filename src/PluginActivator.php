@@ -15,10 +15,12 @@ namespace StoreAccountant;
 
 use StoreAccountant as StoreAccountantPlugin;
 use StoreAccountant\Storage\Admin\StorageActivationNotice;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Adapter\LocalStorageAdapter;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use function add_rewrite_rule;
 use function flush_rewrite_rules;
 use function function_exists;
@@ -54,13 +56,27 @@ final readonly class PluginActivator {
 			);
 		}
 
+		$directory     = new ProtectedUploadDirectory();
 		$configuration = LocalStorageConfiguration::from_wordpress_uploads();
-		$result        = is_wp_error( $configuration ) ? $configuration : ( new LocalStorageAdapter( $configuration ) )->ensure();
+		$result        = is_wp_error( $configuration ) ? $configuration : ( new LocalStorageAdapter( $configuration, $directory ) )->ensure();
 
 		if ( is_wp_error( $result ) ) {
 			set_transient(
 				StorageActivationNotice::TRANSIENT_NAME,
 				__( 'StoreAccountant was activated, but the local storage location could not be prepared. Please check the upload directory permissions.', 'storeaccountant' ),
+				60
+			);
+		}
+
+		$diagnostic_configuration = DiagnosticLogConfiguration::from_wordpress_uploads();
+		$diagnostic_result        = is_wp_error( $diagnostic_configuration )
+			? $diagnostic_configuration
+			: $directory->ensure( $diagnostic_configuration->root_path, $diagnostic_configuration->display_root_path );
+
+		if ( is_wp_error( $diagnostic_result ) ) {
+			set_transient(
+				StorageActivationNotice::TRANSIENT_NAME,
+				__( 'StoreAccountant was activated, but the diagnostic log directory could not be prepared. Please check the upload directory permissions.', 'storeaccountant' ),
 				60
 			);
 		}

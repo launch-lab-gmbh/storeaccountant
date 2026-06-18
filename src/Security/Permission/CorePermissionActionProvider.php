@@ -74,6 +74,20 @@ final readonly class CorePermissionActionProvider implements HookRegistrarInterf
 				__( 'Allows revealing stored export download passwords in the backend.', 'storeaccountant' )
 			),
 			new PermissionAction(
+				PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE,
+				__( 'Manage diagnostic logging', 'storeaccountant' ),
+				__( 'Administration', 'storeaccountant' ),
+				StoreAccountantCapabilities::MANAGE_DIAGNOSTICS,
+				__( 'Allows enabling or disabling StoreAccountant diagnostic logging.', 'storeaccountant' )
+			),
+			new PermissionAction(
+				PermissionActionIds::DIAGNOSTIC_PACKAGE_DOWNLOAD,
+				__( 'Download diagnostic packages', 'storeaccountant' ),
+				__( 'Administration', 'storeaccountant' ),
+				StoreAccountantCapabilities::DOWNLOAD_DIAGNOSTICS,
+				__( 'Allows downloading diagnostic packages created after StoreAccountant errors.', 'storeaccountant' )
+			),
+			new PermissionAction(
 				PermissionActionIds::MANAGE_PERMISSIONS,
 				__( 'Manage permissions', 'storeaccountant' ),
 				__( 'Administration', 'storeaccountant' ),

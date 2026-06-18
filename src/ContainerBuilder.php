@@ -37,6 +37,12 @@ use StoreAccountant\Admin\AccountingMenu;
 use StoreAccountant\Customer\Admin\CustomerCountryFilterFieldProvider;
 use StoreAccountant\Customer\Admin\CustomerDateFilterFieldProvider;
 use StoreAccountant\Customer\Admin\CustomerFieldMappingTabProvider;
+use StoreAccountant\Diagnostic\Admin\DiagnosticIncidentDownloadController;
+use StoreAccountant\Diagnostic\Admin\DiagnosticSettingsTabProvider;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPage;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPageForm;
 use StoreAccountant\Export\Admin\ExportDetailsReadTabProvider;
@@ -154,6 +160,7 @@ use StoreAccountant\Queue\Transport\SyncTransportProvider;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Adapter\LocalStorageAdapter;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -223,6 +230,8 @@ final readonly class ContainerBuilder {
 		ExportPostType::class,
 		ExportConfigurationPostType::class,
 		StorageActivationNotice::class,
+		DiagnosticSettingsTabProvider::class,
+		DiagnosticIncidentDownloadController::class,
 		PluginSettingsPage::class,
 		AccountingExportPage::class,
 		ExportConfigurationPage::class,
@@ -343,6 +352,26 @@ final readonly class ContainerBuilder {
 		$container->addShared( ExportReadTabProviderRegistry::class );
 		$container->addShared( ExportConfigurationTabProviderRegistry::class );
 		$container->addShared( PluginSettingsTabProviderRegistry::class );
+		$container->addShared( DiagnosticSettings::class );
+		$container->addShared( ProtectedUploadDirectory::class );
+		$container->addShared(
+			DiagnosticLogConfiguration::class,
+			static function (): DiagnosticLogConfiguration {
+				$configuration = DiagnosticLogConfiguration::from_wordpress_uploads();
+
+				if ( is_wp_error( $configuration ) ) {
+					return new DiagnosticLogConfiguration( '', 'wp-content/uploads/' . DiagnosticLogConfiguration::RELATIVE_PATH );
+				}
+
+				return $configuration;
+			}
+		);
+		$container->addShared( DiagnosticIncidentRepository::class )
+			->addArgument( DiagnosticLogConfiguration::class )
+			->addArgument( ProtectedUploadDirectory::class );
+		$container->addShared( DiagnosticIncidentLogger::class )
+			->addArgument( DiagnosticSettings::class )
+			->addArgument( DiagnosticIncidentRepository::class );
 		$container->addShared( FieldProviderRegistry::class );
 		$container->addShared( FieldValueProviderRegistry::class );
 		$container->addShared( ExportAttachmentProviderRegistry::class );
@@ -479,20 +508,30 @@ final readonly class ContainerBuilder {
 			->addArgument( OrderQuery::class )
 			->addArgument( ExportFilterSelectionSerializer::class )
 			->addArgument( ExportFilterSnapshotter::class )
-			->addArgument( PermissionChecker::class );
+			->addArgument( PermissionChecker::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 		$container->addShared( CustomerFieldMappingTabProvider::class )
 			->addArgument( ExportFieldResolver::class )
 			->addArgument( FieldMappingRepository::class )
 			->addArgument( CustomerQuery::class )
 			->addArgument( ExportFilterSelectionSerializer::class )
 			->addArgument( ExportFilterSnapshotter::class )
-			->addArgument( PermissionChecker::class );
+			->addArgument( PermissionChecker::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 		$container->addShared( CsvExportRenderer::class );
 		$container->addShared( SerializerExportRendererRegistrar::class )
 			->addArgument( DefaultExportTemplateNormalizer::class )
 			->addArgument( SerializerInterface::class );
 		$container->addShared( LocalStorageAdapter::class )
-			->addArgument( LocalStorageConfiguration::class );
+			->addArgument( LocalStorageConfiguration::class )
+			->addArgument( ProtectedUploadDirectory::class );
+		$container->addShared( DiagnosticSettingsTabProvider::class )
+			->addArgument( DiagnosticSettings::class )
+			->addArgument( PermissionChecker::class )
+			->addArgument( DiagnosticIncidentRepository::class );
+		$container->addShared( DiagnosticIncidentDownloadController::class )
+			->addArgument( DiagnosticIncidentRepository::class )
+			->addArgument( PermissionChecker::class );
 		$container->addShared( AccountingHeaderBar::class )
 			->addArgument( PermissionChecker::class );
 		$container->addShared( AccountingExportPageForm::class )
@@ -574,7 +613,8 @@ final readonly class ContainerBuilder {
 			->addArgument( MessageBusInterface::class )
 			->addArgument( QueueLoopbackDispatcher::class )
 			->addArgument( ExportListPollingResponseFactory::class )
-			->addArgument( ExportDownloadUrlFactory::class );
+			->addArgument( ExportDownloadUrlFactory::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 		$container->addShared( ExportDownloadController::class )
 			->addArgument( StorageAdapterRegistry::class )
 			->addArgument( DownloadPasswordManager::class )
@@ -611,7 +651,8 @@ final readonly class ContainerBuilder {
 			->addArgument( AccountingHeaderBar::class )
 			->addArgument( PermissionChecker::class )
 			->addArgument( QueueLoopbackDispatcher::class )
-			->addArgument( DownloadPasswordManager::class );
+			->addArgument( DownloadPasswordManager::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 		$container->addShared( ExportConfigurationPage::class )
 			->addArgument( ExportConfigurationPageForm::class )
 			->addArgument( ExportConfigurationRepository::class )
@@ -624,6 +665,7 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportConfigurationTabProviderRegistry::class )
 			->addArgument( OrderTaxFieldProviderField::class )
 			->addArgument( PermissionChecker::class )
-			->addArgument( DownloadPasswordManager::class );
+			->addArgument( DownloadPasswordManager::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 	}
 }

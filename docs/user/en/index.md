@@ -27,7 +27,12 @@ Key features include:
 * Fully configurable export columns
 * Value transformations through mutators
 * Password-protected downloads
+* Diagnostic packages for support cases
 * Extensible architecture for custom requirements
 
 This documentation will guide you through the installation, configuration, and usage of StoreAccountant, helping you
 create export workflows tailored to your business needs.
+
+## Further Reading
+
+* [Diagnostic Packages](Diagnostic.md)

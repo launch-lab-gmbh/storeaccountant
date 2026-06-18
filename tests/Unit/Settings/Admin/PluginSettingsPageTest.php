@@ -66,6 +66,7 @@ final class PluginSettingsPageTest extends TestCase {
 				echo $text;
 			}
 		);
+		Functions\when( 'sanitize_text_field' )->alias( static fn ( string $text ): string => strip_tags( $text ) );
 		Functions\when( 'sanitize_key' )->alias(
 			static fn ( string $key ): string => strtolower( preg_replace( '/[^a-zA-Z0-9_\\-]/', '', $key ) ?? '' )
 		);

@@ -98,6 +98,7 @@ StoreAccountant
 - [Events](docs/developer/events.md)
 - [Extension Points, Free/Premium, and Hooks](docs/developer/extension-points.md)
 - [Development Notes for Agents](docs/developer/development-notes.md)
+- [Diagnostic Logging](docs/developer/diagnostic.md)
 - [Export Download Protection](docs/developer/export-download-protection.md)
 
 ## Translations

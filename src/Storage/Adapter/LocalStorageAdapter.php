@@ -24,15 +24,13 @@ use League\Flysystem\FilesystemOperator;
 use League\Flysystem\ZipArchive\FilesystemZipArchiveProvider;
 use League\Flysystem\ZipArchive\ZipArchiveAdapter;
 use StoreAccountant\Contract\HookRegistrarInterface;
-use StoreAccountant\Contract\WordPress\WordPressFilesystem;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\Contract\StorageAdapterInterface;
 use StoreAccountant\Storage\StorageFile;
 use StoreAccountant\Storage\StorageFileConfiguration;
-use function array_diff;
 use function basename;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Stream resources are required by Flysystem.
 use function fclose;
-use function file_exists;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Stream resources are required by Flysystem.
 use function fopen;
 use function esc_html;
@@ -42,12 +40,9 @@ use function is_file;
 use function is_int;
 use function is_resource;
 use function is_string;
-use function scandir;
-use function sprintf;
 use function strpos;
 use function substr;
 use function wp_delete_file;
-use function wp_is_writable;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -59,14 +54,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class LocalStorageAdapter implements StorageAdapterInterface, FilesystemAdapter, HookRegistrarInterface {
 	public const ENGINE_ID = 'local';
 
-	private const HTACCESS_FILE = '.htaccess';
-
-	private const HTACCESS_CONTENT = 'deny from all';
-
-	private const INDEX_FILE = 'index.html';
-
 	public function __construct(
-		private LocalStorageConfiguration $configuration
+		private LocalStorageConfiguration $configuration,
+		private ProtectedUploadDirectory $directory = new ProtectedUploadDirectory()
 	) {}
 
 	/**
@@ -502,31 +492,7 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 			return $path;
 		}
 
-		$this->load_file_helpers();
-
-		if ( ! is_dir( $path ) && ! wp_mkdir_p( $path ) ) {
-			return new WP_Error(
-				'storeaccountant_storage_root_not_created',
-				sprintf(
-					/* translators: %s: storage directory path */
-					__( 'StoreAccountant could not create the local storage directory at %s.', 'storeaccountant' ),
-					$this->configuration->display_root_path
-				)
-			);
-		}
-
-		if ( ! wp_is_writable( $path ) ) {
-			return new WP_Error(
-				'storeaccountant_storage_root_not_writable',
-				sprintf(
-					/* translators: %s: storage directory path */
-					__( 'StoreAccountant local storage directory exists but is not writable: %s.', 'storeaccountant' ),
-					$this->configuration->display_root_path
-				)
-			);
-		}
-
-		return $this->ensure_protection_files( $path );
+		return $this->directory->ensure( $path, $this->configuration->display_root_path );
 	}
 
 	/**
@@ -535,12 +501,11 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 	public function delete_if_empty(): void {
 		$path = $this->configuration->get_root_path();
 
-		if ( is_wp_error( $path ) || ! is_dir( $path ) || ! $this->contains_only_managed_files( $path ) ) {
+		if ( is_wp_error( $path ) || ! is_dir( $path ) ) {
 			return;
 		}
 
-		$this->delete_managed_files( $path );
-		$this->delete_local_directory( $path );
+		$this->directory->delete_if_empty( $path );
 	}
 
 	/**
@@ -585,72 +550,6 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 	}
 
 	/**
-	 * Ensures files that prevent public directory browsing exist.
-	 *
-	 * @param string $path Directory path.
-	 *
-	 * @return true|WP_Error
-	 */
-	private function ensure_protection_files( string $path ): true|WP_Error {
-		$index_path    = trailingslashit( $path ) . self::INDEX_FILE;
-		$htaccess_path = trailingslashit( $path ) . self::HTACCESS_FILE;
-
-		if ( ! file_exists( $index_path ) && ! WordPressFilesystem::put_contents( $index_path, '' ) ) {
-			return new WP_Error(
-				'storeaccountant_index_file_not_created',
-				sprintf(
-					/* translators: %s: storage directory path */
-					__( 'StoreAccountant could not create the index file in %s.', 'storeaccountant' ),
-					$this->configuration->display_root_path
-				)
-			);
-		}
-
-		if ( ! file_exists( $htaccess_path ) && ! WordPressFilesystem::put_contents( $htaccess_path, self::HTACCESS_CONTENT ) ) {
-			return new WP_Error(
-				'storeaccountant_htaccess_file_not_created',
-				sprintf(
-					/* translators: %s: storage directory path */
-					__( 'StoreAccountant could not create the access protection file in %s.', 'storeaccountant' ),
-					$this->configuration->display_root_path
-				)
-			);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Checks whether a directory contains only files managed by this adapter.
-	 *
-	 * @param string $path Directory path.
-	 */
-	private function contains_only_managed_files( string $path ): bool {
-		$items = scandir( $path );
-
-		if ( false === $items ) {
-			return false;
-		}
-
-		return [] === array_diff( $items, [ '.', '..', self::INDEX_FILE, self::HTACCESS_FILE ] );
-	}
-
-	/**
-	 * Deletes files managed by this adapter.
-	 *
-	 * @param string $path Directory path.
-	 */
-	private function delete_managed_files( string $path ): void {
-		foreach ( [ self::INDEX_FILE, self::HTACCESS_FILE ] as $file ) {
-			$file_path = trailingslashit( $path ) . $file;
-
-			if ( is_file( $file_path ) ) {
-				$this->delete_local_file( $file_path );
-			}
-		}
-	}
-
-	/**
 	 * Opens a read stream for APIs that require PHP resources.
 	 *
 	 * @param string $path File path.
@@ -686,15 +585,6 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 	private function delete_local_file( string $path ): void {
 		$this->load_file_helpers();
 		wp_delete_file( $path );
-	}
-
-	/**
-	 * Deletes an empty local directory through WP_Filesystem.
-	 *
-	 * @param string $path Directory path.
-	 */
-	private function delete_local_directory( string $path ): void {
-		WordPressFilesystem::rmdir( $path );
 	}
 
 	/**

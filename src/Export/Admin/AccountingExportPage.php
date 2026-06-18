@@ -18,6 +18,9 @@ use WP_Error;
 use Symfony\Component\Messenger\MessageBusInterface;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Diagnostic\Admin\DiagnosticIncidentDownloadController;
+use StoreAccountant\Diagnostic\DiagnosticIncident;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\ExportAdapterRegistry;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
@@ -73,6 +76,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	 * @param PermissionChecker                 $permissions            Permission checker.
 	 * @param QueueLoopbackDispatcher           $loopback_dispatcher    Queue loopback dispatcher.
 	 * @param DownloadPasswordManager           $passwords              Download password manager.
+	 * @param DiagnosticIncidentLogger          $diagnostics            Diagnostic incident logger.
 	 */
 	public function __construct(
 		private AccountingExportPageForm $form,
@@ -87,7 +91,8 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		private AccountingHeaderBar $header_bar,
 		private PermissionChecker $permissions,
 		private QueueLoopbackDispatcher $loopback_dispatcher,
-		private DownloadPasswordManager $passwords
+		private DownloadPasswordManager $passwords,
+		private DiagnosticIncidentLogger $diagnostics
 	) {}
 
 	/**
@@ -158,7 +163,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			$this->handle_quick_export();
 		}
 
-		$this->redirect_with_error();
+		$this->redirect_with_error( '1', 'non_quick_export_submission' );
 	}
 
 	/**
@@ -186,28 +191,28 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		}
 
 		if ( ! str_starts_with( $selection, 'configuration:' ) ) {
-			$this->redirect_overview_with_error();
+			$this->redirect_overview_with_error( '1', 'invalid_overview_selection' );
 		}
 
 		$configuration_id = absint( substr( $selection, 14 ) );
 		$title            = trim( Request::post_text( 'storeaccountant_export_title' ) );
 
 		if ( '' === $title ) {
-			$this->redirect_overview_with_error( 'missing_title' );
+			$this->redirect_overview_with_error( 'missing_title', 'missing_title' );
 		}
 
 		if ( $this->repository->exists_with_title( $title ) ) {
-			$this->redirect_overview_with_error( 'duplicate_title' );
+			$this->redirect_overview_with_error( 'duplicate_title', 'duplicate_title' );
 		}
 
 		$password = $this->passwords->reveal_configuration_password( $configuration_id );
 
 		if ( is_wp_error( $password ) ) {
-			$this->redirect_overview_with_error();
+			$this->redirect_overview_with_error( '1', 'configuration_password_reveal_failed', $password, [ 'configuration_id' => $configuration_id ] );
 		}
 
 		if ( str_contains( $title, $password ) ) {
-			$this->redirect_overview_with_error( 'title_contains_password' );
+			$this->redirect_overview_with_error( 'title_contains_password', 'title_contains_password', null, [ 'configuration_id' => $configuration_id ] );
 		}
 
 		$this->handle_configuration_export( $configuration_id, $title );
@@ -223,7 +228,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		$configuration = get_post( $configuration_id );
 
 		if ( ! $configuration || ExportConfigurationPostType::POST_TYPE !== $configuration->post_type || 'publish' !== $configuration->post_status ) {
-			$this->redirect_overview_with_error();
+			$this->redirect_overview_with_error( '1', 'invalid_or_unpublished_configuration', null, [ 'configuration_id' => $configuration_id ] );
 		}
 
 		$filters            = $this->filter_serializer->decode( (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_FILTERS, true ) );
@@ -239,14 +244,31 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		$filters = $this->filter_snapshotter->snapshot( $filters );
 
 		if ( is_wp_error( $filters ) || ! $this->storage_adapters->is_enabled( $storage_engine ) ) {
-			$this->redirect_overview_with_error();
+			$this->redirect_overview_with_error(
+				'1',
+				is_wp_error( $filters ) ? 'configuration_filters_invalid' : 'configuration_storage_adapter_not_enabled',
+				is_wp_error( $filters ) ? $filters : null,
+				[
+					'configuration_id' => $configuration_id,
+					'storage_engine'   => $storage_engine,
+				]
+			);
 		}
 
 		$export_adapter_instance = $this->export_adapters->get( $export_adapter );
 		$export_writer_instance  = $this->export_writers->get( $export_writer );
 
 		if ( null === $export_adapter_instance || null === $export_writer_instance ) {
-			$this->redirect_overview_with_error();
+			$this->redirect_overview_with_error(
+				'1',
+				'configuration_export_adapter_or_writer_missing',
+				null,
+				[
+					'configuration_id' => $configuration_id,
+					'export_adapter'   => $export_adapter,
+					'export_writer'    => $export_writer,
+				]
+			);
 		}
 
 			$post_id = $this->repository->create(
@@ -261,7 +283,15 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			);
 
 		if ( is_wp_error( $post_id ) || $post_id <= 0 ) {
-			$this->redirect_overview_with_error();
+			$this->redirect_overview_with_error(
+				'1',
+				'configuration_export_persistence_failed',
+				is_wp_error( $post_id ) ? $post_id : null,
+				[
+					'configuration_id' => $configuration_id,
+					'post_id'          => is_wp_error( $post_id ) ? 0 : $post_id,
+				]
+			);
 		}
 
 		try {
@@ -289,7 +319,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 					'log_message' => 'The accounting export could not be queued.',
 				]
 			);
-			$this->redirect_overview_with_error();
+			$this->redirect_overview_with_error( '1', 'configuration_export_queue_failed', null, [ 'export_id' => $post_id ], $exception );
 		}
 
 		wp_safe_redirect(
@@ -320,42 +350,55 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		$filters        = $this->get_filter_selections_from_request( $export_adapter, $request );
 
 		if ( is_wp_error( $batch_size ) ) {
-			$this->redirect_with_error( 'invalid_batch_size' );
+			$this->redirect_with_error( 'invalid_batch_size', 'invalid_batch_size', $batch_size );
 		}
 
 		if ( is_wp_error( $filters ) || ! $this->storage_adapters->is_enabled( $storage_engine ) ) {
-			$this->redirect_with_error();
+			$this->redirect_with_error(
+				'1',
+				is_wp_error( $filters ) ? 'quick_export_filters_invalid' : 'quick_export_storage_adapter_not_enabled',
+				is_wp_error( $filters ) ? $filters : null,
+				[ 'storage_engine' => $storage_engine ]
+			);
 		}
 
 		$export_adapter_instance = $this->export_adapters->get( $export_adapter );
 		$export_writer_instance  = $this->export_writers->get( $export_writer );
 
 		if ( null === $export_adapter_instance || null === $export_writer_instance ) {
-			$this->redirect_with_error();
+			$this->redirect_with_error(
+				'1',
+				'quick_export_adapter_or_writer_missing',
+				null,
+				[
+					'export_adapter' => $export_adapter,
+					'export_writer'  => $export_writer,
+				]
+			);
 		}
 
 		if ( '' === $title ) {
-			$this->redirect_with_error( 'missing_title' );
+			$this->redirect_with_error( 'missing_title', 'missing_title' );
 		}
 
 		if ( $this->repository->exists_with_title( $title ) ) {
-			$this->redirect_with_error( 'duplicate_title' );
+			$this->redirect_with_error( 'duplicate_title', 'duplicate_title' );
 		}
 
 		$effective_password = $this->passwords->get_password_for_submission( $password );
 
 		if ( is_wp_error( $effective_password ) ) {
-			$this->redirect_with_error();
+			$this->redirect_with_error( '1', 'quick_export_password_submission_failed', $effective_password );
 		}
 
 		if ( str_contains( $title, $effective_password ) ) {
-			$this->redirect_with_error( 'title_contains_password' );
+			$this->redirect_with_error( 'title_contains_password', 'title_contains_password' );
 		}
 
 		$password_snapshot = $this->passwords->get_snapshot_for_submission( $password );
 
 		if ( is_wp_error( $password_snapshot ) ) {
-			$this->redirect_with_error();
+			$this->redirect_with_error( '1', 'quick_export_password_snapshot_failed', $password_snapshot );
 		}
 
 		$post_id = $this->repository->create(
@@ -371,7 +414,12 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		);
 
 		if ( is_wp_error( $post_id ) || $post_id <= 0 ) {
-			$this->redirect_with_error();
+			$this->redirect_with_error(
+				'1',
+				'quick_export_persistence_failed',
+				is_wp_error( $post_id ) ? $post_id : null,
+				[ 'post_id' => is_wp_error( $post_id ) ? 0 : $post_id ]
+			);
 		}
 
 		try {
@@ -398,7 +446,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 					'log_message' => 'The accounting export could not be queued.',
 				]
 			);
-			$this->redirect_with_error();
+			$this->redirect_with_error( '1', 'quick_export_queue_failed', null, [ 'export_id' => $post_id ], $exception );
 		}
 
 		wp_safe_redirect(
@@ -513,6 +561,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			?>
 			<div class="notice notice-error is-dismissible">
 				<p><?php echo esc_html( $message ); ?></p>
+				<?php $this->render_diagnostic_notice(); ?>
 			</div>
 			<?php
 		}
@@ -540,13 +589,20 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	/**
 	 * Redirects back to the form with an error notice.
 	 */
-	private function redirect_with_error( string $error = '1' ): void {
+	private function redirect_with_error( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [], ?Throwable $throwable = null ): void {
+		$incident = $this->log_error( 'quick_export', $reason, $wp_error, $context, $throwable );
+		$args     = [
+			'page'                         => self::PAGE_SLUG,
+			'storeaccountant_export_error' => $error,
+		];
+
+		if ( null !== $incident ) {
+			$args['storeaccountant_diagnostic_support_id'] = $incident->support_id;
+		}
+
 			wp_safe_redirect(
 				add_query_arg(
-					[
-						'page'                         => self::PAGE_SLUG,
-						'storeaccountant_export_error' => $error,
-					],
+					$args,
 					admin_url( 'admin.php' )
 				)
 			);
@@ -556,17 +612,89 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	/**
 	 * Redirects back to the export overview with an error notice.
 	 */
-	private function redirect_overview_with_error( string $error = '1' ): void {
+	private function redirect_overview_with_error( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [], ?Throwable $throwable = null ): void {
+		$incident = $this->log_error( 'configuration_export', $reason, $wp_error, $context, $throwable );
+		$args     = [
+			'post_type'                    => ExportPostType::POST_TYPE,
+			'storeaccountant_export_error' => $error,
+		];
+
+		if ( null !== $incident ) {
+			$args['storeaccountant_diagnostic_support_id'] = $incident->support_id;
+		}
+
 		wp_safe_redirect(
 			add_query_arg(
-				[
-					'post_type'                    => ExportPostType::POST_TYPE,
-					'storeaccountant_export_error' => $error,
-				],
+				$args,
 				admin_url( 'edit.php' )
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Renders the diagnostic package hint when an incident was logged.
+	 */
+	private function render_diagnostic_notice(): void {
+		$support_id = Request::get_key( 'storeaccountant_diagnostic_support_id' );
+
+		if ( '' === $support_id || ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_PACKAGE_DOWNLOAD ) ) {
+			return;
+		}
+		?>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %s: diagnostic support ID */
+					__( 'StoreAccountant logged this error with support ID %s.', 'storeaccountant' ),
+					$support_id
+				)
+			);
+			?>
+			<a href="<?php echo esc_url( $this->get_diagnostic_download_url( $support_id ) ); ?>">
+				<?php esc_html_e( 'Download diagnostic package', 'storeaccountant' ); ?>
+			</a>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Logs a diagnostic incident for export creation failures.
+	 *
+	 * @param string               $source    Incident source.
+	 * @param string               $reason    Internal failure reason.
+	 * @param WP_Error|null        $wp_error  Optional WordPress error.
+	 * @param array<string, mixed> $context   Additional safe diagnostic context.
+	 * @param Throwable|null       $throwable Optional throwable.
+	 */
+	private function log_error( string $source, string $reason, ?WP_Error $wp_error = null, array $context = [], ?Throwable $throwable = null ): ?DiagnosticIncident {
+		return $this->diagnostics->error(
+			$source,
+			__( 'The accounting export could not be saved.', 'storeaccountant' ),
+			[
+				'reason'  => $reason,
+				'context' => $context,
+			],
+			$wp_error,
+			$throwable
+		);
+	}
+
+	/**
+	 * Gets the authorized diagnostic package download URL.
+	 */
+	private function get_diagnostic_download_url( string $support_id ): string {
+		return wp_nonce_url(
+			add_query_arg(
+				[
+					'action'     => DiagnosticIncidentDownloadController::ACTION,
+					'support_id' => $support_id,
+				],
+				admin_url( 'admin-post.php' )
+			),
+			DiagnosticIncidentDownloadController::ACTION
+		);
 	}
 
 	/**

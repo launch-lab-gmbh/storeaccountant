@@ -19,6 +19,10 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPage;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPageForm;
 use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
@@ -38,6 +42,7 @@ use StoreAccountant\Security\Permission\PermissionActionRegistry;
 use StoreAccountant\Security\Permission\PermissionChecker;
 use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Security\ReversibleCrypto;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\Contract\StorageAdapterInterface;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use StoreAccountant\Tax\Admin\OrderTaxFieldProviderField;
@@ -165,7 +170,14 @@ final class ExportConfigurationPageTest extends TestCase {
 			new ExportConfigurationTabProviderRegistry(),
 			$tax_field,
 			$permissions,
-			$passwords
+			$passwords,
+			new DiagnosticIncidentLogger(
+				new DiagnosticSettings(),
+				new DiagnosticIncidentRepository(
+					new DiagnosticLogConfiguration( '', 'wp-content/uploads/storeaccountant/logging' ),
+					new ProtectedUploadDirectory()
+				)
+			)
 		);
 	}
 

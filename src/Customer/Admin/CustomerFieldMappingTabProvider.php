@@ -13,9 +13,12 @@ declare(strict_types=1);
 
 namespace StoreAccountant\Customer\Admin;
 
+use Throwable;
 use WP_Post;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Contract\WordPress\Request;
+use StoreAccountant\Diagnostic\DiagnosticIncident;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Customer\Export\Adapter\CustomerExportAdapter;
 use StoreAccountant\Customer\Export\Query\CustomerQuery;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
@@ -60,6 +63,7 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 	 * @param ExportFilterSelectionSerializer $filter_serializer  Filter selection serializer.
 	 * @param ExportFilterSnapshotter         $filter_snapshotter Filter snapshotter.
 	 * @param PermissionChecker               $permissions        Permission checker.
+	 * @param DiagnosticIncidentLogger        $diagnostics        Diagnostic incident logger.
 	 */
 	public function __construct(
 		private ExportFieldResolver $field_resolver,
@@ -67,7 +71,8 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 		private CustomerQuery $customer_query,
 		private ExportFilterSelectionSerializer $filter_serializer,
 		private ExportFilterSnapshotter $filter_snapshotter,
-		private PermissionChecker $permissions
+		private PermissionChecker $permissions,
+		private DiagnosticIncidentLogger $diagnostics
 	) {}
 
 	/**
@@ -221,13 +226,19 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 		$configuration    = $configuration_id > 0 ? get_post( $configuration_id ) : null;
 
 		if ( ! $configuration || ExportConfigurationPostType::POST_TYPE !== $configuration->post_type || ! $this->permissions->can( PermissionActionIds::CONFIGURATION_EDIT_FIELD_MAPPING, $configuration_id ) || ! $this->supports( $configuration ) ) {
-			$this->redirect_with_error( $configuration_id );
+			$incident = $this->log_save_error( 'invalid_or_unauthorized_configuration', $configuration_id );
+			$this->redirect_with_error( $configuration_id, $incident );
 		}
 
-		$fields  = $this->field_resolver->get_fields( $this->get_context( $configuration_id ) );
-		$mapping = $this->mapping->sanitize_from_request( $request, $fields );
+		try {
+			$fields  = $this->field_resolver->get_fields( $this->get_context( $configuration_id ) );
+			$mapping = $this->mapping->sanitize_from_request( $request, $fields );
 
-		$this->mapping->save( $configuration_id, $mapping );
+			$this->mapping->save( $configuration_id, $mapping );
+		} catch ( Throwable $exception ) {
+			$incident = $this->log_save_error( 'field_mapping_persistence_failed', $configuration_id, $exception );
+			$this->redirect_with_error( $configuration_id, $incident );
+		}
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -247,20 +258,43 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 	 * Redirects back to the field mapping tab with an error notice.
 	 *
 	 * @param int $configuration_id Export configuration post ID.
+	 * @param DiagnosticIncident|null $incident Optional diagnostic incident.
 	 */
-	private function redirect_with_error( int $configuration_id ): void {
+	private function redirect_with_error( int $configuration_id, ?DiagnosticIncident $incident = null ): void {
+		$args = [
+			'page'                                => 'storeaccountant-export-configuration',
+			'configuration_id'                    => (string) $configuration_id,
+			'tab'                                 => self::TAB_ID,
+			'storeaccountant_field_mapping_error' => '1',
+		];
+
+		if ( null !== $incident ) {
+			$args['storeaccountant_diagnostic_support_id'] = $incident->support_id;
+		}
+
 		wp_safe_redirect(
 			add_query_arg(
-				[
-					'page'                                => 'storeaccountant-export-configuration',
-					'configuration_id'                    => (string) $configuration_id,
-					'tab'                                 => self::TAB_ID,
-					'storeaccountant_field_mapping_error' => '1',
-				],
+				$args,
 				admin_url( 'admin.php' )
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Logs a diagnostic incident for customer field mapping save failures.
+	 */
+	private function log_save_error( string $reason, int $configuration_id, ?Throwable $throwable = null ): ?DiagnosticIncident {
+		return $this->diagnostics->error(
+			'customer_field_mapping',
+			__( 'The field mapping could not be saved.', 'storeaccountant' ),
+			[
+				'reason'           => $reason,
+				'configuration_id' => $configuration_id,
+			],
+			null,
+			$throwable
+		);
 	}
 
 	/**
