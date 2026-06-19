@@ -2,6 +2,11 @@ name: Reusable Lint
 
 on:
   workflow_call:
+    inputs:
+      artifact_name:
+        required: false
+        type: string
+        default: vendor-php82
 
 jobs:
   lint:
@@ -9,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup PHP 8.2
         uses: shivammathur/setup-php@v2
@@ -20,9 +25,9 @@ jobs:
           coverage: none
 
       - name: Download vendor
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
-          name: vendor-php82
+          name: ${{ inputs.artifact_name }}
           path: vendor
 
       - name: Verify vendor exists

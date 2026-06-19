@@ -23,6 +23,8 @@ storeaccountant_export_order_tax_field_provider
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_order_tax_field_provider',
 	static function ( array $providers ): array {

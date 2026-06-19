@@ -76,6 +76,8 @@ and do not emit stale invoice columns.
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_invoice_plugin',
 	static function ( array $plugins ) use ( $invoice_plugin ): array {

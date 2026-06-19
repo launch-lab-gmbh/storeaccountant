@@ -27,6 +27,8 @@ final class StoreAccountantCapabilitiesTest extends TestCase {
 				'ACCESS_ADMIN'            => 'storeaccountant_access_admin',
 				'MANAGE_SETTINGS'         => 'storeaccountant_manage_settings',
 				'VIEW_DOWNLOAD_PASSWORDS' => 'storeaccountant_view_download_passwords',
+				'MANAGE_DIAGNOSTICS'      => 'storeaccountant_manage_diagnostics',
+				'DOWNLOAD_DIAGNOSTICS'    => 'storeaccountant_download_diagnostics',
 				'MANAGE_PERMISSIONS'      => 'storeaccountant_manage_permissions',
 				'READ_EXPORTS'            => 'storeaccountant_read_exports',
 				'CREATE_EXPORTS'          => 'storeaccountant_create_exports',

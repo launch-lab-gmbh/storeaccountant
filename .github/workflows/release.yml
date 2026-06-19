@@ -9,21 +9,295 @@ permissions:
   contents: write
 
 jobs:
-  install:
+
+  ################################
+  # Validate version constraints #
+  ################################
+
+  validate-version:
+    name: Validate release version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v6
+
+      - name: Validate plugin versions against Git tag
+        shell: bash
+        run: |
+          set -u -o pipefail
+
+          EXPECTED_VERSION="${GITHUB_REF_NAME}"
+
+          errors=()
+
+          add_error() {
+            local message="$1"
+            errors+=("$message")
+            echo "::error::$message"
+          }
+
+          check_equals() {
+            local label="$1"
+            local actual="$2"
+
+            if [[ -z "$actual" ]]; then
+              add_error "$label was not found. Expected: $EXPECTED_VERSION"
+            elif [[ "$actual" != "$EXPECTED_VERSION" ]]; then
+              add_error "$label is '$actual', expected '$EXPECTED_VERSION'"
+            else
+              echo "OK: $label = $actual"
+            fi
+          }
+
+          echo "Validating plugin versions against Git tag: $EXPECTED_VERSION"
+
+          #
+          # 1. readme.txt - Stable tag
+          #
+          if [[ ! -f "readme.txt" ]]; then
+            add_error "readme.txt was not found."
+          else
+            README_STABLE_TAG="$(
+              grep -m1 -E '^[[:space:]]*Stable tag:[[:space:]]*' readme.txt \
+                | sed -E 's/^[[:space:]]*Stable tag:[[:space:]]*//; s/[[:space:]]+$//' \
+                || true
+            )"
+
+            check_equals "readme.txt Stable tag" "$README_STABLE_TAG"
+          fi
+
+          #
+          # 2. storeaccountant.php - WordPress plugin header version
+          #
+          if [[ ! -f "storeaccountant.php" ]]; then
+            add_error "storeaccountant.php was not found."
+          else
+            PLUGIN_HEADER_VERSION="$(
+              grep -m1 -E '^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*' storeaccountant.php \
+                | sed -E 's/^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*//; s/[[:space:]]+$//' \
+                || true
+            )"
+
+            check_equals "storeaccountant.php plugin header Version" "$PLUGIN_HEADER_VERSION"
+
+            #
+            # 2.1 storeaccountant.php - public const PLUGIN_VERSION
+            #
+            PLUGIN_CONST_VERSION="$(
+              sed -nE "s/^[[:space:]]*public[[:space:]]+const[[:space:]]+PLUGIN_VERSION[[:space:]]*=[[:space:]]*['\"]([^'\"]+)['\"][[:space:]]*;.*/\1/p" storeaccountant.php \
+                | head -n1 \
+                || true
+            )"
+
+            check_equals "storeaccountant.php public const PLUGIN_VERSION" "$PLUGIN_CONST_VERSION"
+          fi
+          
+          # Fail at the end with a collected error summary          
+          if (( ${#errors[@]} > 0 )); then
+            {
+              echo "## Release version validation failed"
+              echo ""
+              echo "Expected version from Git tag: \`$EXPECTED_VERSION\`"
+              echo ""
+              echo "### Errors"
+              for error in "${errors[@]}"; do
+                echo "- $error"
+              done
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            echo ""
+            echo "Release version validation failed:"
+            for error in "${errors[@]}"; do
+              echo "- $error"
+            done
+
+            exit 1
+          fi
+
+          {
+            echo "## Release version validation passed :rocket:"
+            echo ""
+            echo "All checked versions match: \`$EXPECTED_VERSION\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "Release version validation passed. All versions match $EXPECTED_VERSION."
+
+  #####################
+  # QA and Unit tests #
+  #####################
+
+  dev-install:
+    name: Install Composer development dependencies
     uses: ./.github/workflows/reusable-composer.yml
+    needs: validate-version
+    with:
+      artifact_name: vendor-dev-php82
+
+  production-install:
+    name: Install Composer production dependencies
+    uses: ./.github/workflows/reusable-composer.yml
+    needs: validate-version
+    with:
+      production: true
+      artifact_name: vendor-prod-php82
 
   lint:
-    needs: install
+    name: PHP code linting
+    needs: dev-install
     uses: ./.github/workflows/reusable-lint.yml
+    with:
+      artifact_name: vendor-dev-php82
 
   unit:
-    needs: install
+    name: PHP unit tests
+    needs: dev-install
     uses: ./.github/workflows/reusable-unit.yml
+    with:
+      artifact_name: vendor-dev-php82
+
+  ###################################
+  # Build and deploy documentations #
+  ###################################
+
+  build-docs:
+    name: Build and deploy HTML documentation
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - unit
+
+    env:
+      DOCS_USER_DE_DIR: site-user-de
+      DOCS_USER_EN_DIR: site-user-en
+      DOCS_DEVELOPER_DIR: site-developer
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install documentation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-docs.txt
+
+      - name: Build German user documentation
+        run: |
+          mkdocs build \
+            --config-file mkdocs-user-de.yml \
+            --site-dir "${DOCS_USER_DE_DIR}"
+
+      - name: Build English user documentation
+        run: |
+          mkdocs build \
+            --config-file mkdocs-user-en.yml \
+            --site-dir "${DOCS_USER_EN_DIR}"
+
+      - name: Build developer documentation
+        run: |
+          mkdocs build \
+            --config-file mkdocs-developer.yml \
+            --site-dir "${DOCS_DEVELOPER_DIR}"
+
+      - name: Prepare documentation deploy directories
+        run: |
+          rm -rf deploy-docs
+          mkdir -p deploy-docs/user-de
+          mkdir -p deploy-docs/user-en
+          mkdir -p deploy-docs/developer
+
+          rsync -a --delete "${DOCS_USER_DE_DIR}/" deploy-docs/user-de/
+          rsync -a --delete "${DOCS_USER_EN_DIR}/" deploy-docs/user-en/
+          rsync -a --delete "${DOCS_DEVELOPER_DIR}/" deploy-docs/developer/
+
+      - name: Deploy German user documentation via SFTP
+        uses: pressidium/lftp-mirror-action@v1
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          user: ${{ secrets.SFTP_USER }}
+          pass: ${{ secrets.SFTP_PASSWORD }}
+          localDir: ./deploy-docs/user-de
+          remoteDir: ${{ secrets.SFTP_PATH_DOCUMENTATION_USER_DE }}
+          reverse: true
+          onlyNewer: true
+          options: >-
+            --delete
+            --verbose
+
+      - name: Deploy English user documentation via SFTP
+        uses: pressidium/lftp-mirror-action@v1
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          user: ${{ secrets.SFTP_USER }}
+          pass: ${{ secrets.SFTP_PASSWORD }}
+          localDir: ./deploy-docs/user-en
+          remoteDir: ${{ secrets.SFTP_PATH_DOCUMENTATION_USER_EN }}
+          reverse: true
+          onlyNewer: true
+          options: >-
+            --delete
+            --verbose
+
+      - name: Deploy developer documentation via SFTP
+        uses: pressidium/lftp-mirror-action@v1
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          user: ${{ secrets.SFTP_USER }}
+          pass: ${{ secrets.SFTP_PASSWORD }}
+          localDir: ./deploy-docs/developer
+          remoteDir: ${{ secrets.SFTP_PATH_DOCUMENTATION_DEVELOPER }}
+          reverse: true
+          onlyNewer: true
+          options: >-
+            --delete
+            --verbose
+
+      - name: Create documentation ZIP archives
+        run: |
+          rm -rf documentation-user-archive
+          mkdir -p documentation-user-archive/de/anleitungen
+          mkdir -p documentation-user-archive/en/documentation
+
+          rsync -a --delete deploy-docs/user-de/ documentation-user-archive/de/anleitungen/
+          rsync -a --delete deploy-docs/user-en/ documentation-user-archive/en/documentation/
+
+          cd documentation-user-archive
+          zip -r "../storeaccountant-documentation-user.zip" .
+
+          cd "../${DOCS_DEVELOPER_DIR}"
+          zip -r "../storeaccountant-documentation-developer.zip" .
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: storeaccountant-docs
+          path: |
+            storeaccountant-documentation-user.zip
+            storeaccountant-documentation-developer.zip
+          retention-days: 30
+
+  #########################
+  # Build release package #
+  #########################
 
   build-release:
     name: Build GitHub Release
     runs-on: ubuntu-latest
-    needs: unit
+    needs:
+      - lint
+      - unit
+      - production-install
+      - build-docs
 
     env:
       PLUGIN_SLUG: storeaccountant
@@ -31,18 +305,13 @@ jobs:
 
     steps:
       - name: Check out source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup PHP 8.2
-        uses: shivammathur/setup-php@v2
+      - name: Download production vendor
+        uses: actions/download-artifact@v8
         with:
-          php-version: '8.2'
-          extensions: zip
-          tools: composer:v2
-          coverage: none
-
-      - name: Install production dependencies
-        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+          name: vendor-prod-php82
+          path: vendor
 
       - name: Prepare release package
         run: |
@@ -52,115 +321,144 @@ jobs:
           mkdir -p "build/${PLUGIN_SLUG}"
 
           cp "${MAIN_PLUGIN_FILE}" "build/${PLUGIN_SLUG}/"
-          cp readme.txt "build/${PLUGIN_SLUG}/"
+          cp readme.txt composer.json LICENSE "build/${PLUGIN_SLUG}/"
 
           cp -R src "build/${PLUGIN_SLUG}/"
           cp -R assets "build/${PLUGIN_SLUG}/"
           cp -R vendor "build/${PLUGIN_SLUG}/"
           cp -R languages "build/${PLUGIN_SLUG}/"
+          
+          find "build/${PLUGIN_SLUG}/vendor" -type d \( \
+            -name ".git" -o \
+            -name ".github" -o \
+            -name "test" -o \
+            -name "tests" -o \
+            -name "Tests" -o \
+            -name "docs" -o \
+            -name "doc" -o \
+            -name "examples" -o \
+            -name "example" -o \
+            -name "demo" \
+            \) -prune -exec rm -rf {} +
+          
+            find "build/${PLUGIN_SLUG}/vendor" -type f \( \
+            -name ".gitignore" -o \
+            -name ".gitattributes" -o \
+            -name "phpunit.xml" -o \
+            -name "phpunit.xml.dist" -o \
+            -name "phpstan.neon" -o \
+            -name "psalm.xml" -o \
+            -name "composer.lock" -o \
+            -name "LICENSE-for-cc42c1d" \
+            \) -delete
 
       - name: Create ZIP archive
         run: |
-          VERSION="${GITHUB_REF_NAME}"
-
           cd build
-          zip -r "${PLUGIN_SLUG}-${VERSION}.zip" "${PLUGIN_SLUG}"
+          zip -r "${PLUGIN_SLUG}.zip" "${PLUGIN_SLUG}"
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: ${{ env.PLUGIN_SLUG }}-${{ github.ref_name }}
-          path: build/${{ env.PLUGIN_SLUG }}-${{ github.ref_name }}.zip
+          name: ${{ env.PLUGIN_SLUG }}
+          path: build/${{ env.PLUGIN_SLUG }}.zip
           retention-days: 30
+
+      - name: Download documentation artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: storeaccountant-docs
+          path: build/docs
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/${{ env.PLUGIN_SLUG }}-${{ github.ref_name }}.zip
+          name: StoreAccountant ${{ github.ref_name }}
+          files: |
+            build/${{ env.PLUGIN_SLUG }}.zip
+            build/docs/storeaccountant-documentation-user.zip
+            build/docs/storeaccountant-documentation-developer.zip
           generate_release_notes: true
 
-#
-#  wordpress-org-deploy:
-#    name: Deploy to WordPress.org
-#    runs-on: ubuntu-latest
-#    needs:
-#      - unit
-#      - build-release
-#
-#    env:
-#      PLUGIN_SLUG: storeaccountant
-#      MAIN_PLUGIN_FILE: storeaccountant.php
-#
-#    steps:
-#      - name: Check out source code
-#        uses: actions/checkout@v4
-#
-#      - name: Setup PHP 8.2
-#        uses: shivammathur/setup-php@v2
-#        with:
-#          php-version: '8.2'
-#          extensions: zip
-#          tools: composer:v2
-#          coverage: none
-#
-#      - name: Install production dependencies
-#        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
-#
-#      - name: Install SVN
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y subversion rsync
-#
-#      - name: Prepare deployment package
-#        run: |
-#          VERSION="${GITHUB_REF_NAME}"
-#
-#          rm -rf build
-#          mkdir -p "build/${PLUGIN_SLUG}"
-#
-#          cp "${MAIN_PLUGIN_FILE}" "build/${PLUGIN_SLUG}/"
-#          cp readme.txt "build/${PLUGIN_SLUG}/"
-#
-#          cp -R src "build/${PLUGIN_SLUG}/"
-#          cp -R assets "build/${PLUGIN_SLUG}/"
-#          cp -R vendor "build/${PLUGIN_SLUG}/"
-#
-#          if [ -d languages ]; then
-#            cp -R languages "build/${PLUGIN_SLUG}/"
-#          fi
-#
-#      - name: Checkout WordPress.org SVN
-#        env:
-#          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
-#          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
-#        run: |
-#          svn checkout \
-#            "https://plugins.svn.wordpress.org/${PLUGIN_SLUG}" \
-#            svn \
-#            --username "$SVN_USERNAME" \
-#            --password "$SVN_PASSWORD" \
-#            --non-interactive \
-#            --trust-server-cert
-#
-#      - name: Sync plugin files
-#        run: |
-#          VERSION="${GITHUB_REF_NAME}"
-#
-#          rsync -av --delete \
-#            "build/${PLUGIN_SLUG}/" \
-#            svn/trunk/
-#
-#          mkdir -p "svn/tags/${VERSION}"
-#
-#          rsync -av --delete \
-#            "build/${PLUGIN_SLUG}/" \
-#            "svn/tags/${VERSION}/"
-#
-#      - name: Sync WordPress.org assets
-#        run: |
-#          rsync -av --delete \
-#            .wordpress-org/ \
-#            svn/assets/
+      #  wordpress-org-deploy:
+      #    name: Deploy to WordPress.org
+      #    runs-on: ubuntu-latest
+      #    needs:
+      #  - unit
+      #  - build-release
+      #  - production-install
+      #
+      #    env:
+      #      PLUGIN_SLUG: storeaccountant
+      #      MAIN_PLUGIN_FILE: storeaccountant.php
+      #
+      #    steps:
+      #      - name: Check out source code
+      #        uses: actions/checkout@v6
+      #
+      #      - name: Download production vendor
+      #        uses: actions/download-artifact@v8
+      #        with:
+      #          name: vendor-prod-php82
+      #          path: vendor
+      #
+      #      - name: Install SVN
+      #        run: |
+      #          sudo apt-get update
+      #          sudo apt-get install -y subversion rsync
+      #
+      #      - name: Prepare deployment package
+      #        run: |
+      #          VERSION="${GITHUB_REF_NAME}"
+      #
+      #          rm -rf build
+      #          mkdir -p "build/${PLUGIN_SLUG}"
+      #
+      #          cp "${MAIN_PLUGIN_FILE}" "build/${PLUGIN_SLUG}/"
+      #          cp readme.txt "build/${PLUGIN_SLUG}/"
+      #
+      #          cp -R src "build/${PLUGIN_SLUG}/"
+      #          cp -R assets "build/${PLUGIN_SLUG}/"
+      #          cp -R vendor "build/${PLUGIN_SLUG}/"
+      #
+      #          if [ -d languages ]; then
+      #            cp -R languages "build/${PLUGIN_SLUG}/"
+      #          fi
+      #
+      #      - name: Checkout WordPress.org SVN
+      #        env:
+      #          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
+      #          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
+      #        run: |
+      #          svn checkout \
+      #            "https://plugins.svn.wordpress.org/${PLUGIN_SLUG}" \
+      #            svn \
+      #            --username "$SVN_USERNAME" \
+      #            --password "$SVN_PASSWORD" \
+      #            --non-interactive \
+      #            --trust-server-cert
+      #
+      #      - name: Sync plugin files
+      #        run: |
+      #          VERSION="${GITHUB_REF_NAME}"
+      #
+      #          rsync -av --delete \
+      #            "build/${PLUGIN_SLUG}/" \
+      #            svn/trunk/
+      #
+      #          mkdir -p "svn/tags/${VERSION}"
+      #
+      #          rsync -av --delete \
+      #            "build/${PLUGIN_SLUG}/" \
+      #            "svn/tags/${VERSION}/"
+      #
+      #      - name: Sync WordPress.org assets
+      #  run: |
+      #    mkdir -p svn/assets
+      #
+      #    rsync -av --delete \
+      #      .wordpress-org/ \
+      #      svn/assets/
 #
 #      - name: Commit to SVN
 #        env:
@@ -172,8 +470,12 @@ jobs:
 #          cd svn
 #
 #          svn add --force . --auto-props --parents --depth infinity || true
+#          find assets -type f -name '*.png' -exec svn propset svn:mime-type image/png {} +
+#          find assets -type f \( -name '*.jpg' -o -name '*.jpeg' \) -exec svn propset svn:mime-type image/jpeg {} +
 #
-#          svn status | awk '/^!/ {print $2}' | xargs -r svn rm
+#          svn status | awk '$1 == "!" {print substr($0, 9)}' | while IFS= read -r path; do
+#            svn rm "$path"
+#          done
 #
 #          svn commit \
 #            -m "Release ${VERSION}" \

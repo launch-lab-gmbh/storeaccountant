@@ -1,10 +1,10 @@
 === StoreAccountant ===
 Contributors: launchlab
-Tags: woocommerce, accounting, export, bookkeeping
+Tags: woocommerce, accounting, export, bookkeeping, vat, tax
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.0.0
+Stable tag: 0.3.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,7 +17,7 @@ It creates saved export records for WooCommerce orders and customers, processes 
 
 = Core features =
 
-- Advanced order and customer exports
+- Advanced order, customer, and product exports
 - Configurable export formats (CSV, JSON)
 - Password-protected export downloads
 - Filters for export periods, order statuses, and customer countries
@@ -69,11 +69,14 @@ plugin. Additional invoice plugins will be supported in future updates.
 Filter customers by date period and country. Country filters can use billing or shipping countries.
 
 == Screenshots ==
-1. Export overview and export management.
-2. Order export configuration with field mapping.
-3. Customer export configuration.
-4. Export filters and date range selection.
-5. Password-protected export download.
+1. Export configuration overview table.
+2. Export configuration edit.
+3. Export field mapping and column sorting.
+4. Export overview table.
+5. Export detail view.
+6. Export detail raw data for better debugging.
+7. Export detail logging data per export.
+8. Plugin settings - permission area.
 
 == Frequently Asked Questions ==
 

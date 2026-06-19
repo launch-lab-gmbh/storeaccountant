@@ -62,13 +62,33 @@ final class AccountingExportPageFormTest extends TestCase {
 		parent::tearDown();
 	}
 
-	public function test_render_outputs_adapters_renderers_storage_batch_size_and_filter_fields(): void {
+	public function test_render_outputs_prepare_step_with_title_and_export_type(): void {
 		$output = $this->render_form();
 
 		self::assertStringContainsString( 'storeaccountant_start_export', $output );
+		self::assertStringContainsString( 'name="storeaccountant_quick_export_prepare"', $output );
 		self::assertStringContainsString( 'name="storeaccountant_export_title"', $output );
 		self::assertStringContainsString( 'value="orders"', $output );
 		self::assertStringContainsString( 'export_adapter_orders', $output );
+		self::assertStringContainsString( '<button type="submit" name="storeaccountant_prepare_quick_export">Continue</button>', $output );
+		self::assertStringNotContainsString( 'name="storeaccountant_export_batch_size"', $output );
+		self::assertStringNotContainsString( 'data-storeaccountant-export-filter-group="1"', $output );
+		self::assertStringNotContainsString( 'Current Download Password', $output );
+	}
+
+	public function test_render_outputs_details_step_with_editable_title_fixed_type_and_export_fields(): void {
+		$output = $this->render_form(
+			[
+				'title'          => 'May Export',
+				'export_adapter' => OrderExportAdapter::ADAPTER_ID,
+			]
+		);
+
+		self::assertStringContainsString( 'name="storeaccountant_quick_export"', $output );
+		self::assertStringContainsString( 'value="May Export"', $output );
+		self::assertMatchesRegularExpression( '/id="storeaccountant-export-title"(?:(?!disabled=).)*\\/>/s', $output );
+		self::assertStringContainsString( 'name="storeaccountant_export_adapter_display"', $output );
+		self::assertStringContainsString( 'disabled="disabled"', $output );
 		self::assertStringContainsString( 'value="csv"', $output );
 		self::assertStringContainsString( 'exporter_csv', $output );
 		self::assertStringContainsString( 'value="local"', $output );
@@ -90,12 +110,17 @@ final class AccountingExportPageFormTest extends TestCase {
 		$output = $this->render_form();
 
 		self::assertStringContainsString( 'No export adapters are available.', $output );
-		self::assertStringContainsString( 'No export formats are available.', $output );
-		self::assertStringContainsString( 'No storage locations are enabled.', $output );
 		self::assertStringContainsString( 'disabled="disabled"', $output );
+		self::assertStringNotContainsString( 'No export formats are available.', $output );
+		self::assertStringNotContainsString( 'No storage locations are enabled.', $output );
 	}
 
-	private function render_form(): string {
+	/**
+	 * Renders the quick export form.
+	 *
+	 * @param array{title: string, export_adapter: string}|null $draft Current quick export draft.
+	 */
+	private function render_form( ?array $draft = null ): string {
 		ob_start();
 		try {
 			( new AccountingExportPageForm(
@@ -105,7 +130,7 @@ final class AccountingExportPageFormTest extends TestCase {
 				new ExportFilterFieldProviderRegistry(),
 				new DownloadPasswordManager( new ReversibleCrypto() ),
 				new PermissionChecker( new PermissionActionRegistry() )
-			) )->render();
+			) )->render( $draft );
 
 			return (string) ob_get_clean();
 		} catch ( \Throwable $exception ) {
@@ -122,6 +147,20 @@ final class AccountingExportPageFormTest extends TestCase {
 		Functions\when( 'esc_html_e' )->alias(
 			static function ( string $text ): void {
 				echo $text;
+			}
+		);
+		Functions\when( 'disabled' )->alias(
+			static function ( bool $disabled ): void {
+				if ( $disabled ) {
+					echo ' disabled="disabled"';
+				}
+			}
+		);
+		Functions\when( 'selected' )->alias(
+			static function ( mixed $selected, mixed $current ): void {
+				if ( $selected === $current ) {
+					echo ' selected="selected"';
+				}
 			}
 		);
 		Functions\when( 'admin_url' )->alias( static fn ( string $path = '' ): string => 'https://example.test/wp-admin/' . ltrim( $path, '/' ) );

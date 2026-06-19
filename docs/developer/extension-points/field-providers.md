@@ -61,6 +61,8 @@ customers
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_field_provider',
 	static function ( array $providers ) use ( $field_provider ): array {

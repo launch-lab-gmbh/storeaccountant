@@ -13,10 +13,13 @@ declare(strict_types=1);
 
 namespace StoreAccountant\Order\Admin;
 
+use Throwable;
 use WC_Order;
 use WP_Post;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Contract\WordPress\Request;
+use StoreAccountant\Diagnostic\DiagnosticIncident;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\Contract\ExportConfigurationTabProviderInterface;
@@ -68,6 +71,7 @@ final readonly class OrderFieldMappingTabProvider implements ExportConfiguration
 	 * @param ExportFilterSelectionSerializer $filter_serializer Filter selection serializer.
 	 * @param ExportFilterSnapshotter         $filter_snapshotter Filter snapshotter.
 	 * @param PermissionChecker               $permissions     Permission checker.
+	 * @param DiagnosticIncidentLogger        $diagnostics     Diagnostic incident logger.
 	 */
 	public function __construct(
 		private ExportFieldResolver $field_resolver,
@@ -77,7 +81,8 @@ final readonly class OrderFieldMappingTabProvider implements ExportConfiguration
 		private OrderQuery $order_query,
 		private ExportFilterSelectionSerializer $filter_serializer,
 		private ExportFilterSnapshotter $filter_snapshotter,
-		private PermissionChecker $permissions
+		private PermissionChecker $permissions,
+		private DiagnosticIncidentLogger $diagnostics
 	) {}
 
 	/**
@@ -257,13 +262,19 @@ final readonly class OrderFieldMappingTabProvider implements ExportConfiguration
 		$configuration    = $configuration_id > 0 ? get_post( $configuration_id ) : null;
 
 		if ( ! $configuration || ExportConfigurationPostType::POST_TYPE !== $configuration->post_type || ! $this->permissions->can( PermissionActionIds::CONFIGURATION_EDIT_FIELD_MAPPING, $configuration_id ) || ! $this->supports( $configuration ) ) {
-			$this->redirect_with_error( $configuration_id );
+			$incident = $this->log_save_error( 'invalid_or_unauthorized_configuration', $configuration_id );
+			$this->redirect_with_error( $configuration_id, $incident );
 		}
 
-		$fields  = $this->get_fields( $configuration_id, $this->get_context( $configuration_id ) );
-		$mapping = $this->mapping->sanitize_from_request( $request, $fields );
+		try {
+			$fields  = $this->get_fields( $configuration_id, $this->get_context( $configuration_id ) );
+			$mapping = $this->mapping->sanitize_from_request( $request, $fields );
 
-		$this->mapping->save( $configuration_id, $mapping );
+			$this->mapping->save( $configuration_id, $mapping );
+		} catch ( Throwable $exception ) {
+			$incident = $this->log_save_error( 'field_mapping_persistence_failed', $configuration_id, $exception );
+			$this->redirect_with_error( $configuration_id, $incident );
+		}
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -280,39 +291,46 @@ final readonly class OrderFieldMappingTabProvider implements ExportConfiguration
 	}
 
 	/**
-	 * Rewrites only tax field mapping for the currently selected tax field provider.
-	 *
-	 * @param int $configuration_id Export configuration post ID.
-	 */
-	public function refresh_tax_field_mapping( int $configuration_id ): void {
-		$context = $this->get_context( $configuration_id );
-		$fields  = $this->get_fields( $configuration_id, $context );
-
-		$this->mapping->refresh_matching_fields(
-			$configuration_id,
-			$fields,
-			static fn ( string $field_id ): bool => self::is_tax_field_id( $field_id )
-		);
-	}
-
-	/**
 	 * Redirects back to the field mapping tab with an error notice.
 	 *
 	 * @param int $configuration_id Export configuration post ID.
+	 * @param DiagnosticIncident|null $incident Optional diagnostic incident.
 	 */
-	private function redirect_with_error( int $configuration_id ): void {
+	private function redirect_with_error( int $configuration_id, ?DiagnosticIncident $incident = null ): void {
+		$args = [
+			'page'                                => 'storeaccountant-export-configuration',
+			'configuration_id'                    => (string) $configuration_id,
+			'tab'                                 => self::TAB_ID,
+			'storeaccountant_field_mapping_error' => '1',
+		];
+
+		if ( null !== $incident ) {
+			$args['storeaccountant_diagnostic_support_id'] = $incident->support_id;
+		}
+
 		wp_safe_redirect(
 			add_query_arg(
-				[
-					'page'                                => 'storeaccountant-export-configuration',
-					'configuration_id'                    => (string) $configuration_id,
-					'tab'                                 => self::TAB_ID,
-					'storeaccountant_field_mapping_error' => '1',
-				],
+				$args,
 				admin_url( 'admin.php' )
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Logs a diagnostic incident for order field mapping save failures.
+	 */
+	private function log_save_error( string $reason, int $configuration_id, ?Throwable $throwable = null ): ?DiagnosticIncident {
+		return $this->diagnostics->error(
+			'order_field_mapping',
+			__( 'The field mapping could not be saved.', 'storeaccountant' ),
+			[
+				'reason'           => $reason,
+				'configuration_id' => $configuration_id,
+			],
+			null,
+			$throwable
+		);
 	}
 
 	/**

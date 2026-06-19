@@ -37,6 +37,12 @@ use StoreAccountant\Admin\AccountingMenu;
 use StoreAccountant\Customer\Admin\CustomerCountryFilterFieldProvider;
 use StoreAccountant\Customer\Admin\CustomerDateFilterFieldProvider;
 use StoreAccountant\Customer\Admin\CustomerFieldMappingTabProvider;
+use StoreAccountant\Diagnostic\Admin\DiagnosticIncidentDownloadController;
+use StoreAccountant\Diagnostic\Admin\DiagnosticSettingsTabProvider;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPage;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPageForm;
 use StoreAccountant\Export\Admin\ExportDetailsReadTabProvider;
@@ -49,6 +55,9 @@ use StoreAccountant\Order\Admin\OrderDateFilterFieldProvider;
 use StoreAccountant\Order\Admin\OrderFieldMappingTabProvider;
 use StoreAccountant\Order\Admin\OrderStatusFilterFieldProvider;
 use StoreAccountant\Order\Admin\OrderStatusField;
+use StoreAccountant\Product\Admin\ProductDateFilterFieldProvider;
+use StoreAccountant\Product\Admin\ProductFieldMappingTabProvider;
+use StoreAccountant\Product\Admin\ProductVariantExportFieldProvider;
 use StoreAccountant\Security\Admin\PermissionsSettingsForm;
 use StoreAccountant\Settings\Admin\PluginSettingsPage;
 use StoreAccountant\Settings\Admin\PluginSettingsTabProviderRegistry;
@@ -71,6 +80,7 @@ use StoreAccountant\Customer\Export\Filter\CustomerCountryFilter;
 use StoreAccountant\Customer\Export\Filter\CustomerDateFilter;
 use StoreAccountant\Customer\Export\Query\CustomerQuery;
 use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
+use StoreAccountant\Product\Export\Adapter\ProductExportAdapter;
 use StoreAccountant\Export\Attachment\ExportAttachmentProviderRegistry;
 use StoreAccountant\Export\Admin\ExportListPollingAjaxController;
 use StoreAccountant\Export\Admin\ExportListPollingResponseFactory;
@@ -91,9 +101,12 @@ use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Filter\ExportFilterSnapshotter;
 use StoreAccountant\Order\Export\Filter\OrderDateFilter;
 use StoreAccountant\Order\Export\Filter\OrderStatusFilter;
+use StoreAccountant\Product\Export\Filter\ProductDateFilter;
+use StoreAccountant\Product\Export\Filter\ProductVariantExportFilter;
 use StoreAccountant\Export\Filter\Period\MonthYearPeriodProvider;
 use StoreAccountant\Export\Filter\Period\PeriodProviderRegistry;
 use StoreAccountant\Order\Export\Query\OrderQuery;
+use StoreAccountant\Product\Export\Query\ProductQuery;
 use StoreAccountant\Export\ExportRepository;
 use StoreAccountant\Export\ExportStoragePathGenerator;
 use StoreAccountant\Export\Queue\BatchExportStore;
@@ -115,6 +128,10 @@ use StoreAccountant\Order\Export\Field\Provider\OrderFieldProvider;
 use StoreAccountant\Order\Export\Field\Provider\OrderFieldValueProvider;
 use StoreAccountant\Order\Export\Field\Provider\OrderMetaFieldProvider;
 use StoreAccountant\Order\Export\Field\Provider\OrderMetaFieldValueProvider;
+use StoreAccountant\Product\Export\Field\Provider\ProductFieldProvider;
+use StoreAccountant\Product\Export\Field\Provider\ProductFieldValueProvider;
+use StoreAccountant\Product\Export\Field\Provider\ProductMetaFieldProvider;
+use StoreAccountant\Product\Export\Field\Provider\ProductMetaFieldValueProvider;
 use StoreAccountant\Export\Field\FieldProviderRegistry;
 use StoreAccountant\Export\Field\FieldValueProviderRegistry;
 use StoreAccountant\Tax\Admin\OrderTaxFieldProviderField;
@@ -154,6 +171,7 @@ use StoreAccountant\Queue\Transport\SyncTransportProvider;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Adapter\LocalStorageAdapter;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -190,6 +208,16 @@ final readonly class ContainerBuilder {
 		CustomerCountryFilter::class,
 		CustomerDateFilterFieldProvider::class,
 		CustomerCountryFilterFieldProvider::class,
+		ProductExportAdapter::class,
+		ProductFieldProvider::class,
+		ProductFieldValueProvider::class,
+		ProductMetaFieldProvider::class,
+		ProductMetaFieldValueProvider::class,
+		ProductFieldMappingTabProvider::class,
+		ProductDateFilter::class,
+		ProductVariantExportFilter::class,
+		ProductDateFilterFieldProvider::class,
+		ProductVariantExportFieldProvider::class,
 		OrderExportAdapter::class,
 		OrderFieldProvider::class,
 		OrderFieldValueProvider::class,
@@ -223,6 +251,8 @@ final readonly class ContainerBuilder {
 		ExportPostType::class,
 		ExportConfigurationPostType::class,
 		StorageActivationNotice::class,
+		DiagnosticSettingsTabProvider::class,
+		DiagnosticIncidentDownloadController::class,
 		PluginSettingsPage::class,
 		AccountingExportPage::class,
 		ExportConfigurationPage::class,
@@ -335,6 +365,8 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportFilterRegistry::class );
 		$container->addShared( CustomerQuery::class )
 			->addArgument( ExportFilterRegistry::class );
+		$container->addShared( ProductQuery::class )
+			->addArgument( ExportFilterRegistry::class );
 		$container->addShared( FieldMappingRepository::class );
 		$container->addShared( MetaFieldCollector::class );
 		$container->addShared( MetaFieldValueFormatter::class );
@@ -343,6 +375,26 @@ final readonly class ContainerBuilder {
 		$container->addShared( ExportReadTabProviderRegistry::class );
 		$container->addShared( ExportConfigurationTabProviderRegistry::class );
 		$container->addShared( PluginSettingsTabProviderRegistry::class );
+		$container->addShared( DiagnosticSettings::class );
+		$container->addShared( ProtectedUploadDirectory::class );
+		$container->addShared(
+			DiagnosticLogConfiguration::class,
+			static function (): DiagnosticLogConfiguration {
+				$configuration = DiagnosticLogConfiguration::from_wordpress_uploads();
+
+				if ( is_wp_error( $configuration ) ) {
+					return new DiagnosticLogConfiguration( '', 'wp-content/uploads/' . DiagnosticLogConfiguration::RELATIVE_PATH );
+				}
+
+				return $configuration;
+			}
+		);
+		$container->addShared( DiagnosticIncidentRepository::class )
+			->addArgument( DiagnosticLogConfiguration::class )
+			->addArgument( ProtectedUploadDirectory::class );
+		$container->addShared( DiagnosticIncidentLogger::class )
+			->addArgument( DiagnosticSettings::class )
+			->addArgument( DiagnosticIncidentRepository::class );
 		$container->addShared( FieldProviderRegistry::class );
 		$container->addShared( FieldValueProviderRegistry::class );
 		$container->addShared( ExportAttachmentProviderRegistry::class );
@@ -389,6 +441,9 @@ final readonly class ContainerBuilder {
 			->addArgument( PeriodProviderRegistry::class );
 		$container->addShared( CustomerDateFilter::class )
 			->addArgument( PeriodProviderRegistry::class );
+		$container->addShared( ProductDateFilter::class )
+			->addArgument( PeriodProviderRegistry::class );
+		$container->addShared( ProductVariantExportFilter::class );
 		$container->addShared( CustomerCountryFilter::class );
 		$container->addShared( OrderStatusFilter::class )
 			->addArgument( OrderStatusProvider::class );
@@ -398,6 +453,9 @@ final readonly class ContainerBuilder {
 			->addArgument( MonthYearExportPeriodFieldProvider::class );
 		$container->addShared( CustomerDateFilterFieldProvider::class )
 			->addArgument( MonthYearExportPeriodFieldProvider::class );
+		$container->addShared( ProductDateFilterFieldProvider::class )
+			->addArgument( MonthYearExportPeriodFieldProvider::class );
+		$container->addShared( ProductVariantExportFieldProvider::class );
 		$container->addShared( CustomerCountryFilterFieldProvider::class );
 		$container->addShared( OrderStatusFilterFieldProvider::class )
 			->addArgument( OrderStatusField::class );
@@ -425,6 +483,8 @@ final readonly class ContainerBuilder {
 			->addArgument( PermissionChecker::class );
 		$container->addShared( CustomerExportAdapter::class )
 			->addArgument( CustomerQuery::class );
+		$container->addShared( ProductExportAdapter::class )
+			->addArgument( ProductQuery::class );
 		$container->addShared( OrderExportAdapter::class )
 			->addArgument( OrderTaxRateResolver::class )
 			->addArgument( OrderQuery::class );
@@ -432,9 +492,15 @@ final readonly class ContainerBuilder {
 		$container->addShared( OrderFieldValueProvider::class );
 		$container->addShared( CustomerFieldProvider::class );
 		$container->addShared( CustomerFieldValueProvider::class );
+		$container->addShared( ProductFieldProvider::class );
+		$container->addShared( ProductFieldValueProvider::class );
 		$container->addShared( CustomerMetaFieldProvider::class )
 			->addArgument( MetaFieldCollector::class );
 		$container->addShared( CustomerMetaFieldValueProvider::class )
+			->addArgument( MetaFieldValueFormatter::class );
+		$container->addShared( ProductMetaFieldProvider::class )
+			->addArgument( MetaFieldCollector::class );
+		$container->addShared( ProductMetaFieldValueProvider::class )
 			->addArgument( MetaFieldValueFormatter::class );
 		$container->addShared( OrderMetaFieldProvider::class )
 			->addArgument( MetaFieldCollector::class );
@@ -479,20 +545,38 @@ final readonly class ContainerBuilder {
 			->addArgument( OrderQuery::class )
 			->addArgument( ExportFilterSelectionSerializer::class )
 			->addArgument( ExportFilterSnapshotter::class )
-			->addArgument( PermissionChecker::class );
+			->addArgument( PermissionChecker::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 		$container->addShared( CustomerFieldMappingTabProvider::class )
 			->addArgument( ExportFieldResolver::class )
 			->addArgument( FieldMappingRepository::class )
 			->addArgument( CustomerQuery::class )
 			->addArgument( ExportFilterSelectionSerializer::class )
 			->addArgument( ExportFilterSnapshotter::class )
-			->addArgument( PermissionChecker::class );
+			->addArgument( PermissionChecker::class )
+			->addArgument( DiagnosticIncidentLogger::class );
+		$container->addShared( ProductFieldMappingTabProvider::class )
+			->addArgument( ExportFieldResolver::class )
+			->addArgument( FieldMappingRepository::class )
+			->addArgument( ProductQuery::class )
+			->addArgument( ExportFilterSelectionSerializer::class )
+			->addArgument( ExportFilterSnapshotter::class )
+			->addArgument( PermissionChecker::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 		$container->addShared( CsvExportRenderer::class );
 		$container->addShared( SerializerExportRendererRegistrar::class )
 			->addArgument( DefaultExportTemplateNormalizer::class )
 			->addArgument( SerializerInterface::class );
 		$container->addShared( LocalStorageAdapter::class )
-			->addArgument( LocalStorageConfiguration::class );
+			->addArgument( LocalStorageConfiguration::class )
+			->addArgument( ProtectedUploadDirectory::class );
+		$container->addShared( DiagnosticSettingsTabProvider::class )
+			->addArgument( DiagnosticSettings::class )
+			->addArgument( PermissionChecker::class )
+			->addArgument( DiagnosticIncidentRepository::class );
+		$container->addShared( DiagnosticIncidentDownloadController::class )
+			->addArgument( DiagnosticIncidentRepository::class )
+			->addArgument( PermissionChecker::class );
 		$container->addShared( AccountingHeaderBar::class )
 			->addArgument( PermissionChecker::class );
 		$container->addShared( AccountingExportPageForm::class )
@@ -574,7 +658,8 @@ final readonly class ContainerBuilder {
 			->addArgument( MessageBusInterface::class )
 			->addArgument( QueueLoopbackDispatcher::class )
 			->addArgument( ExportListPollingResponseFactory::class )
-			->addArgument( ExportDownloadUrlFactory::class );
+			->addArgument( ExportDownloadUrlFactory::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 		$container->addShared( ExportDownloadController::class )
 			->addArgument( StorageAdapterRegistry::class )
 			->addArgument( DownloadPasswordManager::class )
@@ -611,7 +696,8 @@ final readonly class ContainerBuilder {
 			->addArgument( AccountingHeaderBar::class )
 			->addArgument( PermissionChecker::class )
 			->addArgument( QueueLoopbackDispatcher::class )
-			->addArgument( DownloadPasswordManager::class );
+			->addArgument( DownloadPasswordManager::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 		$container->addShared( ExportConfigurationPage::class )
 			->addArgument( ExportConfigurationPageForm::class )
 			->addArgument( ExportConfigurationRepository::class )
@@ -624,6 +710,7 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportConfigurationTabProviderRegistry::class )
 			->addArgument( OrderTaxFieldProviderField::class )
 			->addArgument( PermissionChecker::class )
-			->addArgument( DownloadPasswordManager::class );
+			->addArgument( DownloadPasswordManager::class )
+			->addArgument( DiagnosticIncidentLogger::class );
 	}
 }

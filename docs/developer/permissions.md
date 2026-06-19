@@ -54,6 +54,8 @@ Use stable action IDs and capabilities prefixed with your plugin or
 `storeaccountant`.
 
 ```php
+<?php
+
 use StoreAccountant\Security\Permission\PermissionAction;
 
 add_filter(
@@ -83,6 +85,8 @@ Core code should use `StoreAccountant\Security\Permission\PermissionChecker` whe
 available through the service container:
 
 ```php
+<?php
+
 if ( ! $this->permissions->can( 'my_addon.export.send_to_tax_office', $export_id ) ) {
 	wp_die( esc_html__( 'You are not allowed to send this export.', 'my-addon' ) );
 }
@@ -104,6 +108,8 @@ The permissions screen filters roles to avoid exposing frontend-only roles.
 Projects with dedicated backend roles can opt in explicitly:
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_assignable_permission_roles',
 	static function ( array $roles ): array {

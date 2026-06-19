@@ -24,6 +24,7 @@ use StoreAccountant\Security\Permission\PermissionActionIds;
 use StoreAccountant\Security\Permission\PermissionChecker;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use function str_replace;
+use function trim;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -54,27 +55,34 @@ final readonly class AccountingExportPageForm {
 
 	/**
 	 * Renders the quick export form.
+	 *
+	 * @param array{title: string, export_adapter: string}|null $draft Current quick export draft.
 	 */
-	public function render(): void {
+	public function render( ?array $draft = null ): void {
 		?>
 		<div class="storeaccountant-content-panel">
-			<?php $this->render_quick_export_form(); ?>
+			<?php $this->render_quick_export_form( $draft ); ?>
 		</div>
 		<?php
 	}
 
 	/**
 	 * Renders the quick export form.
+	 *
+	 * @param array{title: string, export_adapter: string}|null $draft Current quick export draft.
 	 */
-	private function render_quick_export_form(): void {
+	private function render_quick_export_form( ?array $draft ): void {
 		$storage_adapters = $this->storage_adapters->get_enabled();
 		$export_adapters  = $this->export_adapters->get_all();
 		$export_writers   = $this->export_writers->get_all();
-		$submit_disabled  = [] === $storage_adapters || [] === $export_adapters || [] === $export_writers;
+		$is_details_step  = null !== $draft;
+		$submit_disabled  = [] === $export_adapters || ( $is_details_step && ( [] === $storage_adapters || [] === $export_writers ) );
+		$title            = trim( $draft['title'] ?? '' );
+		$export_adapter   = $draft['export_adapter'] ?? OrderExportAdapter::ADAPTER_ID;
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="storeaccountant_start_export" />
-			<input type="hidden" name="storeaccountant_quick_export" value="1" />
+			<input type="hidden" name="<?php echo esc_attr( $is_details_step ? 'storeaccountant_quick_export' : 'storeaccountant_quick_export_prepare' ); ?>" value="1" />
 			<?php wp_nonce_field( 'storeaccountant_start_export', 'storeaccountant_export_nonce' ); ?>
 
 			<table class="form-table" role="presentation">
@@ -89,7 +97,7 @@ final readonly class AccountingExportPageForm {
 									id="storeaccountant-export-title"
 									name="storeaccountant_export_title"
 									class="regular-text"
-									value=""
+									value="<?php echo esc_attr( $title ); ?>"
 									required="required"
 								/>
 							</td>
@@ -102,82 +110,90 @@ final readonly class AccountingExportPageForm {
 							<?php if ( [] === $export_adapters ) : ?>
 								<p class="description"><?php esc_html_e( 'No export adapters are available. Register at least one export adapter before starting an export.', 'storeaccountant' ); ?></p>
 							<?php else : ?>
-								<select id="storeaccountant-export-adapter" name="storeaccountant_export_adapter" data-storeaccountant-export-adapter-select="1">
+								<?php if ( $is_details_step ) : ?>
+									<input type="hidden" name="storeaccountant_export_adapter" value="<?php echo esc_attr( $export_adapter ); ?>" />
+								<?php endif; ?>
+								<select id="storeaccountant-export-adapter" name="<?php echo esc_attr( $is_details_step ? 'storeaccountant_export_adapter_display' : 'storeaccountant_export_adapter' ); ?>" required="required" <?php disabled( $is_details_step ); ?>>
 									<?php foreach ( $export_adapters as $adapter ) : ?>
-									<option value="<?php echo esc_attr( $adapter->get_id() ); ?>">
+									<option value="<?php echo esc_attr( $adapter->get_id() ); ?>" <?php selected( $export_adapter, $adapter->get_id() ); ?>>
 										<?php
 											echo esc_html( I18n::translate_registry_label( 'export_adapter_', $adapter->get_id() ) );
 										?>
 									</option>
 									<?php endforeach; ?>
 								</select>
+								<?php if ( $is_details_step ) : ?>
+									<p class="description"><?php esc_html_e( 'The export type cannot be changed after the quick export details have been started.', 'storeaccountant' ); ?></p>
+								<?php endif; ?>
 							<?php endif; ?>
 						</td>
 					</tr>
-					<?php $this->render_filter_field_provider_groups( OrderExportAdapter::ADAPTER_ID ); ?>
-					<tr>
-						<th scope="row">
-							<label for="storeaccountant-export-writer"><?php esc_html_e( 'Export Format', 'storeaccountant' ); ?></label>
-						</th>
-						<td>
-							<?php if ( [] === $export_writers ) : ?>
-								<p class="description"><?php esc_html_e( 'No export formats are available. Register at least one export renderer before starting an export.', 'storeaccountant' ); ?></p>
-							<?php else : ?>
-								<select id="storeaccountant-export-writer" name="storeaccountant_export_writer">
-									<?php foreach ( $export_writers as $writer ) : ?>
-									<option value="<?php echo esc_attr( $writer->get_id() ); ?>">
-										<?php
-										echo esc_html( I18n::translate_registry_label( 'exporter_', $writer->get_id() ) );
-										?>
-									</option>
-									<?php endforeach; ?>
-								</select>
-							<?php endif; ?>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row">
-							<label for="storeaccountant-storage-engine"><?php esc_html_e( 'Storage Location', 'storeaccountant' ); ?></label>
-						</th>
-						<td>
-							<?php if ( [] === $storage_adapters ) : ?>
-								<p class="description"><?php esc_html_e( 'No storage locations are enabled. Enable at least one storage location before starting an export.', 'storeaccountant' ); ?></p>
-							<?php else : ?>
-								<select id="storeaccountant-storage-engine" name="storeaccountant_storage_engine">
-									<?php foreach ( $storage_adapters as $storage_adapter ) : ?>
-									<option value="<?php echo esc_attr( $storage_adapter->get_id() ); ?>">
-										<?php
-										echo esc_html( I18n::translate_registry_label( 'storage_adapter_', $storage_adapter->get_id() ) );
-										?>
-									</option>
-									<?php endforeach; ?>
-								</select>
-							<?php endif; ?>
-						</td>
-					</tr>
-					<?php $this->render_download_password_row(); ?>
+					<?php if ( $is_details_step ) : ?>
+						<?php $this->render_filter_field_provider_groups( $export_adapter ); ?>
 						<tr>
-						<th scope="row">
-							<label for="storeaccountant-export-batch-size"><?php esc_html_e( 'Batch Size', 'storeaccountant' ); ?></label>
-						</th>
-						<td>
-							<input
-								type="number"
-								id="storeaccountant-export-batch-size"
-								name="storeaccountant_export_batch_size"
-								class="small-text"
-								value="<?php echo esc_attr( (string) ExportPostType::DEFAULT_BATCH_SIZE ); ?>"
-								min="<?php echo esc_attr( (string) ExportPostType::MIN_BATCH_SIZE ); ?>"
-								step="1"
-								required="required"
-							/>
-							<p class="description"><?php esc_html_e( 'StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 100.', 'storeaccountant' ); ?></p>
-						</td>
-					</tr>
+							<th scope="row">
+								<label for="storeaccountant-export-writer"><?php esc_html_e( 'Export Format', 'storeaccountant' ); ?></label>
+							</th>
+							<td>
+								<?php if ( [] === $export_writers ) : ?>
+									<p class="description"><?php esc_html_e( 'No export formats are available. Register at least one export renderer before starting an export.', 'storeaccountant' ); ?></p>
+								<?php else : ?>
+									<select id="storeaccountant-export-writer" name="storeaccountant_export_writer">
+										<?php foreach ( $export_writers as $writer ) : ?>
+										<option value="<?php echo esc_attr( $writer->get_id() ); ?>">
+											<?php
+											echo esc_html( I18n::translate_registry_label( 'exporter_', $writer->get_id() ) );
+											?>
+										</option>
+										<?php endforeach; ?>
+									</select>
+								<?php endif; ?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="storeaccountant-storage-engine"><?php esc_html_e( 'Storage Location', 'storeaccountant' ); ?></label>
+							</th>
+							<td>
+								<?php if ( [] === $storage_adapters ) : ?>
+									<p class="description"><?php esc_html_e( 'No storage locations are enabled. Enable at least one storage location before starting an export.', 'storeaccountant' ); ?></p>
+								<?php else : ?>
+									<select id="storeaccountant-storage-engine" name="storeaccountant_storage_engine">
+										<?php foreach ( $storage_adapters as $storage_adapter ) : ?>
+										<option value="<?php echo esc_attr( $storage_adapter->get_id() ); ?>">
+											<?php
+											echo esc_html( I18n::translate_registry_label( 'storage_adapter_', $storage_adapter->get_id() ) );
+											?>
+										</option>
+										<?php endforeach; ?>
+									</select>
+								<?php endif; ?>
+							</td>
+						</tr>
+						<?php $this->render_download_password_row(); ?>
+							<tr>
+							<th scope="row">
+								<label for="storeaccountant-export-batch-size"><?php esc_html_e( 'Batch Size', 'storeaccountant' ); ?></label>
+							</th>
+							<td>
+								<input
+									type="number"
+									id="storeaccountant-export-batch-size"
+									name="storeaccountant_export_batch_size"
+									class="small-text"
+									value="<?php echo esc_attr( (string) ExportPostType::DEFAULT_BATCH_SIZE ); ?>"
+									min="<?php echo esc_attr( (string) ExportPostType::MIN_BATCH_SIZE ); ?>"
+									step="1"
+									required="required"
+								/>
+								<p class="description"><?php esc_html_e( 'StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 100.', 'storeaccountant' ); ?></p>
+							</td>
+						</tr>
+					<?php endif; ?>
 				</tbody>
 			</table>
 
-			<?php submit_button( __( 'Start Quick Export', 'storeaccountant' ), 'primary', 'storeaccountant_start_quick_export', false, $submit_disabled ? [ 'disabled' => 'disabled' ] : [] ); ?>
+			<?php submit_button( $is_details_step ? __( 'Start Quick Export', 'storeaccountant' ) : __( 'Continue', 'storeaccountant' ), 'primary', $is_details_step ? 'storeaccountant_start_quick_export' : 'storeaccountant_prepare_quick_export', false, $submit_disabled ? [ 'disabled' => 'disabled' ] : [] ); ?>
 		</form>
 		<?php
 	}
@@ -220,27 +236,22 @@ final readonly class AccountingExportPageForm {
 	}
 
 	/**
-	 * Renders default filter fields for each registered export adapter.
+	 * Renders default filter fields for the selected export adapter.
 	 *
-	 * @param string $active_export_type Initially active export type.
+	 * @param string $active_export_type Active export type.
 	 */
 	private function render_filter_field_provider_groups( string $active_export_type ): void {
-		foreach ( $this->export_adapters->get_all() as $adapter ) {
-			$export_type = $adapter->get_id();
-			$hidden      = $active_export_type !== $export_type;
+		foreach ( $this->filter_field_providers->get_providers( $active_export_type ) as $provider ) {
+			ob_start();
+			$provider->render( $provider->get_default_selection() );
+			$rows = (string) ob_get_clean();
+			$rows = str_replace(
+				'<tr',
+				'<tr data-storeaccountant-export-filter-group="1" data-storeaccountant-export-type="' . esc_attr( $active_export_type ) . '"',
+				$rows
+			);
 
-			foreach ( $this->filter_field_providers->get_providers( $export_type ) as $provider ) {
-				ob_start();
-				$provider->render( $provider->get_default_selection() );
-				$rows = (string) ob_get_clean();
-				$rows = str_replace(
-					'<tr',
-					'<tr data-storeaccountant-export-filter-group="1" data-storeaccountant-export-type="' . esc_attr( $export_type ) . '"' . ( $hidden ? ' class="storeaccountant-is-hidden"' : '' ),
-					$rows
-				);
-
-					echo wp_kses( $rows, $this->get_allowed_filter_row_html() );
-			}
+				echo wp_kses( $rows, $this->get_allowed_filter_row_html() );
 		}
 	}
 

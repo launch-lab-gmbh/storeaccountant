@@ -125,20 +125,34 @@ final class RequestTest extends TestCase {
 	public function test_post_data_returns_sanitized_post_array(): void {
 		Functions\expect( 'filter_input_array' )
 			->once()
-			->with(
-				INPUT_POST,
-				[
-					'filter'  => FILTER_CALLBACK,
-					'options' => [ Request::class, 'sanitize_text_value' ],
-				]
-			)
+			->with( INPUT_POST, FILTER_UNSAFE_RAW )
 			->andReturn(
 				[
-					'title' => 'Monthly Export',
+					'title'    => '<b>Monthly Export</b>',
+					'settings' => [
+						'adapter' => '<script>orders</script>',
+					],
 				]
 			);
 
-		self::assertSame( [ 'title' => 'Monthly Export' ], Request::post_data() );
+		Functions\expect( 'sanitize_text_field' )
+			->once()
+			->with( '<b>Monthly Export</b>' )
+			->andReturn( 'Monthly Export' );
+		Functions\expect( 'sanitize_text_field' )
+			->once()
+			->with( '<script>orders</script>' )
+			->andReturn( 'orders' );
+
+		self::assertSame(
+			[
+				'title'    => 'Monthly Export',
+				'settings' => [
+					'adapter' => 'orders',
+				],
+			],
+			Request::post_data()
+		);
 	}
 
 	public function test_post_array_returns_sanitized_array_value(): void {

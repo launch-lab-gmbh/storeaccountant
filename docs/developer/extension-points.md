@@ -22,6 +22,7 @@ as breaking changes.
 - Month-based order date filtering.
 - Order export adapter.
 - Customer export adapter.
+- Product export adapter.
 - Persisted export configurations.
 - Hookable field providers for export datasets.
 - Hookable field value providers for export datasets.
@@ -54,6 +55,8 @@ core, higher priorities run after core. When registering services into array
 based registries, add-ons should append or replace by ID:
 
 ```php
+<?php
+
 $items['my_id'] = $my_service;
 
 return $items;

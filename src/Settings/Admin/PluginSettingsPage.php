@@ -29,6 +29,7 @@ use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Storage\Admin\StorageLocationsForm;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use function array_key_exists;
+use function array_key_first;
 use function implode;
 use function sprintf;
 
@@ -122,7 +123,7 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 	 * Renders the settings page.
 	 */
 	public function render(): void {
-		if ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) && ! $this->permissions->can( PermissionActionIds::MANAGE_PERMISSIONS ) ) {
+		if ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) && ! $this->permissions->can( PermissionActionIds::MANAGE_PERMISSIONS ) && ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE ) ) {
 			wp_die( esc_html__( 'You are not allowed to manage StoreAccountant settings.', 'storeaccountant' ) );
 		}
 
@@ -247,7 +248,7 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 			if ( ! $this->permissions->can( PermissionActionIds::MANAGE_PERMISSIONS ) ) {
 				wp_die( esc_html__( 'You are not allowed to manage StoreAccountant permissions.', 'storeaccountant' ) );
 			}
-		} elseif ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) ) {
+		} elseif ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) && ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE ) ) {
 			wp_die( esc_html__( 'You are not allowed to manage StoreAccountant settings.', 'storeaccountant' ) );
 		}
 
@@ -375,7 +376,10 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 			return $tab;
 		}
 
-		return $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) ? self::TAB_STORAGE_LOCATIONS : self::TAB_PERMISSIONS;
+		$tabs = $this->get_available_tabs();
+		$tab  = array_key_first( $tabs );
+
+		return null !== $tab ? (string) $tab : self::TAB_STORAGE_LOCATIONS;
 	}
 
 	/**
@@ -398,7 +402,9 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 
 		if ( $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) ) {
 			$tabs[ self::TAB_SECURITY ] = __( 'Security', 'storeaccountant' );
+		}
 
+		if ( $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) || $this->permissions->can( PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE ) ) {
 			foreach ( $this->tab_providers->get_all() as $provider ) {
 				foreach ( $provider->get_tabs() as $tab => $label ) {
 					$tab = sanitize_key( $tab );
@@ -421,7 +427,7 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 	 * @param string $active_tab Active tab key.
 	 */
 	private function render_provider_tab( string $active_tab ): void {
-		if ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) || $this->is_core_tab( $active_tab ) ) {
+		if ( ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) && ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE ) ) || $this->is_core_tab( $active_tab ) ) {
 			return;
 		}
 
@@ -449,7 +455,7 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 	 * @param array<string, mixed> $request    Request data.
 	 */
 	private function save_provider_tab( string $active_tab, array $request ): void {
-		if ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) || $this->is_core_tab( $active_tab ) ) {
+		if ( ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) && ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE ) ) || $this->is_core_tab( $active_tab ) ) {
 			return;
 		}
 

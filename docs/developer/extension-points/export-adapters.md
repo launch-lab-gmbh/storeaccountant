@@ -13,6 +13,8 @@ contains orders, customers, or another entity type.
 ## Contract
 
 ```php
+<?php
+
 StoreAccountant\Export\Contract\ExportAdapterInterface
 ```
 
@@ -35,12 +37,16 @@ adapter-owned fields, but normal extensible data should be implemented through
 ## Registry
 
 ```php
+<?php
+
 StoreAccountant\Export\ExportAdapterRegistry
 ```
 
 ## Hook
 
 ```php
+<?php
+
 storeaccountant_export_adapter
 ```
 

@@ -57,6 +57,8 @@ final class CorePermissionActionProviderTest extends TestCase {
 		self::assertArrayHasKey( PermissionActionIds::CONFIGURATION_EDIT_FIELD_MAPPING, $actions );
 		self::assertSame( StoreAccountantCapabilities::ACCESS_ADMIN, $actions[ PermissionActionIds::ACCESS_ADMIN ]->get_capability() );
 		self::assertSame( StoreAccountantCapabilities::EDIT_FIELD_MAPPING, $actions[ PermissionActionIds::CONFIGURATION_EDIT_FIELD_MAPPING ]->get_capability() );
-		self::assertCount( 17, $actions );
+		self::assertSame( StoreAccountantCapabilities::MANAGE_DIAGNOSTICS, $actions[ PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE ]->get_capability() );
+		self::assertSame( StoreAccountantCapabilities::DOWNLOAD_DIAGNOSTICS, $actions[ PermissionActionIds::DIAGNOSTIC_PACKAGE_DOWNLOAD ]->get_capability() );
+		self::assertCount( 19, $actions );
 	}
 }

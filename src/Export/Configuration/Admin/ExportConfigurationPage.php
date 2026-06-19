@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 namespace StoreAccountant\Export\Configuration\Admin;
 
+use Throwable;
 use WP_Error;
 use WP_Post;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Diagnostic\Admin\DiagnosticIncidentDownloadController;
+use StoreAccountant\Diagnostic\DiagnosticIncident;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\Configuration\ExportConfigurationRepository;
@@ -41,6 +45,7 @@ use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use function array_key_first;
 use function array_merge;
+use function is_array;
 use function is_numeric;
 use function sprintf;
 use function str_contains;
@@ -70,6 +75,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	 * @param OrderTaxFieldProviderField                   $tax_field_provider_field Order tax provider field.
 	 * @param PermissionChecker                            $permissions     Permission checker.
 	 * @param DownloadPasswordManager                      $passwords       Download password manager.
+	 * @param DiagnosticIncidentLogger                     $diagnostics     Diagnostic incident logger.
 	 */
 	public function __construct(
 		private ExportConfigurationPageForm $form,
@@ -83,7 +89,8 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		private ExportConfigurationTabProviderRegistry $tab_providers,
 		private OrderTaxFieldProviderField $tax_field_provider_field,
 		private PermissionChecker $permissions,
-		private DownloadPasswordManager $passwords
+		private DownloadPasswordManager $passwords,
+		private DiagnosticIncidentLogger $diagnostics
 	) {}
 
 	/**
@@ -196,15 +203,16 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		$stored_tax_provider_id  = '';
 		$batch_size              = $this->get_batch_size_from_request( $request );
 		$password                = Request::post_text( 'storeaccountant_configuration_download_password' );
-		$redirect_with_error     = function ( string $error = '1' ) use ( $configuration_id ): void {
-			$this->redirect_with_error( $error, $configuration_id );
+		$redirect_with_error     = function ( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [] ) use ( $configuration_id ): void {
+			$incident = $this->log_save_error( $reason, $configuration_id, $wp_error, $context );
+			$this->redirect_with_error( $error, $configuration_id, $incident );
 		};
 
 		if ( $configuration_id > 0 ) {
 			$configuration = get_post( $configuration_id );
 
 			if ( ! $configuration || ExportConfigurationPostType::POST_TYPE !== $configuration->post_type || ! $this->permissions->can( PermissionActionIds::CONFIGURATION_EDIT, $configuration_id ) ) {
-				$redirect_with_error();
+				$redirect_with_error( '1', 'invalid_or_unauthorized_configuration' );
 			}
 
 			$export_adapter         = $this->get_stored_export_adapter( $configuration_id );
@@ -218,7 +226,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			$additional_settings    = $this->get_additional_settings( $export_adapter, $request );
 		} else {
 			if ( ! $this->permissions->can( PermissionActionIds::CONFIGURATION_CREATE ) ) {
-				$redirect_with_error();
+				$redirect_with_error( '1', 'missing_create_permission' );
 			}
 
 			$export_writer  = $this->get_default_export_writer();
@@ -227,45 +235,45 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		}
 
 		if ( '' === $title ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'missing_title' );
 		}
 
 		$configuration_password = $this->passwords->get_configuration_password_for_submission( $password );
 
 		if ( is_wp_error( $configuration_password ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'configuration_password_submission_failed', $configuration_password );
 		}
 
 		if ( str_contains( $title, $configuration_password ) ) {
-			$redirect_with_error( 'title_contains_password' );
+			$redirect_with_error( 'title_contains_password', 'title_contains_password' );
 		}
 
 		if ( is_wp_error( $batch_size ) ) {
-			$redirect_with_error( 'invalid_batch_size' );
+			$redirect_with_error( 'invalid_batch_size', 'invalid_batch_size', $batch_size );
 		}
 
 		if ( is_wp_error( $filters ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'invalid_filters', $filters, [ 'export_adapter' => $export_adapter ] );
 		}
 
 		if ( OrderExportAdapter::ADAPTER_ID === $export_adapter && '' === $tax_provider_id ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'missing_tax_provider', null, [ 'export_adapter' => $export_adapter ] );
 		}
 
 		if ( null === $this->export_adapters->get( $export_adapter ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'unknown_export_adapter', null, [ 'export_adapter' => $export_adapter ] );
 		}
 
 		if ( null === $this->export_writers->get( $export_writer ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'unknown_export_writer', null, [ 'export_writer' => $export_writer ] );
 		}
 
 		if ( ! $this->storage_adapters->is_enabled( $storage_engine ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'storage_adapter_not_enabled', null, [ 'storage_engine' => $storage_engine ] );
 		}
 
 		if ( is_wp_error( $additional_settings ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'invalid_additional_settings', $additional_settings, [ 'export_adapter' => $export_adapter ] );
 		}
 
 		if ( $configuration_id > 0 ) {
@@ -292,7 +300,12 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		}
 
 		if ( is_wp_error( $post_id ) || $post_id <= 0 ) {
-			$redirect_with_error();
+			$redirect_with_error(
+				'1',
+				'configuration_persistence_failed',
+				is_wp_error( $post_id ) ? $post_id : null,
+				[ 'post_id' => is_wp_error( $post_id ) ? 0 : $post_id ]
+			);
 		}
 
 		if ( OrderExportAdapter::ADAPTER_ID === $export_adapter ) {
@@ -312,7 +325,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		$result = $this->passwords->save_configuration_password( $post_id, $password );
 
 		if ( is_wp_error( $result ) ) {
-			$redirect_with_error();
+			$redirect_with_error( '1', 'configuration_password_save_failed', $result, [ 'post_id' => $post_id ] );
 		}
 
 		wp_safe_redirect(
@@ -481,6 +494,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			?>
 			<div class="notice notice-error is-dismissible">
 				<p><?php esc_html_e( 'The field mapping could not be saved.', 'storeaccountant' ); ?></p>
+				<?php $this->render_diagnostic_notice(); ?>
 			</div>
 			<?php
 			return;
@@ -502,14 +516,80 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		?>
 		<div class="notice notice-error is-dismissible">
 			<p><?php echo esc_html( $message ); ?></p>
+			<?php $this->render_diagnostic_notice(); ?>
 		</div>
 		<?php
 	}
 
 	/**
+	 * Renders the diagnostic package hint when an incident was logged.
+	 */
+	private function render_diagnostic_notice(): void {
+		$support_id = Request::get_key( 'storeaccountant_diagnostic_support_id' );
+
+		if ( '' === $support_id || ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_PACKAGE_DOWNLOAD ) ) {
+			return;
+		}
+		?>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %s: diagnostic support ID */
+					__( 'StoreAccountant logged this error with support ID %s.', 'storeaccountant' ),
+					$support_id
+				)
+			);
+			?>
+			<a href="<?php echo esc_url( $this->get_diagnostic_download_url( $support_id ) ); ?>">
+				<?php esc_html_e( 'Download diagnostic package', 'storeaccountant' ); ?>
+			</a>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Logs the concrete save failure reason for WP debug.log troubleshooting.
+	 *
+	 * @param string               $reason           Internal failure reason.
+	 * @param int                  $configuration_id Export configuration post ID.
+	 * @param WP_Error|null        $wp_error         Optional WordPress error.
+	 * @param array<string, mixed> $context          Additional safe diagnostic context.
+	 * @param Throwable|null       $throwable        Optional throwable.
+	 */
+	private function log_save_error( string $reason, int $configuration_id, ?WP_Error $wp_error = null, array $context = [], ?Throwable $throwable = null ): ?DiagnosticIncident {
+		$details = [
+			'reason'           => $reason,
+			'configuration_id' => $configuration_id,
+		];
+
+		if ( [] !== $context ) {
+			$details['context'] = $context;
+		}
+
+		if ( null !== $wp_error ) {
+			$error_code = $wp_error->get_error_code();
+
+			$details['wp_error'] = [
+				'code'    => $error_code,
+				'message' => $wp_error->get_error_message( $error_code ),
+				'data'    => $wp_error->get_error_data( $error_code ),
+			];
+		}
+
+		return $this->diagnostics->error(
+			'export_configuration',
+			__( 'The export configuration could not be saved.', 'storeaccountant' ),
+			$details,
+			$wp_error,
+			$throwable
+		);
+	}
+
+	/**
 	 * Redirects back to the form with an error notice.
 	 */
-	private function redirect_with_error( string $error = '1', int $configuration_id = 0 ): void {
+	private function redirect_with_error( string $error = '1', int $configuration_id = 0, ?DiagnosticIncident $incident = null ): void {
 		$args = [
 			'page'                                       => 'storeaccountant-export-configuration',
 			'storeaccountant_export_configuration_error' => $error,
@@ -519,6 +599,10 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			$args['configuration_id'] = (string) $configuration_id;
 		}
 
+		if ( null !== $incident ) {
+			$args['storeaccountant_diagnostic_support_id'] = $incident->support_id;
+		}
+
 		wp_safe_redirect(
 			add_query_arg(
 				$args,
@@ -526,6 +610,22 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Gets the authorized diagnostic package download URL.
+	 */
+	private function get_diagnostic_download_url( string $support_id ): string {
+		return wp_nonce_url(
+			add_query_arg(
+				[
+					'action'     => DiagnosticIncidentDownloadController::ACTION,
+					'support_id' => $support_id,
+				],
+				admin_url( 'admin-post.php' )
+			),
+			DiagnosticIncidentDownloadController::ACTION
+		);
 	}
 
 	/**

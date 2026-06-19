@@ -47,6 +47,8 @@ storeaccountant_export_configuration_form_field_provider
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_configuration_form_field_provider',
 	static function ( array $providers ) use ( $provider ): array {

@@ -44,6 +44,8 @@ tabs from `get_tabs()`, keyed by stable tab identifiers.
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_plugin_settings_tab_provider',
 	static function ( array $providers ) use ( $tab_provider ): array {

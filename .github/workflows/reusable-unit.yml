@@ -2,6 +2,11 @@ name: Reusable Unit Tests
 
 on:
   workflow_call:
+    inputs:
+      artifact_name:
+        required: false
+        type: string
+        default: vendor-php82
 
 jobs:
   unit:
@@ -14,7 +19,7 @@ jobs:
         php-version: [ '8.2', '8.3', '8.4', '8.5' ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
@@ -25,9 +30,9 @@ jobs:
           coverage: none
 
       - name: Download vendor
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
-          name: vendor-php82
+          name: ${{ inputs.artifact_name }}
           path: vendor
 
       - name: Verify vendor exists

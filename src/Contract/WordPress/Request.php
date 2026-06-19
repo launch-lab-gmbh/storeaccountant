@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace StoreAccountant\Contract\WordPress;
 
 use function absint;
+use function array_map;
 use function filter_input;
 use function filter_input_array;
 use function is_array;
@@ -102,15 +103,9 @@ final readonly class Request {
 	 * @return array<string, mixed>
 	 */
 	public static function post_data(): array {
-		$value = filter_input_array(
-			INPUT_POST,
-			[
-				'filter'  => FILTER_CALLBACK,
-				'options' => [ self::class, 'sanitize_text_value' ],
-			]
-		);
+		$value = filter_input_array( INPUT_POST, FILTER_UNSAFE_RAW );
 
-		return is_array( $value ) ? $value : [];
+		return is_array( $value ) ? self::sanitize_data( $value ) : [];
 	}
 
 	/**
@@ -163,6 +158,20 @@ final readonly class Request {
 	 */
 	public static function sanitize_text_value( mixed $value ): string {
 		return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
+	}
+
+	/**
+	 * Sanitizes nested request data while preserving the submitted shape.
+	 *
+	 * @param array<int|string, mixed> $data Raw request data.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private static function sanitize_data( array $data ): array {
+		return array_map(
+			static fn ( mixed $value ): mixed => is_array( $value ) ? self::sanitize_data( $value ) : self::sanitize_text_value( $value ),
+			$data
+		);
 	}
 
 	/**

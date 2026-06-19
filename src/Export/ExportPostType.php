@@ -18,6 +18,9 @@ use Throwable;
 use Symfony\Component\Messenger\MessageBusInterface;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Diagnostic\Admin\DiagnosticIncidentDownloadController;
+use StoreAccountant\Diagnostic\DiagnosticIncident;
+use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Export\Admin\ExportListPollingResponseFactory;
 use StoreAccountant\Export\Download\ExportDownloadUrlFactory;
 use StoreAccountant\Export\Event\ExportEventDispatcher;
@@ -112,6 +115,7 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	 * @param QueueLoopbackDispatcher          $loopback_dispatcher      Queue loopback dispatcher.
 	 * @param ExportListPollingResponseFactory $polling_response_factory Polling response factory.
 	 * @param ExportDownloadUrlFactory         $download_urls            Download URL factory.
+	 * @param DiagnosticIncidentLogger         $diagnostics              Diagnostic incident logger.
 	 */
 	public function __construct(
 		private AccountingHeaderBar $header_bar,
@@ -126,7 +130,8 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 		private MessageBusInterface $message_bus,
 		private QueueLoopbackDispatcher $loopback_dispatcher,
 		private ExportListPollingResponseFactory $polling_response_factory,
-		private ExportDownloadUrlFactory $download_urls
+		private ExportDownloadUrlFactory $download_urls,
+		private DiagnosticIncidentLogger $diagnostics
 	) {
 	}
 
@@ -787,7 +792,35 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 		?>
 		<div class="notice notice-error is-dismissible">
 			<p><?php echo esc_html( $message ); ?></p>
+			<?php $this->render_diagnostic_notice(); ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Renders the diagnostic package hint when an incident was logged.
+	 */
+	private function render_diagnostic_notice(): void {
+		$support_id = Request::get_key( 'storeaccountant_diagnostic_support_id' );
+
+		if ( '' === $support_id || ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_PACKAGE_DOWNLOAD ) ) {
+			return;
+		}
+		?>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %s: diagnostic support ID */
+					__( 'StoreAccountant logged this error with support ID %s.', 'storeaccountant' ),
+					$support_id
+				)
+			);
+			?>
+			<a href="<?php echo esc_url( $this->get_diagnostic_download_url( $support_id ) ); ?>">
+				<?php esc_html_e( 'Download diagnostic package', 'storeaccountant' ); ?>
+			</a>
+		</p>
 		<?php
 	}
 
@@ -859,6 +892,17 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 					'log_message' => 'The accounting export could not be queued.',
 				]
 			);
+			$incident = $this->diagnostics->error(
+				'retry_export',
+				__( 'The accounting export could not be saved.', 'storeaccountant' ),
+				[
+					'reason'    => 'retry_export_queue_failed',
+					'export_id' => $post_id,
+				],
+				null,
+				$exception
+			);
+			$this->redirect_list_with_error( '1', $incident );
 		}
 
 		wp_safe_redirect(
@@ -871,6 +915,44 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Redirects back to the export list with an error notice.
+	 */
+	private function redirect_list_with_error( string $error = '1', ?DiagnosticIncident $incident = null ): void {
+		$args = [
+			'post_type'                    => self::POST_TYPE,
+			'storeaccountant_export_error' => $error,
+		];
+
+		if ( null !== $incident ) {
+			$args['storeaccountant_diagnostic_support_id'] = $incident->support_id;
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				$args,
+				admin_url( 'edit.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Gets the authorized diagnostic package download URL.
+	 */
+	private function get_diagnostic_download_url( string $support_id ): string {
+		return wp_nonce_url(
+			add_query_arg(
+				[
+					'action'     => DiagnosticIncidentDownloadController::ACTION,
+					'support_id' => $support_id,
+				],
+				admin_url( 'admin-post.php' )
+			),
+			DiagnosticIncidentDownloadController::ACTION
+		);
 	}
 
 	/**

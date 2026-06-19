@@ -304,6 +304,219 @@ if ( ! class_exists( 'WC_Customer' ) ) {
 	}
 }
 
+if ( ! class_exists( 'WC_Product_Attribute' ) ) {
+	/**
+	 * Flexible WooCommerce product attribute double for unit tests.
+	 */
+	class WC_Product_Attribute {
+		/**
+		 * @param array<int, mixed> $options Attribute options.
+		 */
+		public function __construct(
+			private readonly string $name = '',
+			private readonly bool $taxonomy = false,
+			private readonly array $options = []
+		) {}
+
+		public function get_name(): string {
+			return $this->name;
+		}
+
+		public function is_taxonomy(): bool {
+			return $this->taxonomy;
+		}
+
+		/**
+		 * @return array<int, mixed>
+		 */
+		public function get_options(): array {
+			return $this->options;
+		}
+	}
+}
+
+if ( ! class_exists( 'WC_Product' ) ) {
+	/**
+	 * Flexible WooCommerce product double for unit tests.
+	 */
+	class WC_Product {
+		/**
+		 * Product fixtures indexed by product ID.
+		 *
+		 * @var array<int, array<string, mixed>>
+		 */
+		public static array $products = [];
+
+		/**
+		 * @param array<string, mixed>|int $data Product data or product ID.
+		 */
+		public function __construct(
+			protected readonly array|int $data = []
+		) {}
+
+		/**
+		 * Gets normalized product data.
+		 *
+		 * @return array<string, mixed>
+		 */
+		protected function get_data(): array {
+			if ( is_int( $this->data ) ) {
+				return self::$products[ $this->data ] ?? [ 'id' => $this->data ];
+			}
+
+			return $this->data;
+		}
+
+		public function get_id(): int {
+			return (int) ( $this->get_data()['id'] ?? 0 );
+		}
+
+		public function get_parent_id(): int {
+			return (int) ( $this->get_data()['parent_id'] ?? 0 );
+		}
+
+		public function get_date_created(): ?WC_DateTime {
+			$value = $this->get_data()['date_created'] ?? null;
+
+			return $value instanceof WC_DateTime ? $value : null;
+		}
+
+		public function get_date_modified(): ?WC_DateTime {
+			$value = $this->get_data()['date_modified'] ?? null;
+
+			return $value instanceof WC_DateTime ? $value : null;
+		}
+
+		/**
+		 * @return array<int|string, mixed>
+		 */
+		public function get_attributes(): array {
+			return $this->get_data()['attributes'] ?? [];
+		}
+
+		/**
+		 * @return array<string, mixed>
+		 */
+		public function get_default_attributes(): array {
+			return $this->get_data()['default_attributes'] ?? [];
+		}
+
+		public function get_meta( string $key, bool $single = true ): mixed {
+			return $this->get_data()['meta'][ $key ] ?? '';
+		}
+
+		public function get_meta_data(): array {
+			$meta = $this->get_data()['meta'] ?? [];
+
+			return array_map(
+				static fn ( string $key, mixed $value ): object => new class( $key, $value ) {
+					public function __construct(
+						private readonly string $key,
+						private readonly mixed $value
+					) {}
+
+					public function get_data(): array {
+						return [
+							'key'   => $this->key,
+							'value' => $this->value,
+						];
+					}
+				},
+				array_keys( $meta ),
+				$meta
+			);
+		}
+
+		public function __call( string $name, array $arguments ): mixed {
+			if ( str_starts_with( $name, 'get_' ) ) {
+				return $this->get_data()[ substr( $name, 4 ) ] ?? '';
+			}
+
+			return null;
+		}
+	}
+}
+
+if ( ! class_exists( 'WC_Product_Variation' ) ) {
+	/**
+	 * Flexible WooCommerce product variation double for unit tests.
+	 */
+	class WC_Product_Variation extends WC_Product {
+		/**
+		 * @return array<string, mixed>
+		 */
+		public function get_variation_attributes(): array {
+			return $this->get_data()['variation_attributes'] ?? [];
+		}
+	}
+}
+
+if ( ! class_exists( 'WP_Query' ) ) {
+	/**
+	 * Flexible WordPress query double for unit tests.
+	 */
+	class WP_Query {
+		/**
+		 * Query post results used by the next query instances.
+		 *
+		 * @var array<int, mixed>|array<int, array<int, mixed>>
+		 */
+		public static array $results = [];
+
+		/**
+		 * Query total used by paginated query instances.
+		 */
+		public static int $found_posts_result = 0;
+
+		/**
+		 * Captured constructor arguments.
+		 *
+		 * @var array<int, array<string, mixed>>
+		 */
+		public static array $queries = [];
+
+		/**
+		 * Query posts.
+		 *
+		 * @var array<int, mixed>
+		 */
+		public array $posts = [];
+
+		/**
+		 * Query total.
+		 */
+		public int $found_posts = 0;
+
+		/**
+		 * @param array<string, mixed> $args Query args.
+		 */
+		public function __construct(
+			private readonly array $args = []
+		) {
+			self::$queries[]    = $args;
+			$this->found_posts = self::$found_posts_result;
+			$this->posts       = $this->get_next_results();
+		}
+
+		/**
+		 * Gets configured query results.
+		 *
+		 * @return array<int, mixed>
+		 */
+		private function get_next_results(): array {
+			if ( [] === self::$results ) {
+				return [];
+			}
+
+			if ( isset( self::$results[0] ) && is_array( self::$results[0] ) ) {
+				return array_shift( self::$results );
+			}
+
+			return self::$results;
+		}
+	}
+}
+
 if ( ! class_exists( 'WP_User_Query' ) ) {
 	/**
 	 * Flexible WordPress user query double for unit tests.

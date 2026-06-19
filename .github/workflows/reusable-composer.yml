@@ -2,6 +2,15 @@ name: Reusable Composer
 
 on:
   workflow_call:
+    inputs:
+      production:
+        required: false
+        type: boolean
+        default: false
+      artifact_name:
+        required: false
+        type: string
+        default: vendor-php82
 
 jobs:
   install:
@@ -9,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup PHP 8.2
         uses: shivammathur/setup-php@v2
@@ -24,7 +33,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Composer downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: composer-php82-${{ runner.os }}-${{ hashFiles('composer.lock') }}
@@ -35,11 +44,16 @@ jobs:
         run: composer validate --strict
 
       - name: Install dependencies
+        if: ${{ !inputs.production }}
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Install production dependencies
+        if: ${{ inputs.production }}
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+
       - name: Upload vendor
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: vendor-php82
+          name: ${{ inputs.artifact_name }}
           path: vendor/**
           retention-days: 1
