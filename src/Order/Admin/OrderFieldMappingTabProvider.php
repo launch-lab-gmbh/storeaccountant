@@ -291,22 +291,6 @@ final readonly class OrderFieldMappingTabProvider implements ExportConfiguration
 	}
 
 	/**
-	 * Rewrites only tax field mapping for the currently selected tax field provider.
-	 *
-	 * @param int $configuration_id Export configuration post ID.
-	 */
-	public function refresh_tax_field_mapping( int $configuration_id ): void {
-		$context = $this->get_context( $configuration_id );
-		$fields  = $this->get_fields( $configuration_id, $context );
-
-		$this->mapping->refresh_matching_fields(
-			$configuration_id,
-			$fields,
-			static fn ( string $field_id ): bool => self::is_tax_field_id( $field_id )
-		);
-	}
-
-	/**
 	 * Redirects back to the field mapping tab with an error notice.
 	 *
 	 * @param int $configuration_id Export configuration post ID.

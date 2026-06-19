@@ -54,6 +54,8 @@ storeaccountant_queue_transport_provider
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_queue_transport_provider',
 	static function ( array $providers ) use ( $transport_provider ): array {

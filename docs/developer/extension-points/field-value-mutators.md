@@ -46,6 +46,8 @@ The `supports()` method decides field-by-field whether a mutator applies.
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_field_value_mutator',
 	static function ( array $mutators ) use ( $mutator ): array {

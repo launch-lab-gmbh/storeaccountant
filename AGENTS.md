@@ -1,14 +1,39 @@
 # Agent Instructions
 
-This repository contains a WordPress PHP project. The active custom plugin is
-`wp-content/plugins/storeaccountant`.
+This repository contains a WordPress PHP project.
 
 ## Product Context
 
 StoreAccountant is planned as a WooCommerce accounting workflow plugin. It
-starts with configurable exports for orders and customers, while keeping the
+starts with configurable exports for orders, customers, and products while keeping the
 architecture open for broader bookkeeping-related features around tax data,
 documents, storage, and recurring accounting processes.
+
+## Current State
+
+- PHP 8.2 is the minimum target version.
+- Classes live below `src` and are loaded through Composer PSR-4 autoloading.
+- The plugin entry file `storeaccountant.php` stays bootstrap-only.
+- Services are registered through `League\Container` in
+  `src/ContainerBuilder.php`.
+- Saved exports use the custom post type `storeacct_export`.
+- Saved export configurations use the custom post type `storeacct_config`.
+- Manual exports are dispatched through Symfony Messenger and processed in the
+  background through the free Action Scheduler transport.
+- Export processing stores lifecycle status and progress metadata so queued,
+  processing, completed, and failed exports are visible in the backend.
+- Scheduled exports are not currently offered in the admin UI. The export status
+  and polling layers contain preparatory support for future scheduled export run
+  records.
+- StoreAccountant admin actions are guarded by plugin-specific WordPress
+  capabilities that can be assigned to backend roles from the plugin settings.
+- StoreAccountant declares WooCommerce HPOS compatibility; order features must
+  use WooCommerce order APIs and avoid direct post/postmeta access for
+  WooCommerce order data.
+- Export adapters and providers register through WordPress hooks so premium
+  add-ons or third-party plugins can hook into the system.
+- The first storage adapter is `local`; it uses Flysystem with a protected local
+  zip archive below `wp-content/uploads/storeaccountant`.
 
 ## Documentation
 
@@ -98,7 +123,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Export plugin for WooCommerce accounting workflows.
  *
  * @copyright   LaunchLab GmbH
- * @author      thomas.baier@launch-lab.de
  * @author-uri  https://launch-lab.de
  * @license     GPL-3.0-or-later
  */
@@ -153,24 +177,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 - Keep admin UI code under `src/Admin`.
 - Keep export-related code under `src/Export`.
 
+## Translations
+
+All user-facing strings in PHP code must stay in English and use the
+`storeaccountant` text domain. Use natural English strings in translation
+function calls for normal UI text. Synthetic translation keys are reserved for
+values that must be resolved from runtime identifiers, such as registered export
+adapter, renderer, storage adapter, or invoice plugin IDs; built-in dynamic keys
+must also be listed statically for translation extraction.
+
+When adding or changing translatable strings, update the complete translation
+catalogue below `languages`, including the template, English files, and German
+files. The English files are intentionally maintained even though the PHP source
+strings are English, because they provide readable labels for dynamic keys and
+give translators the same complete catalogue as other locales.
+
 ## Local Environment
 
-- This project lives in WSL at `/home/thomas/Projects/storeaccountant`. If the
-  working directory is shown as a Windows UNC path such as
-  `\\wsl.localhost\FedoraLinux-44\home\thomas\Projects\storeaccountant`, run
-  project commands through WSL instead of looking for PHP, Git, or `wp-env` on
-  the Windows/PowerShell PATH.
-- Use `wsl -d FedoraLinux-44 bash -lc 'cd /home/thomas/Projects/storeaccountant && <command>'`
-  for repository commands from a Windows shell.
-- PHP tooling is available through `wp-env` in WSL. For example:
+- Local development uses Docker through `wp-env`. The local checkout is mapped
+  into the WordPress container as
+  `/var/www/html/wp-content/plugins/storeaccountant`; prefer that container path
+  for commands executed through `wp-env run`.
+- If the project is opened from Windows through WSL and the working directory is
+  shown as a UNC path such as `\\wsl.localhost\<Distribution>\<path-to-project>`,
+  run repository commands inside the matching WSL distribution instead of
+  looking for PHP, Git, or `wp-env` on the Windows/PowerShell PATH.
+- Agents should resolve the repository root from the current checkout instead
+  of relying on a fixed personal path:
 
 ```sh
-wsl -d FedoraLinux-44 bash -lc 'cd /home/thomas/Projects/storeaccountant && wp-env run cli php -v'
-wsl -d FedoraLinux-44 bash -lc 'cd /home/thomas/Projects/storeaccountant && wp-env run cli php -l /var/www/html/wp-content/plugins/storeaccountant/src/ChangedFile.php'
+git rev-parse --show-toplevel
+pwd
+```
+
+- From a Windows shell, derive the WSL distribution and Linux path from the UNC
+  working directory, then run repository commands through WSL:
+
+```sh
+wsl -d <Distribution> bash -lc 'cd <linux-project-path> && <command>'
+```
+
+- PHP tooling is available through `wp-env` in WSL and runs inside the Docker
+  container. For example:
+
+```sh
+wp-env run cli php -v
+wp-env run cli php -l /var/www/html/wp-content/plugins/storeaccountant/src/ChangedFile.php
 ```
 
 ## Verification
 
-- Run PHP linting or tests when PHP tooling is available.
+- Run PHP linting and tests after changes:
+```bash
+# tests
+wp-env run cli composer test --working-dir=/var/www/html/wp-content/plugins/storeaccountant
+# linting
+wp-env run cli composer lint --working-dir=/var/www/html/wp-content/plugins/storeaccountant
+```
+
 - Do not revert unrelated user changes.
 - Keep changes scoped to the requested feature or fix.

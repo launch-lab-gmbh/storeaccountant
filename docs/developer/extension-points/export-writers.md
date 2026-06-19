@@ -35,6 +35,8 @@ User-facing labels are resolved from renderer IDs through the translation key
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_renderer',
 	static function ( array $renderers ) use ( $xlsx_renderer ): array {
@@ -116,6 +118,8 @@ registrar can publish as many instances as needed.
 Example:
 
 ```php
+<?php
+
 use Symfony\Component\Serializer\SerializerInterface;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Export\Contract\ExportTemplateNormalizerInterface;

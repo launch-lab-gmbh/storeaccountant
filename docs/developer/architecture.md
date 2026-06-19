@@ -247,7 +247,11 @@ The built-in order export adapter is `OrderExportAdapter`; it has the adapter ID
 `orders`, loads WooCommerce orders, and provides an `ExportContext`, additional
 tax context such as known tax rates, and record IDs. The built-in customer export adapter is
 `CustomerExportAdapter`; it has the adapter ID `customers` and loads
-WooCommerce customers through customer/user APIs. `ExportContext` carries typed
+WooCommerce customers through customer/user APIs. The built-in product export
+adapter is `ProductExportAdapter`; it has the adapter ID `products`, loads
+WooCommerce products through WordPress/WooCommerce product APIs, and can include
+product variations as separate rows when the product variant export setting is
+enabled. `ExportContext` carries typed
 runtime data such as `export_type`, `configuration_id`, source items, and
 optional adapter values readable through `$context->get( 'tax_rates', [] )`.
 The shared field pipeline lives above concrete adapters in
@@ -339,15 +343,15 @@ decides whether they apply to a mapped field.
 The field resolver always moves metadata-backed custom fields to the end of the
 available field collection before applying saved field mappings. For order
 exports this means order tax fields remain before custom order fields. For
-customer exports it means custom customer fields are also appended after all
-fixed customer fields.
+customer and product exports it means custom metadata fields are also appended
+after all fixed fields.
 
 The shared metadata helper classes live below `StoreAccountant\Export\Field\Meta`.
-Order and customer metadata providers use these helpers to discover scalar
-WooCommerce metadata keys from the current export context, create stable field
-IDs with type-specific prefixes such as `order_meta_` and `customer_meta_`, and
-format metadata values. Entity-specific providers still own their reserved
-metadata key lists because built-in order and customer fields differ.
+Order, customer, and product metadata providers use these helpers to discover
+scalar WooCommerce metadata keys from the current export context, create stable
+field IDs with type-specific prefixes such as `order_meta_`, `customer_meta_`,
+and `product_meta_`, and format metadata values. Entity-specific providers still
+own their reserved metadata key lists because built-in fields differ.
 
 The order dataset contains accounting-relevant order, billing, total, fee,
 shipping, tax, and custom metadata fields. Invoice fields are intentionally outside the core
@@ -383,6 +387,15 @@ country when available. Customer queries are intentionally not limited to the Wo
 `customer` role, because WooCommerce customers can also have roles such as
 administrator or shop manager. Instead, customer exports include only registered
 users whose WooCommerce customer record has at least one order.
+
+Product exports include product identity fields, parent product IDs and SKUs,
+catalog status, prices, tax settings, stock data, dimensions, categories, tags,
+attributes, variation attributes, descriptions, and scalar custom product
+metadata fields not already covered by dedicated built-in fields. Product date
+filters use the product creation date and currently expose all time, this month,
+and last month selections. The product variant export setting defaults to parent
+products only; when enabled, WooCommerce `product_variation` records are loaded
+as separate export rows alongside products.
 
 Selected invoice files are written below the localized invoice attachment
 directory in the generated zip archive. In English this is `Invoices/{type}/`;

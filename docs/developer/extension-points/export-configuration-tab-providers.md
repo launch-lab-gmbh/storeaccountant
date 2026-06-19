@@ -40,6 +40,8 @@ checking the stored export adapter ID such as `orders`.
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_configuration_tab_provider',
 	static function ( array $providers ) use ( $tab_provider ): array {

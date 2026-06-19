@@ -46,6 +46,8 @@ example to group different invoice file types.
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_attachment_provider',
 	static function ( array $providers ) use ( $attachment_provider ): array {

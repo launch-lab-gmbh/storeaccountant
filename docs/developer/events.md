@@ -22,6 +22,8 @@ registering normal WordPress action hooks underneath. Subscribers implement
 `StoreAccountant\Event\EventSubscriberRegistrar`.
 
 ```php
+<?php
+
 namespace StoreAccountant\Export\Event;
 
 use StoreAccountant\Event\Contract\EventSubscriberInterface;
@@ -97,6 +99,8 @@ default limit and export post ID and returns the maximum number of stored log
 entries.
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_log_entry_limit',
 	static function ( int $limit, int $export_id ): int {
@@ -114,6 +118,8 @@ state has been persisted for the step being reported. New core events should
 use `ExportEvents` instead of repeating literal hook strings.
 
 ```php
+<?php
+
 use StoreAccountant\Export\Event\ExportEventDispatcher;
 use StoreAccountant\Export\Event\ExportEvents;
 
@@ -148,6 +154,8 @@ queued batches have not finished yet, or when an already-completed export is
 encountered again.
 
 ```php
+<?php
+
 add_action(
 	'storeaccountant_export_completed',
 	static function ( int $export_id, array $context = [] ): void {
@@ -167,6 +175,8 @@ Fires when an export is marked failed. The event includes both the public error
 message and a technical log message so listeners can decide what to expose.
 
 ```php
+<?php
+
 add_action(
 	'storeaccountant_export_failed',
 	static function (

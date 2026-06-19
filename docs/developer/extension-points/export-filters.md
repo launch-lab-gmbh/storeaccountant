@@ -122,6 +122,8 @@ filters aligned with WooCommerce storage changes such as HPOS.
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_filter',
 	static function ( array $filters ) use ( $filter ): array {

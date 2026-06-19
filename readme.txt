@@ -17,7 +17,7 @@ It creates saved export records for WooCommerce orders and customers, processes 
 
 = Core features =
 
-- Advanced order and customer exports
+- Advanced order, customer, and product exports
 - Configurable export formats (CSV, JSON)
 - Password-protected export downloads
 - Filters for export periods, order statuses, and customer countries

@@ -37,6 +37,7 @@ final readonly class I18n {
 		return match ( $key ) {
 			'export_adapter_orders' => __( 'export_adapter_orders', 'storeaccountant' ),
 			'export_adapter_customers' => __( 'export_adapter_customers', 'storeaccountant' ),
+			'export_adapter_products' => __( 'export_adapter_products', 'storeaccountant' ),
 			'exporter_csv' => __( 'exporter_csv', 'storeaccountant' ),
 			'exporter_json' => __( 'exporter_json', 'storeaccountant' ),
 			'invoice_plugin_woocommerce-pdf-invoices-packing-slips' => __( 'invoice_plugin_woocommerce-pdf-invoices-packing-slips', 'storeaccountant' ),

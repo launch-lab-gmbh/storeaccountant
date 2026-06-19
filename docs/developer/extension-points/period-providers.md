@@ -35,6 +35,8 @@ without adding a separate provider selection UI.
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_export_period_field_provider',
 	static fn (): PremiumCalendarPeriodFieldProvider => $premium_provider,

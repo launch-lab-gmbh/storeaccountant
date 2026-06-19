@@ -45,6 +45,8 @@ User-facing labels are resolved from adapter IDs through the translation key
 ## Registration
 
 ```php
+<?php
+
 add_filter(
 	'storeaccountant_storage_adapter',
 	static function ( array $adapters ) use ( $s3_adapter ): array {
