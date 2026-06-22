@@ -30,10 +30,16 @@ use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\SerializerInterface;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Admin\AdminAssets;
+use StoreAccountant\Admin\AccountingOverviewTabProviderRegistry;
 use StoreAccountant\Export\Admin\AccountingExportPage;
 use StoreAccountant\Export\Admin\AccountingExportPageForm;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Admin\AccountingSupportAccess;
+use StoreAccountant\Admin\AccountingSupportPage;
+use StoreAccountant\Admin\ExportConfigurationOverviewTabProvider;
+use StoreAccountant\Admin\ExportOverviewTabProvider;
+use StoreAccountant\Admin\SupportOverviewTabProvider;
 use StoreAccountant\Customer\Admin\CustomerCountryFilterFieldProvider;
 use StoreAccountant\Customer\Admin\CustomerDateFilterFieldProvider;
 use StoreAccountant\Customer\Admin\CustomerFieldMappingTabProvider;
@@ -47,7 +53,6 @@ use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPage;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPageForm;
 use StoreAccountant\Export\Admin\ExportDetailsReadTabProvider;
 use StoreAccountant\Export\Admin\ExportLogReadTabProvider;
-use StoreAccountant\Export\Admin\Period\ExportPeriodFieldProviderResolver;
 use StoreAccountant\Export\Admin\ExportRawDataReadTabProvider;
 use StoreAccountant\Export\Admin\Period\MonthYearExportPeriodFieldProvider;
 use StoreAccountant\Invoice\Admin\InvoicePluginForm;
@@ -193,6 +198,10 @@ final readonly class ContainerBuilder {
 		PermissionCapabilityRegistrar::class,
 		AdminAssets::class,
 		AccountingMenu::class,
+		ExportOverviewTabProvider::class,
+		ExportConfigurationOverviewTabProvider::class,
+		SupportOverviewTabProvider::class,
+		AccountingSupportPage::class,
 		SyncTransportProvider::class,
 		ActionSchedulerTransportProvider::class,
 		ActionSchedulerTransportProcessor::class,
@@ -237,7 +246,6 @@ final readonly class ContainerBuilder {
 		CsvExportRenderer::class,
 		SerializerExportRendererRegistrar::class,
 		LocalStorageAdapter::class,
-		MonthYearExportPeriodFieldProvider::class,
 		MonthYearPeriodProvider::class,
 		OrderDateFilter::class,
 		OrderStatusFilter::class,
@@ -375,6 +383,8 @@ final readonly class ContainerBuilder {
 		$container->addShared( ExportReadTabProviderRegistry::class );
 		$container->addShared( ExportConfigurationTabProviderRegistry::class );
 		$container->addShared( PluginSettingsTabProviderRegistry::class );
+		$container->addShared( AccountingOverviewTabProviderRegistry::class );
+		$container->addShared( AccountingSupportAccess::class );
 		$container->addShared( DiagnosticSettings::class );
 		$container->addShared( ProtectedUploadDirectory::class );
 		$container->addShared(
@@ -434,7 +444,6 @@ final readonly class ContainerBuilder {
 		$container->addShared( StorageAdapterRegistry::class );
 		$container->addShared( QueueTransportsSettingsForm::class )
 			->addArgument( QueueTransportRegistry::class );
-		$container->addShared( ExportPeriodFieldProviderResolver::class );
 		$container->addShared( MonthYearExportPeriodFieldProvider::class );
 		$container->addShared( MonthYearPeriodProvider::class );
 		$container->addShared( OrderDateFilter::class )
@@ -481,6 +490,12 @@ final readonly class ContainerBuilder {
 		$container->addShared( AdminAssets::class );
 		$container->addShared( AccountingMenu::class )
 			->addArgument( PermissionChecker::class );
+		$container->addShared( ExportOverviewTabProvider::class )
+			->addArgument( PermissionChecker::class );
+		$container->addShared( ExportConfigurationOverviewTabProvider::class )
+			->addArgument( PermissionChecker::class );
+		$container->addShared( SupportOverviewTabProvider::class )
+			->addArgument( AccountingSupportAccess::class );
 		$container->addShared( CustomerExportAdapter::class )
 			->addArgument( CustomerQuery::class );
 		$container->addShared( ProductExportAdapter::class )
@@ -578,7 +593,11 @@ final readonly class ContainerBuilder {
 			->addArgument( DiagnosticIncidentRepository::class )
 			->addArgument( PermissionChecker::class );
 		$container->addShared( AccountingHeaderBar::class )
-			->addArgument( PermissionChecker::class );
+			->addArgument( PermissionChecker::class )
+			->addArgument( AccountingOverviewTabProviderRegistry::class );
+		$container->addShared( AccountingSupportPage::class )
+			->addArgument( AccountingHeaderBar::class )
+			->addArgument( AccountingSupportAccess::class );
 		$container->addShared( AccountingExportPageForm::class )
 			->addArgument( StorageAdapterRegistry::class )
 			->addArgument( ExportAdapterRegistry::class )

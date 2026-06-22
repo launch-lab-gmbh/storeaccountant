@@ -13,7 +13,11 @@
 ## Links
 
 Homepage: [storeaccountant.launch-lab.de](https://storeaccountant.launch-lab.de)  
-Wordpress Listing: [wordpress.org/plugins/storeaccountant](https://wordpress.org/plugins/storeaccountant)
+Wordpress Listing: [wordpress.org/plugins/storeaccountant](https://wordpress.org/plugins/storeaccountant)  
+Documentation
+developers: [storeaccountant.launch-lab.de/en/documentation-developer/](https://storeaccountant.launch-lab.de/en/documentation-developer/)  
+Documentation
+users: [storeaccountant.launch-lab.de/en/documentation/](https://storeaccountant.launch-lab.de/en/documentation/)
 
 ## Features
 

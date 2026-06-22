@@ -54,6 +54,9 @@ final class ExportRepositoryTest extends TestCase {
 		Functions\when( 'sanitize_key' )->alias(
 			static fn ( string $value ): string => strtolower( preg_replace( '/[^a-zA-Z0-9_\\-]/', '', $value ) ?? '' )
 		);
+		Functions\when( 'add_option' )->justReturn( true );
+		Functions\when( 'delete_option' )->justReturn( true );
+		Functions\when( 'get_option' )->justReturn( 0 );
 		Functions\when( 'do_action' )->justReturn();
 	}
 

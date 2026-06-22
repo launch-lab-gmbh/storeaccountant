@@ -87,6 +87,10 @@ final readonly class ProductDateFilter implements ExportFilterInterface, HookReg
 			return new WP_Error( 'storeaccountant_invalid_product_query', __( 'The product date filter requires a WooCommerce product query.', 'storeaccountant' ) );
 		}
 
+		if ( $this->is_all_time_period( $selection ) ) {
+			return true;
+		}
+
 		$period = $this->get_period( $selection );
 
 		if ( is_wp_error( $period ) ) {
@@ -141,5 +145,20 @@ final readonly class ProductDateFilter implements ExportFilterInterface, HookReg
 		}
 
 		return new ExportPeriod( $start_at, $end_at );
+	}
+
+	/**
+	 * Checks whether the selected period intentionally leaves dates unrestricted.
+	 *
+	 * @param ExportFilterSelection $selection Filter selection.
+	 */
+	private function is_all_time_period( ExportFilterSelection $selection ): bool {
+		$period_selection = $selection->settings['period'] ?? null;
+
+		if ( ! is_array( $period_selection ) || ! isset( $period_selection['month'] ) || ! is_scalar( $period_selection['month'] ) ) {
+			return false;
+		}
+
+		return MonthYearPeriodProvider::PERIOD_ALL_TIME === sanitize_key( (string) $period_selection['month'] );
 	}
 }

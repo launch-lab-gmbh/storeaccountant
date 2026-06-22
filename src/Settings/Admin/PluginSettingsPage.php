@@ -28,10 +28,13 @@ use StoreAccountant\Security\Permission\RolePermissionRepository;
 use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Storage\Admin\StorageLocationsForm;
 use StoreAccountant\Storage\StorageAdapterRegistry;
+use function array_filter;
 use function array_key_exists;
 use function array_key_first;
+use function array_values;
 use function implode;
 use function sprintf;
+use function str_contains;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -84,6 +87,7 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 		add_action( 'admin_menu', [ $this, 'register_page' ] );
 		add_action( 'admin_post_storeaccountant_save_plugin_settings', [ $this, 'handle_save' ] );
 		add_filter( 'plugin_action_links_' . plugin_basename( STOREACCOUNTANT_FILE ), [ $this, 'filter_plugin_action_links' ] );
+		add_filter( 'plugin_row_meta', [ $this, 'filter_plugin_row_meta' ], 10, 2 );
 	}
 
 	/**
@@ -117,6 +121,60 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 		array_unshift( $links, $settings_link );
 
 		return $links;
+	}
+
+	/**
+	 * Adds documentation links to the plugin row metadata.
+	 *
+	 * @param array<int|string, string> $links Plugin row metadata links.
+	 * @param string                    $file  Plugin file path.
+	 *
+	 * @return array<int|string, string>
+	 */
+	public function filter_plugin_row_meta( array $links, string $file ): array {
+		if ( plugin_basename( STOREACCOUNTANT_FILE ) !== $file ) {
+			return $links;
+		}
+
+		$links = array_values(
+			array_filter(
+				$links,
+				static fn ( string $link ): bool => ! str_contains( $link, 'storeaccountant.launch-lab.de' )
+			)
+		);
+
+		$links[] = $this->plugin_meta_link(
+			'https://storeaccountant.launch-lab.de/',
+			__( 'To Plugin Website', 'storeaccountant' )
+		);
+		$links[] = $this->plugin_meta_link(
+			__( 'https://storeaccountant.launch-lab.de/en/documentation/', 'storeaccountant' ),
+			__( 'Guides', 'storeaccountant' )
+		);
+		$links[] = $this->plugin_meta_link(
+			'https://storeaccountant.launch-lab.de/en/documentation-developer/',
+			__( 'Developer Documentation', 'storeaccountant' )
+		);
+		$links[] = $this->plugin_meta_link(
+			'https://github.com/launch-lab-gmbh/storeaccountant',
+			__( 'GitHub', 'storeaccountant' )
+		);
+
+		return $links;
+	}
+
+	/**
+	 * Formats a plugin row metadata link.
+	 *
+	 * @param string $url   Link URL.
+	 * @param string $label Link label.
+	 */
+	private function plugin_meta_link( string $url, string $label ): string {
+		return sprintf(
+			'<a href="%1$s">%2$s</a>',
+			esc_url( $url ),
+			esc_html( $label )
+		);
 	}
 
 	/**

@@ -13,6 +13,7 @@
     - [Extension Points](extension-points.md)
 
 - Extension Points
+    - [Accounting Overview Tab Providers](extension-points/accounting-overview-tab-providers.md)
     - [Export Adapters](extension-points/export-adapters.md)
     - [Export Attachment Providers](extension-points/export-attachment-providers.md)
     - [Export Configuration Form Field Providers](extension-points/export-configuration-form-field-providers.md)
@@ -25,7 +26,6 @@
     - [Field Value Providers](extension-points/field-value-providers.md)
     - [Invoice Plugins](extension-points/invoice-plugins.md)
     - [Order Tax Field Providers](extension-points/order-tax-field-providers.md)
-    - [Period Providers](extension-points/period-providers.md)
     - [Plugin Settings Tab Providers](extension-points/plugin-settings-tab-providers.md)
     - [Queue Transports](extension-points/queue-transports.md)
     - [Storage Adapters](extension-points/storage-adapters.md)

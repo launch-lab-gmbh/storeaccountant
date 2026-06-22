@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace StoreAccountant\Export\Configuration;
 
 use WP_Post;
+use StoreAccountant\Admin\AdminDateFormatter;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
 use StoreAccountant\Export\ExportAdapterRegistry;
@@ -530,11 +531,7 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 		}
 
 		return get_the_time(
-			sprintf(
-				'%1$s %2$s',
-				(string) get_option( 'date_format' ),
-				(string) get_option( 'time_format' )
-			),
+			AdminDateFormatter::get_datetime_format(),
 			$post
 		);
 	}

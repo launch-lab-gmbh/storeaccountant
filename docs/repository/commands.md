@@ -112,7 +112,9 @@ wp-env run cli wp plugin activate storeaccountant
 ```bash
 wp-env run cli wp wc generate terms
 wp-env run cli wp wc generate products 20
-wp-env run cli wp wc generate products 20 --type=variable
+wp-env run cli wp wc generate products 10 --type=variable
+wp-env run cli wp wc generate orders 20 --status=completed
+wp-env run cli wp wc generate orders 20 --status=failed
 wp-env run cli wp wc generate orders 20 --date-start=2024-01-01 --date-end=2026-01-01 --status=completed
 wp-env run cli wp wc generate orders 20 --date-start=2024-01-01 --date-end=2026-01-01 --status=failed
 ```
@@ -122,11 +124,13 @@ wp-env run cli wp wc generate orders 20 --date-start=2024-01-01 --date-end=2026-
 ```bash
 source .venv/bin/activate
 mkdocs serve -f mkdocs-developer.yml
-mkdocs serve -f mkdocs-user.yml
+mkdocs serve -f mkdocs-user-de.yml
+mkdocs serve -f mkdocs-user-en.yml
 ```
 
 ```bash
 source .venv/bin/activate
 mkdocs build -f mkdocs-developer.yml --strict
-mkdocs build -f mkdocs-user.yml --strict
+mkdocs build -f mkdocs-user-de.yml --strict
+mkdocs build -f mkdocs-user-en.yml --strict
 ```

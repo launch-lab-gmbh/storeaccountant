@@ -132,7 +132,8 @@ final readonly class AdminAssets implements HookRegistrarInterface {
 			|| $this->is_plugin_page( AccountingExportPage::PAGE_SLUG )
 			|| $this->is_plugin_page( 'storeaccountant-export' )
 			|| $this->is_plugin_page( 'storeaccountant-export-configuration' )
-			|| $this->is_plugin_page( 'storeaccountant-settings' );
+			|| $this->is_plugin_page( 'storeaccountant-settings' )
+			|| $this->is_plugin_page( AccountingSupportPage::PAGE_SLUG );
 	}
 
 	/**

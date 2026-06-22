@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Export\ExportPayload;
 use StoreAccountant\Export\Filter\ExportFilterSelection;
+use StoreAccountant\Export\Filter\Period\MonthYearPeriodProvider;
 use StoreAccountant\Export\Filter\Period\PeriodProviderRegistry;
 use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
 use StoreAccountant\Order\Export\Filter\OrderDateFilter;
@@ -85,6 +86,32 @@ final class OrderDateFilterTest extends TestCase {
 
 		self::assertTrue( $result );
 		self::assertSame( '1777593600...1780271999', $query->get( OrderDateFilter::FIELD_DATE_PAID ) );
+	}
+
+	public function test_apply_leaves_query_unrestricted_for_all_time_period(): void {
+		Functions\when( 'sanitize_key' )->alias( static fn ( string $value ): string => $value );
+		$query  = new WC_Order_Query();
+		$result = ( new OrderDateFilter( new PeriodProviderRegistry() ) )->apply(
+			$query,
+			new ExportFilterSelection(
+				OrderDateFilter::FILTER_ID,
+				[
+					'date_field'      => OrderDateFilter::FIELD_DATE_CREATED,
+					'period_provider' => MonthYearPeriodProvider::PROVIDER_ID,
+					'period'          => [
+						'month' => MonthYearPeriodProvider::PERIOD_ALL_TIME,
+					],
+					'resolved_period' => [
+						'start_at' => '2016-01-01 00:00:00',
+						'end_at'   => '2026-06-22 08:08:26',
+					],
+				]
+			),
+			new ExportPayload( 1, OrderExportAdapter::ADAPTER_ID )
+		);
+
+		self::assertTrue( $result );
+		self::assertNull( $query->get( OrderDateFilter::FIELD_DATE_CREATED ) );
 	}
 
 	public function test_apply_returns_wp_error_for_invalid_query_missing_provider_or_invalid_period(): void {
