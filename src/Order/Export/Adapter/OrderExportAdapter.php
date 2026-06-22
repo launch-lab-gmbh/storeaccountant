@@ -19,13 +19,17 @@ use StoreAccountant\Export\Contract\BatchExportAdapterInterface;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\ExportPayload;
+use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Export\Field\FieldCollection;
 use StoreAccountant\Tax\Field\Provider\ExtendedOrderTaxFieldProvider;
 use StoreAccountant\Order\Tax\OrderTaxRateResolver;
 use StoreAccountant\Order\Export\Query\OrderQuery;
 use StoreAccountant\Contract\HookRegistrarInterface;
+use function add_filter;
+use function get_post_meta;
 use function is_array;
 use function is_int;
+use function sanitize_key;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -102,6 +106,7 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 			$this->get_configuration_id( $payload ),
 			$orders,
 			[
+				'export_id'             => $payload->export_id,
 				'tax_rates'             => $this->tax_rates->get_tax_rates( $orders ),
 				'tax_field_provider_id' => $this->get_tax_field_provider_id( $payload ),
 			]
@@ -152,11 +157,13 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 	private function get_tax_field_provider_id( ExportPayload $payload ): string {
 		$configuration_id = $this->get_configuration_id( $payload );
 
-		if ( $configuration_id <= 0 ) {
-			return ExtendedOrderTaxFieldProvider::PROVIDER_ID;
+		if ( $configuration_id > 0 ) {
+			$provider_id = sanitize_key( (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_ORDER_TAX_FIELD_PROVIDER, true ) );
+
+			return '' !== $provider_id ? $provider_id : ExtendedOrderTaxFieldProvider::PROVIDER_ID;
 		}
 
-		$provider_id = sanitize_key( (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_ORDER_TAX_FIELD_PROVIDER, true ) );
+		$provider_id = sanitize_key( (string) get_post_meta( $payload->export_id, ExportPostType::META_ORDER_TAX_FIELD_PROVIDER, true ) );
 
 		return '' !== $provider_id ? $provider_id : ExtendedOrderTaxFieldProvider::PROVIDER_ID;
 	}

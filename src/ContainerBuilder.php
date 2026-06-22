@@ -33,6 +33,7 @@ use StoreAccountant\Admin\AdminAssets;
 use StoreAccountant\Admin\AccountingOverviewTabProviderRegistry;
 use StoreAccountant\Export\Admin\AccountingExportPage;
 use StoreAccountant\Export\Admin\AccountingExportPageForm;
+use StoreAccountant\Export\Admin\ExportSettingsFields;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
 use StoreAccountant\Admin\AccountingSupportAccess;
@@ -599,20 +600,21 @@ final readonly class ContainerBuilder {
 			->addArgument( AccountingHeaderBar::class )
 			->addArgument( AccountingSupportAccess::class );
 		$container->addShared( AccountingExportPageForm::class )
-			->addArgument( StorageAdapterRegistry::class )
 			->addArgument( ExportAdapterRegistry::class )
-			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportFilterFieldProviderRegistry::class )
+			->addArgument( ExportSettingsFields::class )
 			->addArgument( DownloadPasswordManager::class )
 			->addArgument( PermissionChecker::class );
-		$container->addShared( ExportConfigurationPageForm::class )
+		$container->addShared( ExportSettingsFields::class )
 			->addArgument( StorageAdapterRegistry::class )
-			->addArgument( ExportAdapterRegistry::class )
 			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportConfigurationFormFieldProviderRegistry::class )
+			->addArgument( OrderTaxFieldProviderField::class );
+		$container->addShared( ExportConfigurationPageForm::class )
+			->addArgument( ExportAdapterRegistry::class )
 			->addArgument( ExportFilterFieldProviderRegistry::class )
 			->addArgument( ExportFilterSelectionSerializer::class )
-			->addArgument( OrderTaxFieldProviderField::class )
+			->addArgument( ExportSettingsFields::class )
 			->addArgument( DownloadPasswordManager::class )
 			->addArgument( PermissionChecker::class );
 		$container->addShared( StorageLocationsForm::class )
@@ -710,6 +712,7 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportAdapterRegistry::class )
 			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportFilterFieldProviderRegistry::class )
+			->addArgument( ExportSettingsFields::class )
 			->addArgument( ExportFilterSelectionSerializer::class )
 			->addArgument( ExportFilterSnapshotter::class )
 			->addArgument( AccountingHeaderBar::class )
@@ -723,11 +726,10 @@ final readonly class ContainerBuilder {
 			->addArgument( StorageAdapterRegistry::class )
 			->addArgument( ExportAdapterRegistry::class )
 			->addArgument( ExportRendererRegistry::class )
-			->addArgument( ExportConfigurationFormFieldProviderRegistry::class )
 			->addArgument( ExportFilterFieldProviderRegistry::class )
 			->addArgument( AccountingHeaderBar::class )
 			->addArgument( ExportConfigurationTabProviderRegistry::class )
-			->addArgument( OrderTaxFieldProviderField::class )
+			->addArgument( ExportSettingsFields::class )
 			->addArgument( PermissionChecker::class )
 			->addArgument( DownloadPasswordManager::class )
 			->addArgument( DiagnosticIncidentLogger::class );

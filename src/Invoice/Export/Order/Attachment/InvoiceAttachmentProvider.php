@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace StoreAccountant\Invoice\Export\Order\Attachment;
 
+use Throwable;
 use WC_Order;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
@@ -20,6 +21,8 @@ use StoreAccountant\Export\Attachment\ExportAttachment;
 use StoreAccountant\Export\Contract\ExportAttachmentProviderInterface;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\ExportPayload;
+use StoreAccountant\Export\Event\ExportEventDispatcher;
+use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Invoice\Export\Order\InvoiceExportAttachmentSettings;
 use StoreAccountant\Invoice\InvoicePluginDetector;
 use function ltrim;
@@ -97,10 +100,23 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 		}
 
 		$attachments = [];
-		$file_types  = $this->settings->get_selected_file_types( $context->configuration_id, $plugin );
+
+		try {
+			$file_types = $this->settings->get_selected_file_types( $context->configuration_id, $plugin, $payload->export_id );
+		} catch ( Throwable $exception ) {
+			$this->log_invoice_plugin_warning( $payload->export_id, $item, $plugin->get_id(), '', $exception );
+
+			return [];
+		}
 
 		foreach ( $file_types as $file_type ) {
-			$file = $plugin->get_invoice_file( $item, $file_type );
+			try {
+				$file = $plugin->get_invoice_file( $item, $file_type );
+			} catch ( Throwable $exception ) {
+				$this->log_invoice_plugin_warning( $payload->export_id, $item, $plugin->get_id(), $file_type, $exception );
+
+				continue;
+			}
 
 			if ( null === $file ) {
 				continue;
@@ -121,6 +137,37 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 		}
 
 		return $attachments;
+	}
+
+	/**
+	 * Logs a non-fatal invoice plugin attachment error.
+	 *
+	 * @param int       $export_id Export post ID.
+	 * @param WC_Order  $order     WooCommerce order.
+	 * @param string    $plugin_id Invoice plugin ID.
+	 * @param string    $file_type Invoice file type, if known.
+	 * @param Throwable $exception Plugin exception.
+	 */
+	private function log_invoice_plugin_warning( int $export_id, WC_Order $order, string $plugin_id, string $file_type, Throwable $exception ): void {
+		if ( $export_id <= 0 ) {
+			return;
+		}
+
+		ExportEventDispatcher::dispatch(
+			ExportEvents::LOG_ENTRY,
+			$export_id,
+			'warning',
+			'Invoice plugin error while retrieving an invoice file.',
+			[
+				'export_id'          => $export_id,
+				'order_id'           => $order->get_id(),
+				'invoice_plugin_id'  => $plugin_id,
+				'invoice_file_type'  => $file_type,
+				'exception_message'  => $exception->getMessage(),
+				'attachment_skipped' => true,
+			],
+			$exception
+		);
 	}
 
 	/**

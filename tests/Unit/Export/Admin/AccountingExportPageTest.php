@@ -26,6 +26,8 @@ use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
 use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Admin\AccountingExportPage;
 use StoreAccountant\Export\Admin\AccountingExportPageForm;
+use StoreAccountant\Export\Admin\ExportSettingsFields;
+use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
 use StoreAccountant\Export\Contract\ExportAdapterInterface;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
 use StoreAccountant\Export\ExportAdapterRegistry;
@@ -46,6 +48,8 @@ use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\StorageAdapterRegistry;
+use StoreAccountant\Tax\Admin\OrderTaxFieldProviderField;
+use StoreAccountant\Order\Tax\OrderTaxFieldProviderRegistry;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
@@ -223,10 +227,9 @@ final class AccountingExportPageTest extends TestCase {
 
 		return new AccountingExportPage(
 			new AccountingExportPageForm(
-				new StorageAdapterRegistry(),
 				new ExportAdapterRegistry(),
-				new ExportRendererRegistry(),
 				new ExportFilterFieldProviderRegistry(),
+				$this->settings_fields(),
 				$passwords,
 				$permissions
 			),
@@ -234,9 +237,10 @@ final class AccountingExportPageTest extends TestCase {
 			$this->createMock( MessageBusInterface::class ),
 			new StorageAdapterRegistry(),
 			new ExportAdapterRegistry(),
-			new ExportRendererRegistry(),
-			new ExportFilterFieldProviderRegistry(),
-			new ExportFilterSelectionSerializer(),
+				new ExportRendererRegistry(),
+				new ExportFilterFieldProviderRegistry(),
+				$this->settings_fields(),
+				new ExportFilterSelectionSerializer(),
 			new ExportFilterSnapshotter( new PeriodProviderRegistry() ),
 			new AccountingHeaderBar( $permissions, new AccountingOverviewTabProviderRegistry() ),
 			$permissions,
@@ -319,5 +323,14 @@ final class AccountingExportPageTest extends TestCase {
 		$adapter->method( 'get_id' )->willReturn( $id );
 
 		return $adapter;
+	}
+
+	private function settings_fields(): ExportSettingsFields {
+		return new ExportSettingsFields(
+			new StorageAdapterRegistry(),
+			new ExportRendererRegistry(),
+			new ExportConfigurationFormFieldProviderRegistry(),
+			new OrderTaxFieldProviderField( new OrderTaxFieldProviderRegistry() )
+		);
 	}
 }

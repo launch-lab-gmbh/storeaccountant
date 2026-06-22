@@ -16,7 +16,9 @@ namespace StoreAccountant\Tests\Unit\Invoice\Export\Order\Attachment;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
+use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\ExportPayload;
 use StoreAccountant\Invoice\Contract\InvoicePluginInterface;
@@ -135,6 +137,80 @@ final class InvoiceAttachmentProviderTest extends TestCase {
 		self::assertSame( 'Invoices/pdf/Invoice-1001.pdf', $attachments[0]->internal_path );
 		self::assertSame( 'Invoice-1001.xml', $attachments[1]->file_name );
 		self::assertSame( 'Invoices/xml/Invoice-1001.xml', $attachments[1]->internal_path );
+	}
+
+	public function test_get_attachments_logs_warning_and_continues_when_invoice_plugin_throws(): void {
+		$exception  = new RuntimeException( 'PDF invoice failed' );
+		$xml_stream = fopen( 'php://temp', 'rb+' );
+		$events     = [];
+
+		self::assertIsResource( $xml_stream );
+
+		$plugin = $this->createMock( InvoicePluginInterface::class );
+		$plugin->method( 'get_id' )->willReturn( 'pdf_plugin' );
+		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'get_invoice_file_types' )->willReturn(
+			[
+				new InvoiceFileType( 'pdf', 'PDF' ),
+				new InvoiceFileType( 'xml', 'XML' ),
+			]
+		);
+		$plugin->method( 'get_invoice_file' )->willReturnCallback(
+			static function ( WC_Order $order, string $type ) use ( $exception, $xml_stream ): ?StorageFile {
+				if ( 'pdf' === $type ) {
+					throw $exception;
+				}
+
+				return new StorageFile( $xml_stream, 'Invoice 1001.xml', 'application/xml' );
+			}
+		);
+
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'storeaccountant_enabled_invoice_plugin', '' )
+			->andReturn( 'pdf_plugin' );
+		Functions\expect( 'apply_filters' )
+			->once()
+			->with( 'storeaccountant_invoice_plugin', [] )
+			->andReturn( [ $plugin ] );
+		Functions\expect( 'get_post_meta' )
+			->once()
+			->with( 77, ExportConfigurationPostType::META_ADDITIONAL_SETTINGS, true )
+			->andReturn(
+				json_encode(
+					[
+						InvoiceExportAttachmentSettings::PROVIDER_ID => [
+							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'pdf', 'xml' ],
+						],
+					]
+				)
+			);
+		Functions\when( 'do_action' )->alias(
+			static function ( mixed ...$args ) use ( &$events ): void {
+				$events[] = $args;
+			}
+		);
+
+		$attachments = $this->provider( null )->get_attachments(
+			new WC_Order( 1001 ),
+			new ExportPayload( 123, OrderExportAdapter::ADAPTER_ID ),
+			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77 )
+		);
+
+		$attachments = is_array( $attachments ) ? $attachments : iterator_to_array( $attachments );
+
+		self::assertCount( 1, $attachments );
+		self::assertSame( 'Invoice-1001.xml', $attachments[0]->file_name );
+		self::assertCount( 1, $events );
+		self::assertSame( ExportEvents::LOG_ENTRY->value, $events[0][0] );
+		self::assertSame( 123, $events[0][1] );
+		self::assertSame( 'warning', $events[0][2] );
+		self::assertSame( 'Invoice plugin error while retrieving an invoice file.', $events[0][3] );
+		self::assertSame( 1001, $events[0][4]['order_id'] );
+		self::assertSame( 'pdf_plugin', $events[0][4]['invoice_plugin_id'] );
+		self::assertSame( 'pdf', $events[0][4]['invoice_file_type'] );
+		self::assertSame( 'PDF invoice failed', $events[0][4]['exception_message'] );
+		self::assertSame( $exception, $events[0][5] );
 	}
 
 	public function test_get_attachments_ignores_non_order_or_missing_plugin(): void {

@@ -71,6 +71,7 @@ final class StartExportMessageHandlerTest extends TestCase {
 		Functions\when( 'add_option' )->justReturn( true );
 		Functions\when( 'delete_option' )->justReturn( true );
 		Functions\when( 'get_option' )->justReturn( 0 );
+		Functions\when( 'wp_cache_delete' )->justReturn( true );
 		Functions\when( 'do_action' )->justReturn();
 	}
 

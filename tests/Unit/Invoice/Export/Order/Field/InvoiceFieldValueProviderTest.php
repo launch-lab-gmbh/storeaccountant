@@ -17,8 +17,10 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use Mockery;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
+use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\Field\Field;
 use StoreAccountant\Export\Field\FieldCollection;
@@ -122,6 +124,94 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 			],
 			array_map( static fn ( $value ): mixed => $value->value, $values )
 		);
+	}
+
+	public function test_get_values_logs_warning_and_returns_empty_values_when_invoice_plugin_throws(): void {
+		$number_exception = new RuntimeException( 'Invoice number failed' );
+		$file_exception   = new RuntimeException( 'Invoice PDF name failed' );
+		$events           = [];
+		$plugin           = $this->createMock( InvoicePluginInterface::class );
+		$order            = new WC_Order( [ 'id' => 1001 ] );
+
+		$plugin->method( 'get_id' )->willReturn( 'pdf' );
+		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'get_invoice_number' )->willThrowException( $number_exception );
+		$plugin->method( 'get_invoice_date' )->willReturn( '2026-05-04' );
+		$plugin->method( 'get_invoice_file_types' )->willReturn(
+			[
+				new InvoiceFileType( 'pdf', 'PDF' ),
+				new InvoiceFileType( 'ubl', 'UBL' ),
+			]
+		);
+		$plugin->method( 'get_invoice_file_name' )->willReturnCallback(
+			static function ( WC_Order $order, string $type ) use ( $file_exception ): string {
+				if ( 'pdf' === $type ) {
+					throw $file_exception;
+				}
+
+				return 'invoice-1001.xml';
+			}
+		);
+
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'storeaccountant_enabled_invoice_plugin', '' )
+			->andReturn( 'pdf' );
+		Functions\expect( 'apply_filters' )
+			->once()
+			->with( 'storeaccountant_invoice_plugin', [] )
+			->andReturn( [ $plugin ] );
+		Functions\expect( 'get_post_meta' )
+			->once()
+			->with( 77, ExportConfigurationPostType::META_ADDITIONAL_SETTINGS, true )
+			->andReturn(
+				json_encode(
+					[
+						InvoiceExportAttachmentSettings::PROVIDER_ID => [
+							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'pdf', 'ubl' ],
+						],
+					]
+				)
+			);
+		Functions\when( 'do_action' )->alias(
+			static function ( mixed ...$args ) use ( &$events ): void {
+				$events[] = $args;
+			}
+		);
+
+		$values = $this->provider()->get_values(
+			$order,
+			new FieldCollection(
+				[
+					new Field( 'invoice_number', 'invoice_number' ),
+					new Field( 'invoice_date', 'invoice_date' ),
+					new Field( 'invoice_file_name', 'invoice_file_name' ),
+				]
+			),
+			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77, [], [ 'export_id' => 123 ] )
+		);
+
+		self::assertSame(
+			[
+				'invoice_number'    => '',
+				'invoice_date'      => '2026-05-04',
+				'invoice_file_name' => 'invoice-1001.xml',
+			],
+			array_map( static fn ( $value ): mixed => $value->value, $values )
+		);
+
+		self::assertCount( 2, $events );
+		self::assertSame( ExportEvents::LOG_ENTRY->value, $events[0][0] );
+		self::assertSame( 123, $events[0][1] );
+		self::assertSame( 'warning', $events[0][2] );
+		self::assertSame( 'Invoice plugin error while resolving invoice export data.', $events[0][3] );
+		self::assertSame( 'invoice_number', $events[0][4]['field_id'] );
+		self::assertSame( 'Invoice number failed', $events[0][4]['exception_message'] );
+		self::assertSame( $number_exception, $events[0][5] );
+		self::assertSame( 'invoice_file_name', $events[1][4]['field_id'] );
+		self::assertSame( 'pdf', $events[1][4]['invoice_file_type'] );
+		self::assertSame( 'Invoice PDF name failed', $events[1][4]['exception_message'] );
+		self::assertSame( $file_exception, $events[1][5] );
 	}
 
 	public function test_get_values_returns_empty_array_without_order_context_or_enabled_plugin(): void {

@@ -72,6 +72,7 @@ final class ProcessExportBatchMessageHandlerTest extends TestCase {
 		Functions\when( 'add_option' )->justReturn( true );
 		Functions\when( 'delete_option' )->justReturn( true );
 		Functions\when( 'get_option' )->justReturn( 0 );
+		Functions\when( 'wp_cache_delete' )->justReturn( true );
 		Functions\when( 'do_action' )->justReturn();
 		Functions\when( 'wp_upload_dir' )->alias( fn (): array => [ 'basedir' => $this->upload_dir ] );
 		Functions\when( 'wp_mkdir_p' )->alias( static fn ( string $path ): bool => is_dir( $path ) || mkdir( $path, 0777, true ) );

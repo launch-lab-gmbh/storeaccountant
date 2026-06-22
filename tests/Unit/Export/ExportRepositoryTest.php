@@ -57,6 +57,7 @@ final class ExportRepositoryTest extends TestCase {
 		Functions\when( 'add_option' )->justReturn( true );
 		Functions\when( 'delete_option' )->justReturn( true );
 		Functions\when( 'get_option' )->justReturn( 0 );
+		Functions\when( 'wp_cache_delete' )->justReturn( true );
 		Functions\when( 'do_action' )->justReturn();
 	}
 
@@ -99,7 +100,13 @@ final class ExportRepositoryTest extends TestCase {
 			[
 				'encrypted' => 'encrypted-password',
 				'hash'      => 'hash-password',
-			]
+			],
+			[
+				'invoice_attachments' => [
+					'file_types' => [ 'invoice_pdf' ],
+				],
+			],
+			'simple'
 		);
 
 		$meta = $this->inserted_post['meta_input'];
@@ -113,6 +120,8 @@ final class ExportRepositoryTest extends TestCase {
 		self::assertSame( 'orders', $meta[ ExportPostType::META_EXPORT_ADAPTER ] );
 		self::assertSame( 'csv', $meta[ ExportPostType::META_EXPORT_WRITER ] );
 		self::assertSame( 'local', $meta[ ExportPostType::META_STORAGE_ENGINE ] );
+		self::assertSame( '{"invoice_attachments":{"file_types":["invoice_pdf"]}}', $meta[ ExportPostType::META_ADDITIONAL_SETTINGS ] );
+		self::assertSame( 'simple', $meta[ ExportPostType::META_ORDER_TAX_FIELD_PROVIDER ] );
 		self::assertSame( (string) ExportPostType::MIN_BATCH_SIZE, $meta[ ExportPostType::META_BATCH_SIZE ] );
 		self::assertSame( '9', $meta[ ExportPostType::META_TRIGGERED_BY ] );
 		self::assertSame( '77', $meta[ ExportPostType::META_CONFIGURATION_ID ] );
@@ -179,6 +188,43 @@ final class ExportRepositoryTest extends TestCase {
 
 		self::assertSame( ExportStatus::COMPLETED, $this->meta[42][ ExportPostType::META_STATUS ] );
 		self::assertSame( 'Export file generated.', $this->meta[42][ ExportPostType::META_CURRENT_STEP ] );
+	}
+
+	public function test_batch_progress_ignores_stale_post_meta_cache_after_lock(): void {
+		$database_meta = [
+			ExportPostType::META_PROCESSED_ITEMS   => '100',
+			ExportPostType::META_PROCESSED_BATCHES => '1',
+		];
+		$cached_meta   = [
+			ExportPostType::META_PROCESSED_ITEMS   => '0',
+			ExportPostType::META_PROCESSED_BATCHES => '0',
+		];
+		$cache_deleted = false;
+
+		Functions\when( 'wp_cache_delete' )->alias(
+			static function ( int $post_id, string $group ) use ( &$cache_deleted ): bool {
+				$cache_deleted = 42 === $post_id && 'post_meta' === $group;
+
+				return true;
+			}
+		);
+		Functions\when( 'get_post_meta' )->alias(
+			static function ( int $post_id, string $key ) use ( &$database_meta, &$cached_meta, &$cache_deleted ): mixed {
+				return ( $cache_deleted ? $database_meta : $cached_meta )[ $key ] ?? '';
+			}
+		);
+		Functions\when( 'update_post_meta' )->alias(
+			static function ( int $post_id, string $key, mixed $value ) use ( &$database_meta, &$cached_meta, &$cache_deleted ): void {
+				$database_meta[ $key ] = $value;
+				$cached_meta[ $key ]   = $value;
+				$cache_deleted         = false;
+			}
+		);
+
+		$this->repository()->mark_batch_processed( 42, 9 );
+
+		self::assertSame( '109', $database_meta[ ExportPostType::META_PROCESSED_ITEMS ] );
+		self::assertSame( '2', $database_meta[ ExportPostType::META_PROCESSED_BATCHES ] );
 	}
 
 	public function test_reset_failed_and_log_methods_update_error_and_log_metadata(): void {

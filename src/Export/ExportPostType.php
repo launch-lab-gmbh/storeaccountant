@@ -73,32 +73,34 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	public const POST_TYPE = 'storeacct_export';
 
-	public const META_EXPORTED_AT            = '_storeaccountant_exported_at';
-	public const META_STATUS                 = '_storeaccountant_status';
-	public const META_FILTERS                = '_storeaccountant_filters';
-	public const META_STORAGE_ENGINE         = '_storeaccountant_storage_engine';
-	public const META_EXPORT_ADAPTER         = '_storeaccountant_export_adapter';
-	public const META_EXPORT_WRITER          = '_storeaccountant_export_writer';
-	public const META_BATCH_SIZE             = '_storeaccountant_batch_size';
-	public const META_PATH                   = '_storeaccountant_path';
-	public const META_TRIGGERED_BY           = '_storeaccountant_triggered_by';
-	public const META_CONFIGURATION_ID       = '_storeaccountant_configuration_id';
-	public const META_TOTAL_ITEMS            = '_storeaccountant_total_items';
-	public const META_PROCESSED_ITEMS        = '_storeaccountant_processed_items';
-	public const META_TOTAL_BATCHES          = '_storeaccountant_total_batches';
-	public const META_PROCESSED_BATCHES      = '_storeaccountant_processed_batches';
-	public const META_FAILED_BATCHES         = '_storeaccountant_failed_batches';
-	public const META_CURRENT_STEP           = '_storeaccountant_current_step';
-	public const META_ERROR_MESSAGE          = '_storeaccountant_error_message';
-	public const META_LOG_ENTRIES            = '_storeaccountant_log_entries';
-	public const META_STARTED_AT             = '_storeaccountant_started_at';
-	public const META_FINISHED_AT            = '_storeaccountant_finished_at';
-	public const META_SCHEDULED_FOR          = '_storeaccountant_scheduled_for';
-	public const META_DOWNLOAD_TOKEN         = '_storeaccountant_download_token';
-	public const META_DOWNLOAD_PASSWORD      = '_storeaccountant_download_password';
-	public const META_DOWNLOAD_PASSWORD_HASH = '_storeaccountant_download_password_hash';
-	public const MIN_BATCH_SIZE              = 10;
-	public const DEFAULT_BATCH_SIZE          = 100;
+	public const META_EXPORTED_AT              = '_storeaccountant_exported_at';
+	public const META_STATUS                   = '_storeaccountant_status';
+	public const META_FILTERS                  = '_storeaccountant_filters';
+	public const META_STORAGE_ENGINE           = '_storeaccountant_storage_engine';
+	public const META_EXPORT_ADAPTER           = '_storeaccountant_export_adapter';
+	public const META_EXPORT_WRITER            = '_storeaccountant_export_writer';
+	public const META_ADDITIONAL_SETTINGS      = '_storeaccountant_additional_settings';
+	public const META_ORDER_TAX_FIELD_PROVIDER = '_storeaccountant_order_tax_field_provider';
+	public const META_BATCH_SIZE               = '_storeaccountant_batch_size';
+	public const META_PATH                     = '_storeaccountant_path';
+	public const META_TRIGGERED_BY             = '_storeaccountant_triggered_by';
+	public const META_CONFIGURATION_ID         = '_storeaccountant_configuration_id';
+	public const META_TOTAL_ITEMS              = '_storeaccountant_total_items';
+	public const META_PROCESSED_ITEMS          = '_storeaccountant_processed_items';
+	public const META_TOTAL_BATCHES            = '_storeaccountant_total_batches';
+	public const META_PROCESSED_BATCHES        = '_storeaccountant_processed_batches';
+	public const META_FAILED_BATCHES           = '_storeaccountant_failed_batches';
+	public const META_CURRENT_STEP             = '_storeaccountant_current_step';
+	public const META_ERROR_MESSAGE            = '_storeaccountant_error_message';
+	public const META_LOG_ENTRIES              = '_storeaccountant_log_entries';
+	public const META_STARTED_AT               = '_storeaccountant_started_at';
+	public const META_FINISHED_AT              = '_storeaccountant_finished_at';
+	public const META_SCHEDULED_FOR            = '_storeaccountant_scheduled_for';
+	public const META_DOWNLOAD_TOKEN           = '_storeaccountant_download_token';
+	public const META_DOWNLOAD_PASSWORD        = '_storeaccountant_download_password';
+	public const META_DOWNLOAD_PASSWORD_HASH   = '_storeaccountant_download_password_hash';
+	public const MIN_BATCH_SIZE                = 10;
+	public const DEFAULT_BATCH_SIZE            = 100;
 
 	/**
 	 * Initializes the export post type.

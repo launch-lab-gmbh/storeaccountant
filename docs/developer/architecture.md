@@ -83,6 +83,8 @@ Important meta fields:
 - `_storeaccountant_storage_engine`
 - `_storeaccountant_export_adapter`
 - `_storeaccountant_export_writer`
+- `_storeaccountant_additional_settings`
+- `_storeaccountant_order_tax_field_provider`
 - `_storeaccountant_batch_size`
 - `_storeaccountant_path`
 - `_storeaccountant_triggered_by`
@@ -124,9 +126,12 @@ are ignored so the export record can still be deleted cleanly.
 Each export run stores a random public download token and a snapshot of the
 effective download password. The snapshot stores both an encrypted reversible
 value for authorized backend reveal screens and a separate verification hash for
-frontend password checks. Configuration records store their own download
-password snapshot; saving a configuration with an empty password field stores
-the current global download password on that configuration.
+frontend password checks. Quick exports also snapshot additional provider
+settings and the selected order tax field provider on the export record, because
+they intentionally have no configuration relation. Configuration records store
+their own download password snapshot; saving a configuration with an empty
+password field stores the current global download password on that
+configuration.
 
 ### Export Configurations
 

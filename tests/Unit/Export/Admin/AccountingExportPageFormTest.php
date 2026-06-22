@@ -17,7 +17,10 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
 use StoreAccountant\Export\Admin\AccountingExportPageForm;
+use StoreAccountant\Export\Admin\ExportSettingsFields;
+use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
 use StoreAccountant\Export\Contract\ExportAdapterInterface;
+use StoreAccountant\Export\Contract\ExportConfigurationFormFieldProviderInterface;
 use StoreAccountant\Export\Contract\ExportRendererInterface;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
 use StoreAccountant\Export\ExportAdapterRegistry;
@@ -34,6 +37,10 @@ use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Contract\StorageAdapterInterface;
 use StoreAccountant\Storage\StorageAdapterRegistry;
+use StoreAccountant\Tax\Admin\OrderTaxFieldProviderField;
+use StoreAccountant\Tax\Contract\OrderTaxFieldProviderInterface;
+use StoreAccountant\Tax\Field\Provider\ExtendedOrderTaxFieldProvider;
+use StoreAccountant\Order\Tax\OrderTaxFieldProviderRegistry;
 
 /**
  * Tests accounting quick export form rendering.
@@ -95,11 +102,14 @@ final class AccountingExportPageFormTest extends TestCase {
 		self::assertStringContainsString( 'storage_adapter_local', $output );
 		self::assertStringContainsString( 'name="storeaccountant_export_batch_size"', $output );
 		self::assertStringContainsString( 'value="100"', $output );
-		self::assertStringContainsString( 'data-storeaccountant-export-filter-group="1"', $output );
-		self::assertStringContainsString( 'data-storeaccountant-export-type="orders"', $output );
-		self::assertStringContainsString( 'Rendered order date filter', $output );
-		self::assertStringContainsString( 'Current Download Password', $output );
-		self::assertStringContainsString( 'global-secret', $output );
+			self::assertStringContainsString( 'data-storeaccountant-export-filter-group="1"', $output );
+			self::assertStringContainsString( 'data-storeaccountant-export-type="orders"', $output );
+			self::assertStringContainsString( 'Rendered order date filter', $output );
+			self::assertStringContainsString( 'Tax Fields', $output );
+			self::assertStringContainsString( 'Extended Tax Fields', $output );
+			self::assertStringContainsString( 'Additional invoice fields', $output );
+			self::assertStringContainsString( 'Current Download Password', $output );
+			self::assertStringContainsString( 'global-secret', $output );
 		self::assertStringContainsString( '<button type="submit" name="storeaccountant_start_quick_export">Start Quick Export</button>', $output );
 	}
 
@@ -123,14 +133,13 @@ final class AccountingExportPageFormTest extends TestCase {
 	private function render_form( ?array $draft = null ): string {
 		ob_start();
 		try {
-			( new AccountingExportPageForm(
-				new StorageAdapterRegistry(),
-				new ExportAdapterRegistry(),
-				new ExportRendererRegistry(),
-				new ExportFilterFieldProviderRegistry(),
-				new DownloadPasswordManager( new ReversibleCrypto() ),
-				new PermissionChecker( new PermissionActionRegistry() )
-			) )->render( $draft );
+				( new AccountingExportPageForm(
+					new ExportAdapterRegistry(),
+					new ExportFilterFieldProviderRegistry(),
+					$this->settings_fields(),
+					new DownloadPasswordManager( new ReversibleCrypto() ),
+					new PermissionChecker( new PermissionActionRegistry() )
+				) )->render( $draft );
 
 			return (string) ob_get_clean();
 		} catch ( \Throwable $exception ) {
@@ -194,10 +203,12 @@ final class AccountingExportPageFormTest extends TestCase {
 		Functions\when( 'apply_filters' )->alias(
 			fn ( string $hook, mixed $value ): mixed => match ( $hook ) {
 				'storeaccountant_storage_adapter' => $this->has_storage ? [ $this->storage_adapter( 'local' ) ] : [],
-				'storeaccountant_export_adapter' => $this->has_adapters ? [ $this->export_adapter( OrderExportAdapter::ADAPTER_ID ) ] : [],
-				'storeaccountant_export_renderer' => $this->has_adapters ? [ $this->renderer( 'csv' ) ] : [],
-				'storeaccountant_export_filter_field_provider' => $this->has_adapters ? [ $this->filter_provider( 'order_date', OrderExportAdapter::ADAPTER_ID ) ] : [],
-				'storeaccountant_permission_action' => [
+					'storeaccountant_export_adapter' => $this->has_adapters ? [ $this->export_adapter( OrderExportAdapter::ADAPTER_ID ) ] : [],
+					'storeaccountant_export_renderer' => $this->has_adapters ? [ $this->renderer( 'csv' ) ] : [],
+					'storeaccountant_export_filter_field_provider' => $this->has_adapters ? [ $this->filter_provider( 'order_date', OrderExportAdapter::ADAPTER_ID ) ] : [],
+					'storeaccountant_export_configuration_form_field_provider' => $this->has_adapters ? [ $this->configuration_field_provider( 'invoice' ) ] : [],
+					'storeaccountant_export_order_tax_field_provider' => $this->has_adapters ? [ $this->tax_provider( ExtendedOrderTaxFieldProvider::PROVIDER_ID ) ] : [],
+					'storeaccountant_permission_action' => [
 					new PermissionAction( PermissionActionIds::VIEW_DOWNLOAD_PASSWORDS, 'View passwords', 'Settings', StoreAccountantCapabilities::VIEW_DOWNLOAD_PASSWORDS ),
 				],
 				default => $value,
@@ -238,5 +249,34 @@ final class AccountingExportPageFormTest extends TestCase {
 		);
 
 		return $provider;
+	}
+
+	private function configuration_field_provider( string $id ): ExportConfigurationFormFieldProviderInterface {
+		$provider = $this->createMock( ExportConfigurationFormFieldProviderInterface::class );
+		$provider->method( 'get_id' )->willReturn( $id );
+		$provider->method( 'render_fields' )->willReturnCallback(
+			static function (): void {
+				echo '<tr><td>Additional invoice fields</td></tr>';
+			}
+		);
+
+		return $provider;
+	}
+
+	private function tax_provider( string $id ): OrderTaxFieldProviderInterface {
+		$provider = $this->createMock( OrderTaxFieldProviderInterface::class );
+		$provider->method( 'get_id' )->willReturn( $id );
+		$provider->method( 'get_label' )->willReturn( 'Extended Tax Fields' );
+
+		return $provider;
+	}
+
+	private function settings_fields(): ExportSettingsFields {
+		return new ExportSettingsFields(
+			new StorageAdapterRegistry(),
+			new ExportRendererRegistry(),
+			new ExportConfigurationFormFieldProviderRegistry(),
+			new OrderTaxFieldProviderField( new OrderTaxFieldProviderRegistry() )
+		);
 	}
 }

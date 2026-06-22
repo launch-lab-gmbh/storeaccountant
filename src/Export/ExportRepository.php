@@ -33,6 +33,8 @@ use function random_bytes;
 use function time;
 use function trim;
 use function usleep;
+use function wp_cache_delete;
+use function wp_json_encode;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -71,6 +73,8 @@ final readonly class ExportRepository {
 	 * @param int|null                          $configuration_id Export configuration ID, or null for quick exports.
 	 * @param int                               $batch_size       Number of source items to process per batch.
 	 * @param array{encrypted:string, hash:string}|null $password_snapshot Password snapshot, or null to resolve from configuration/global settings.
+	 * @param array<string, mixed>              $additional_settings Additional provider settings snapshotted for quick exports.
+	 * @param string                            $order_tax_field_provider Order tax field provider snapshotted for quick exports.
 	 *
 	 * @return int|WP_Error
 	 */
@@ -83,7 +87,9 @@ final readonly class ExportRepository {
 		int $triggered_by,
 		?int $configuration_id = null,
 		int $batch_size = ExportPostType::DEFAULT_BATCH_SIZE,
-		?array $password_snapshot = null
+		?array $password_snapshot = null,
+		array $additional_settings = [],
+		string $order_tax_field_provider = ''
 	): int|WP_Error {
 		if ( $this->exists_with_title( $title ) ) {
 			return new WP_Error(
@@ -98,45 +104,47 @@ final readonly class ExportRepository {
 			return $password_snapshot;
 		}
 
-			$meta_input = [
-				ExportPostType::META_EXPORTED_AT       => current_time( 'mysql', true ),
-				ExportPostType::META_STATUS            => ExportStatus::SCHEDULED,
-				ExportPostType::META_FILTERS           => $this->filter_serializer->encode( $filters ),
-				ExportPostType::META_STORAGE_ENGINE    => $storage_engine,
-				ExportPostType::META_EXPORT_ADAPTER    => $export_adapter->get_id(),
-				ExportPostType::META_EXPORT_WRITER     => $export_writer->get_id(),
-				ExportPostType::META_BATCH_SIZE        => (string) max( ExportPostType::MIN_BATCH_SIZE, $batch_size ),
-				ExportPostType::META_PATH              => '',
-				ExportPostType::META_TRIGGERED_BY      => (string) $triggered_by,
-				ExportPostType::META_TOTAL_ITEMS       => '0',
-				ExportPostType::META_PROCESSED_ITEMS   => '0',
-				ExportPostType::META_TOTAL_BATCHES     => '1',
-				ExportPostType::META_PROCESSED_BATCHES => '0',
-				ExportPostType::META_FAILED_BATCHES    => '0',
-				ExportPostType::META_CURRENT_STEP      => __( 'Waiting for queue worker.', 'storeaccountant' ),
-				ExportPostType::META_ERROR_MESSAGE     => '',
-				ExportPostType::META_LOG_ENTRIES       => [],
-				ExportPostType::META_STARTED_AT        => '',
-				ExportPostType::META_FINISHED_AT       => '',
-				ExportPostType::META_DOWNLOAD_TOKEN    => $this->generate_unique_download_token(),
-				ExportPostType::META_DOWNLOAD_PASSWORD => $password_snapshot['encrypted'],
-				ExportPostType::META_DOWNLOAD_PASSWORD_HASH => $password_snapshot['hash'],
-			];
+		$meta_input = [
+			ExportPostType::META_EXPORTED_AT              => current_time( 'mysql', true ),
+			ExportPostType::META_STATUS                   => ExportStatus::SCHEDULED,
+			ExportPostType::META_FILTERS                  => $this->filter_serializer->encode( $filters ),
+			ExportPostType::META_STORAGE_ENGINE           => $storage_engine,
+			ExportPostType::META_EXPORT_ADAPTER           => $export_adapter->get_id(),
+			ExportPostType::META_EXPORT_WRITER            => $export_writer->get_id(),
+			ExportPostType::META_ADDITIONAL_SETTINGS      => wp_json_encode( $additional_settings ),
+			ExportPostType::META_ORDER_TAX_FIELD_PROVIDER => $order_tax_field_provider,
+			ExportPostType::META_BATCH_SIZE               => (string) max( ExportPostType::MIN_BATCH_SIZE, $batch_size ),
+			ExportPostType::META_PATH                     => '',
+			ExportPostType::META_TRIGGERED_BY             => (string) $triggered_by,
+			ExportPostType::META_TOTAL_ITEMS              => '0',
+			ExportPostType::META_PROCESSED_ITEMS          => '0',
+			ExportPostType::META_TOTAL_BATCHES            => '1',
+			ExportPostType::META_PROCESSED_BATCHES        => '0',
+			ExportPostType::META_FAILED_BATCHES           => '0',
+			ExportPostType::META_CURRENT_STEP             => __( 'Waiting for queue worker.', 'storeaccountant' ),
+			ExportPostType::META_ERROR_MESSAGE            => '',
+			ExportPostType::META_LOG_ENTRIES              => [],
+			ExportPostType::META_STARTED_AT               => '',
+			ExportPostType::META_FINISHED_AT              => '',
+			ExportPostType::META_DOWNLOAD_TOKEN           => $this->generate_unique_download_token(),
+			ExportPostType::META_DOWNLOAD_PASSWORD        => $password_snapshot['encrypted'],
+			ExportPostType::META_DOWNLOAD_PASSWORD_HASH   => $password_snapshot['hash'],
+		];
 
-			if ( null !== $configuration_id ) {
-				$meta_input[ ExportPostType::META_CONFIGURATION_ID ] = (string) $configuration_id;
-			}
+		if ( null !== $configuration_id ) {
+			$meta_input[ ExportPostType::META_CONFIGURATION_ID ] = (string) $configuration_id;
+		}
 
-			$post_id = wp_insert_post(
-				[
-					'post_type'   => ExportPostType::POST_TYPE,
-					'post_status' => 'publish',
-					'post_title'  => $title,
-					'post_author' => $triggered_by,
-					'meta_input'  => $meta_input,
-				],
-				true
-			);
+		$post_id = wp_insert_post(
+			[
+				'post_type'   => ExportPostType::POST_TYPE,
+				'post_status' => 'publish',
+				'post_title'  => $title,
+				'post_author' => $triggered_by,
+				'meta_input'  => $meta_input,
+			],
+			true
+		);
 
 		return $post_id;
 	}
@@ -346,6 +354,8 @@ final readonly class ExportRepository {
 	 * @param int    $amount  Increment amount.
 	 */
 	private function increment_meta_counter( int $post_id, string $key, int $amount ): void {
+		wp_cache_delete( $post_id, 'post_meta' );
+
 		update_post_meta(
 			$post_id,
 			$key,

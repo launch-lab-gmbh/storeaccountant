@@ -24,6 +24,7 @@ use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
 use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
 use StoreAccountant\Diagnostic\DiagnosticSettings;
+use StoreAccountant\Export\Admin\ExportSettingsFields;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPage;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPageForm;
 use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
@@ -145,19 +146,15 @@ final class ExportConfigurationPageTest extends TestCase {
 	private function page(): ExportConfigurationPage {
 		$permissions     = new PermissionChecker( new PermissionActionRegistry() );
 		$passwords       = new DownloadPasswordManager( new ReversibleCrypto() );
-		$tax_field       = new OrderTaxFieldProviderField( new OrderTaxFieldProviderRegistry() );
 		$filter_registry = new ExportFilterFieldProviderRegistry();
-		$field_registry  = new ExportConfigurationFormFieldProviderRegistry();
+		$settings_fields = $this->settings_fields();
 
 		return new ExportConfigurationPage(
 			new ExportConfigurationPageForm(
-				new StorageAdapterRegistry(),
 				new ExportAdapterRegistry(),
-				new ExportRendererRegistry(),
-				$field_registry,
 				$filter_registry,
 				new ExportFilterSelectionSerializer(),
-				$tax_field,
+				$settings_fields,
 				$passwords,
 				$permissions
 			),
@@ -165,11 +162,10 @@ final class ExportConfigurationPageTest extends TestCase {
 			new StorageAdapterRegistry(),
 			new ExportAdapterRegistry(),
 			new ExportRendererRegistry(),
-			$field_registry,
 			$filter_registry,
 			new AccountingHeaderBar( $permissions, new AccountingOverviewTabProviderRegistry() ),
 			new ExportConfigurationTabProviderRegistry(),
-			$tax_field,
+			$settings_fields,
 			$permissions,
 			$passwords,
 			new DiagnosticIncidentLogger(
@@ -252,5 +248,14 @@ final class ExportConfigurationPageTest extends TestCase {
 		$renderer->method( 'get_id' )->willReturn( 'csv' );
 
 		return $renderer;
+	}
+
+	private function settings_fields(): ExportSettingsFields {
+		return new ExportSettingsFields(
+			new StorageAdapterRegistry(),
+			new ExportRendererRegistry(),
+			new ExportConfigurationFormFieldProviderRegistry(),
+			new OrderTaxFieldProviderField( new OrderTaxFieldProviderRegistry() )
+		);
 	}
 }

@@ -14,23 +14,19 @@ declare(strict_types=1);
 namespace StoreAccountant\Export\Configuration\Admin;
 
 use WP_Post;
-use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
+use StoreAccountant\Export\Admin\ExportSettingsFields;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
-use StoreAccountant\Export\Contract\ExportTypeAwareInterface;
 use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
 use StoreAccountant\Export\ExportAdapterRegistry;
 use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Export\Filter\ExportFilterFieldProviderRegistry;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
-use StoreAccountant\Export\ExportRendererRegistry;
-use StoreAccountant\Tax\Admin\OrderTaxFieldProviderField;
-use StoreAccountant\Tax\Field\Provider\ExtendedOrderTaxFieldProvider;
 use StoreAccountant\Export\Renderer\CsvExportRenderer;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
 use StoreAccountant\I18n;
 use StoreAccountant\Security\Permission\PermissionActionIds;
 use StoreAccountant\Security\Permission\PermissionChecker;
-use StoreAccountant\Storage\StorageAdapterRegistry;
+use StoreAccountant\Tax\Field\Provider\ExtendedOrderTaxFieldProvider;
 use function is_array;
 use function json_decode;
 
@@ -45,24 +41,18 @@ final readonly class ExportConfigurationPageForm {
 	/**
 	 * Initializes the form.
 	 *
-	 * @param StorageAdapterRegistry                       $storage_adapters         storage adapter registry.
 	 * @param ExportAdapterRegistry                        $export_adapters         Export adapter registry.
-	 * @param ExportRendererRegistry                       $export_writers          Export writer registry.
-	 * @param ExportConfigurationFormFieldProviderRegistry $field_providers        Additional field providers.
 	 * @param ExportFilterFieldProviderRegistry            $filter_field_providers Export filter field providers.
 	 * @param ExportFilterSelectionSerializer              $filter_serializer      Filter selection serializer.
-	 * @param OrderTaxFieldProviderField                   $tax_field_provider_field Order tax provider field.
+	 * @param ExportSettingsFields                         $settings_fields       Shared export settings fields.
 	 * @param DownloadPasswordManager                      $passwords               Download password manager.
 	 * @param PermissionChecker                            $permissions             Permission checker.
 	 */
 	public function __construct(
-		private StorageAdapterRegistry $storage_adapters,
 		private ExportAdapterRegistry $export_adapters,
-		private ExportRendererRegistry $export_writers,
-		private ExportConfigurationFormFieldProviderRegistry $field_providers,
 		private ExportFilterFieldProviderRegistry $filter_field_providers,
 		private ExportFilterSelectionSerializer $filter_serializer,
-		private OrderTaxFieldProviderField $tax_field_provider_field,
+		private ExportSettingsFields $settings_fields,
 		private DownloadPasswordManager $passwords,
 		private PermissionChecker $permissions
 	) {}
@@ -73,11 +63,9 @@ final readonly class ExportConfigurationPageForm {
 	 * @param WP_Post|null $configuration Current configuration.
 	 */
 	public function render( ?WP_Post $configuration = null, bool $read_only = false ): void {
-		$storage_adapters  = $this->storage_adapters->get_enabled();
 		$export_adapters   = $this->export_adapters->get_all();
-		$export_writers    = $this->export_writers->get_all();
 		$is_editing        = null !== $configuration;
-		$submit_disabled   = [] === $storage_adapters || [] === $export_adapters || [] === $export_writers;
+		$submit_disabled   = [] === $export_adapters || ! $this->settings_fields->has_required_choices();
 		$title             = $is_editing ? get_the_title( $configuration ) : '';
 		$filter_selections = $is_editing ? $this->get_filter_selections( $configuration->ID ) : [];
 		$export_adapter    = $is_editing ? $this->get_export_adapter( $configuration->ID ) : OrderExportAdapter::ADAPTER_ID;
@@ -86,7 +74,6 @@ final readonly class ExportConfigurationPageForm {
 		$storage_engine    = $is_editing ? (string) get_post_meta( $configuration->ID, ExportConfigurationPostType::META_STORAGE_ENGINE, true ) : '';
 		$batch_size        = $is_editing ? $this->get_batch_size( $configuration->ID ) : ExportPostType::DEFAULT_BATCH_SIZE;
 		$settings          = $is_editing ? $this->get_additional_settings( $configuration->ID ) : [];
-		$field_providers   = $this->get_supported_field_providers( $export_adapter );
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="storeaccountant_save_export_configuration" />
@@ -145,83 +132,9 @@ final readonly class ExportConfigurationPageForm {
 						<?php $this->render_filter_field_provider_groups( $export_adapter, $filter_selections, $read_only ); ?>
 					<?php endif; ?>
 					<?php if ( $is_editing ) : ?>
-					<tr>
-						<th scope="row">
-							<label for="storeaccountant-export-writer"><?php esc_html_e( 'Export Format', 'storeaccountant' ); ?></label>
-						</th>
-						<td>
-							<?php if ( [] === $export_writers ) : ?>
-								<p class="description"><?php esc_html_e( 'No export formats are available. Register at least one export renderer before saving a configuration.', 'storeaccountant' ); ?></p>
-							<?php else : ?>
-								<select id="storeaccountant-export-writer" name="storeaccountant_export_writer" required="required" <?php disabled( $read_only ); ?>>
-									<?php foreach ( $export_writers as $writer ) : ?>
-									<option value="<?php echo esc_attr( $writer->get_id() ); ?>" <?php selected( $export_writer, $writer->get_id() ); ?>>
-										<?php
-											echo esc_html( I18n::translate_registry_label( 'exporter_', $writer->get_id() ) );
-										?>
-									</option>
-									<?php endforeach; ?>
-								</select>
-							<?php endif; ?>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row">
-							<label for="storeaccountant-storage-engine"><?php esc_html_e( 'Storage Location', 'storeaccountant' ); ?></label>
-						</th>
-						<td>
-							<?php if ( [] === $storage_adapters ) : ?>
-								<div class="notice notice-error inline">
-									<p>
-										<?php esc_html_e( 'No storage locations are enabled. Enable at least one storage location before saving a configuration.', 'storeaccountant' ); ?>
-										<a href="<?php echo esc_url( $this->get_storage_settings_url() ); ?>">
-											<?php esc_html_e( 'Open storage settings', 'storeaccountant' ); ?>
-										</a>
-									</p>
-								</div>
-							<?php else : ?>
-								<select id="storeaccountant-storage-engine" name="storeaccountant_storage_engine" required="required" <?php disabled( $read_only ); ?>>
-									<?php foreach ( $storage_adapters as $storage_adapter ) : ?>
-									<option value="<?php echo esc_attr( $storage_adapter->get_id() ); ?>" <?php selected( $storage_engine, $storage_adapter->get_id() ); ?>>
-										<?php
-											echo esc_html( I18n::translate_registry_label( 'storage_adapter_', $storage_adapter->get_id() ) );
-										?>
-									</option>
-									<?php endforeach; ?>
-								</select>
-							<?php endif; ?>
-							</td>
-						</tr>
-							<?php if ( OrderExportAdapter::ADAPTER_ID === $export_adapter ) : ?>
-								<?php $this->tax_field_provider_field->render( $tax_provider_id, $read_only ); ?>
-						<?php endif; ?>
-							<?php if ( $is_editing ) : ?>
-								<?php foreach ( $field_providers as $provider ) : ?>
-									<?php $provider->render_fields( is_array( $settings[ $provider->get_id() ] ?? null ) ? $settings[ $provider->get_id() ] : [], $read_only ); ?>
-						<?php endforeach; ?>
-					<?php endif; ?>
-					<?php endif; ?>
-					<?php if ( $is_editing ) : ?>
+						<?php $this->settings_fields->render( $export_adapter, $export_writer, $storage_engine, $batch_size, $tax_provider_id, $settings, $read_only, false ); ?>
 						<?php $this->render_download_password_row( $configuration->ID, $read_only ); ?>
-						<tr>
-							<th scope="row">
-								<label for="storeaccountant-export-batch-size"><?php esc_html_e( 'Batch Size', 'storeaccountant' ); ?></label>
-							</th>
-							<td>
-								<input
-									type="number"
-									id="storeaccountant-export-batch-size"
-									name="storeaccountant_export_batch_size"
-									class="small-text"
-									value="<?php echo esc_attr( (string) $batch_size ); ?>"
-									min="<?php echo esc_attr( (string) ExportPostType::MIN_BATCH_SIZE ); ?>"
-									step="1"
-									required="required"
-									<?php disabled( $read_only ); ?>
-								/>
-								<p class="description"><?php esc_html_e( 'StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 100.', 'storeaccountant' ); ?></p>
-							</td>
-						</tr>
+						<?php $this->settings_fields->render_batch_size_row( $batch_size, $read_only ); ?>
 					<?php endif; ?>
 				</tbody>
 			</table>
@@ -417,7 +330,7 @@ final readonly class ExportConfigurationPageForm {
 	 * @param int $post_id Configuration post ID.
 	 */
 	private function get_order_tax_field_provider( int $post_id ): string {
-		return $this->tax_field_provider_field->get_provider_id_from_configuration( $post_id );
+		return $this->settings_fields->get_tax_provider_id_from_configuration( $post_id );
 	}
 
 	/**
@@ -448,37 +361,5 @@ final readonly class ExportConfigurationPageForm {
 		$settings = json_decode( (string) get_post_meta( $post_id, ExportConfigurationPostType::META_ADDITIONAL_SETTINGS, true ), true );
 
 		return is_array( $settings ) ? $settings : [];
-	}
-
-	/**
-	 * Gets the storage settings URL.
-	 */
-	private function get_storage_settings_url(): string {
-		return add_query_arg(
-			[
-				'page' => 'storeaccountant-settings',
-				'tab'  => 'storage-locations',
-			],
-			admin_url( 'admin.php' )
-		);
-	}
-
-	/**
-	 * Gets additional form field providers that support the selected export type.
-	 *
-	 * @param string $export_type Export adapter identifier.
-	 *
-	 * @return array<int, \StoreAccountant\Export\Contract\ExportConfigurationFormFieldProviderInterface>
-	 */
-	private function get_supported_field_providers( string $export_type ): array {
-		$providers = [];
-
-		foreach ( $this->field_providers->get_all() as $provider ) {
-			if ( ! $provider instanceof ExportTypeAwareInterface || $provider->supports_export_type( $export_type ) ) {
-				$providers[] = $provider;
-			}
-		}
-
-		return $providers;
 	}
 }
