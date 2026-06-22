@@ -53,6 +53,19 @@ You can assign additional permissions to backend roles for every action.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md)
 
+## Breaking Changes Policy
+
+StoreAccountant treats documented WordPress hooks, including actions and filters,
+as the supported public extension surface. Incompatible changes to documented
+hook names, accepted arguments, execution timing, return contracts, or documented
+behavior are treated as breaking changes once a stable release line guarantees
+backward compatibility.
+
+Public PHP classes and methods inside the plugin are not covered by this
+backward-compatibility guarantee unless they are explicitly documented as
+extension contracts. Integrations should use the documented WordPress hooks
+instead of relying on plugin internals.
+
 ## Agents Development
 
 Important for all future work: always read and follow [AGENTS.md](AGENTS.md)
