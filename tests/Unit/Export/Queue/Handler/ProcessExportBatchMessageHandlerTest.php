@@ -69,6 +69,9 @@ final class ProcessExportBatchMessageHandlerTest extends TestCase {
 		Functions\when( 'sanitize_text_field' )->alias( static fn ( string $value ): string => $value );
 		Functions\when( 'sanitize_key' )->alias( static fn ( string $value ): string => strtolower( $value ) );
 		Functions\when( 'absint' )->alias( static fn ( mixed $value ): int => abs( (int) $value ) );
+		Functions\when( 'add_option' )->justReturn( true );
+		Functions\when( 'delete_option' )->justReturn( true );
+		Functions\when( 'get_option' )->justReturn( 0 );
 		Functions\when( 'do_action' )->justReturn();
 		Functions\when( 'wp_upload_dir' )->alias( fn (): array => [ 'basedir' => $this->upload_dir ] );
 		Functions\when( 'wp_mkdir_p' )->alias( static fn ( string $path ): bool => is_dir( $path ) || mkdir( $path, 0777, true ) );

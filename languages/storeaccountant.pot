@@ -2189,3 +2189,56 @@ msgstr ""
 #: src/Tax/Field/Provider/SimpleOrderTaxFieldProvider.php:83
 msgid "Simple tax fields"
 msgstr ""
+
+#: src/Settings/Admin/PluginSettingsPage.php:148
+msgid "To Plugin Website"
+msgstr ""
+
+#: src/Settings/Admin/PluginSettingsPage.php:151
+msgid "https://storeaccountant.launch-lab.de/en/documentation/"
+msgstr ""
+
+#: src/Settings/Admin/PluginSettingsPage.php:152
+msgid "Guides"
+msgstr ""
+
+#: src/Settings/Admin/PluginSettingsPage.php:156
+msgid "Developer Documentation"
+msgstr ""
+
+#: src/Settings/Admin/PluginSettingsPage.php:160
+msgid "GitHub"
+msgstr ""
+
+#: src/Admin/AccountingSupportPage.php:57
+#: src/Admin/SupportOverviewTabProvider.php:62
+msgid "Support"
+msgstr ""
+
+#: src/Admin/AccountingSupportPage.php:72
+msgid "You are not allowed to access StoreAccountant support."
+msgstr ""
+
+#: src/Admin/AccountingSupportPage.php:76
+msgid "StoreAccountant Support"
+msgstr ""
+
+#: src/Admin/AccountingSupportPage.php:81
+msgid "Found a bug or error?"
+msgstr ""
+
+#: src/Admin/AccountingSupportPage.php:82
+msgid "Have you found bugs or errors in StoreAccountant? Please contact us so we can help and improve the plugin."
+msgstr ""
+
+#: src/Admin/AccountingSupportPage.php:84
+msgid "Custom development"
+msgstr ""
+
+#: src/Admin/AccountingSupportPage.php:85
+msgid "StoreAccountant already covers many use cases for WooCommerce order exports, customer exports, CSV exports, and JSON exports. If you need custom export formats, ERP connections, accounting integrations, or individual WooCommerce extensions, we are happy to support you with the implementation."
+msgstr ""
+
+#: src/Admin/AccountingSupportPage.php:89
+msgid "Contact StoreAccountant Support"
+msgstr ""

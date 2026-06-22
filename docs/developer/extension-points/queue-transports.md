@@ -3,8 +3,9 @@
 StoreAccountant dispatches export work through Symfony Messenger. The free
 plugin ships with a synchronous transport provider for the `sync` scheme and an
 Action Scheduler transport provider for the `action_scheduler` scheme. The
-synchronous transport is the default for small exports; Action Scheduler is
-recommended for larger exports because it moves work into background actions.
+Action Scheduler transport is the default because it moves work into background
+actions. The synchronous transport is available for installations that
+explicitly need inline processing.
 When Action Scheduler is selected, manually triggered exports start an async HTTP
 loopback runner. The runner processes StoreAccountant's own pending export
 actions in small chunks and chains another loopback request while more immediate

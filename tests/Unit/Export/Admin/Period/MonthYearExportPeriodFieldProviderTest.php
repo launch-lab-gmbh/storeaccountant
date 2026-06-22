@@ -16,9 +16,7 @@ namespace StoreAccountant\Tests\Unit\Export\Admin\Period;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use DateTimeZone;
-use Mockery;
 use PHPUnit\Framework\TestCase;
-use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Export\Admin\Period\MonthYearExportPeriodFieldProvider;
 use StoreAccountant\Export\ExportPeriod;
 use StoreAccountant\Export\Filter\Period\MonthYearPeriodProvider;
@@ -39,21 +37,6 @@ final class MonthYearExportPeriodFieldProviderTest extends TestCase {
 		Monkey\tearDown();
 
 		parent::tearDown();
-	}
-
-	public function test_register_adds_field_and_view_provider_filters(): void {
-		$provider = new MonthYearExportPeriodFieldProvider();
-
-		Functions\expect( 'add_filter' )
-			->once()
-			->with( 'storeaccountant_export_period_field_provider', Mockery::type( 'callable' ), HookRegistrarInterface::DEFAULT_PRIORITY );
-		Functions\expect( 'add_filter' )
-			->once()
-			->with( 'storeaccountant_export_period_view_provider', Mockery::type( 'callable' ), HookRegistrarInterface::DEFAULT_PRIORITY );
-
-		$provider->register();
-
-		self::assertTrue( true );
 	}
 
 	public function test_get_period_selection_from_request_sanitizes_dynamic_and_concrete_values(): void {
@@ -127,30 +110,6 @@ final class MonthYearExportPeriodFieldProviderTest extends TestCase {
 				]
 			)
 		);
-	}
-
-	public function test_stores_concrete_period_distinguishes_dynamic_and_concrete_selections(): void {
-		$provider = new MonthYearExportPeriodFieldProvider();
-
-		self::assertFalse( $provider->stores_concrete_period( [ 'month' => MonthYearPeriodProvider::PERIOD_ALL_TIME ] ) );
-		self::assertFalse( $provider->stores_concrete_period( [ 'month' => MonthYearPeriodProvider::PERIOD_CURRENT_MONTH ] ) );
-		self::assertFalse( $provider->stores_concrete_period( [ 'month' => MonthYearPeriodProvider::PERIOD_LAST_MONTH ] ) );
-		self::assertTrue(
-			$provider->stores_concrete_period(
-				[
-					'month' => '5',
-					'year'  => 2026,
-				]
-			)
-		);
-	}
-
-	public function test_default_title_suffix_and_format_period_label_use_wordpress_timezone(): void {
-		$provider = new MonthYearExportPeriodFieldProvider();
-
-		self::assertSame( 'June 2026', $provider->get_default_title_suffix() );
-		self::assertSame( 'May 2026', $provider->format_period_label( new ExportPeriod( '2026-05-01 00:00:00', '2026-05-31 23:59:59' ) ) );
-		self::assertSame( '', $provider->format_period_label( new ExportPeriod( 'not-a-date', '' ) ) );
 	}
 
 	public function test_render_outputs_selected_month_and_year_controls(): void {

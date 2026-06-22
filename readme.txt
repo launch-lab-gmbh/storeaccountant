@@ -1,6 +1,6 @@
 === StoreAccountant ===
 Contributors: launchlab
-Tags: woocommerce, accounting, export, bookkeeping, vat, tax
+Tags: woocommerce, accounting, export, bookkeeping, tax
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.2
@@ -13,20 +13,25 @@ WooCommerce accounting workflow exports with persisted records and background pr
 == Description ==
 
 StoreAccountant is a WordPress/WooCommerce plugin for accounting export workflows.
-It creates saved export records for WooCommerce orders and customers, processes exports in the background, and stores generated files with protected download access.
+It creates saved export records for WooCommerce orders, products, and customers, processes exports in the background, and stores generated files with protected download access.
 
-= Core features =
+[User Guide EN](https://storeaccountant.launch-lab.de/en/documentation/)
+[User Guide DE](https://storeaccountant.launch-lab.de/de/anleitungen/)
+[Developer Guide](https://storeaccountant.launch-lab.de/en/documentation-developer/)
+[Github](https://github.com/launch-lab-gmbh/storeaccountant)
 
-- Advanced order, customer, and product exports
-- Configurable export formats (CSV, JSON)
-- Password-protected export downloads
-- Filters for export periods, order statuses, and customer countries
-- Configurable columns and field mapping
-- Support for custom order and customer fields
-- Tax rate and tax amount fields for order exports
-- Invoice fields and invoice PDF attachments when a supported invoice plugin is active
-- Local and password-protected storage
-- Asynchronous background processing for better performance
+= Key features =
+
+✅ Advanced order, customer, and product exports
+✅ Configurable export formats (CSV, JSON)
+✅ Password-protected export downloads
+✅ Filters for export periods, order statuses, and customer countries
+✅ Configurable columns and field mapping
+✅ Support for custom order and customer fields
+✅ Tax rate and tax amount fields for order exports
+✅ Invoice fields and invoice PDF attachments when a supported invoice plugin is active
+✅ Local and password-protected storage
+✅ Asynchronous background processing for better performance
 
 = How to configure exports =
 
@@ -101,8 +106,25 @@ Yes. StoreAccountant can export invoice-related fields and attach invoice PDF fi
 integration is available for the "PDF Invoices & Packing Slips for WooCommerce" plugin,
 with support for additional invoice plugins planned for future releases.
 
+= Automatic installation =
+
+Automatic installation is the easiest option as WordPress handles the file transfers itself, and you don’t even need to leave your web browser.
+
+1. Go to your WordPress Plugin installation menu (Dashboard > Plugins > Add New)
+2. In the search field, type "storeaccountant" and press enter.
+3. "Install Now" and then click "Active"
+
+= Manual installation =
+
+For Manual installation, you download our product from the WordPress directory uploading it to your web-server via your FTP or CPanel application.
+
+1. Download the plugin and unzip it
+2. Using an FTP program or CPanel upload the unzipped plugin folder to your WordPress installation’s wp-content/plugins/ directory.
+3. Activate the plugin from the Plugins menu (Dashboard > Plugins > Installed Plugins) within the WordPress admin.
+
 == Upgrade Notice ==
 Update the plugin via the WordPress dashboard.
 
 == Changelog ==
-{{CHANGELOG}}
+= 1.0.0 =
+* Initial release.

@@ -92,6 +92,30 @@ final class ProductDateFilterTest extends TestCase {
 		self::assertSame( '2026-05-31 23:59:59', $criteria->period->end_at );
 	}
 
+	public function test_apply_leaves_query_unrestricted_for_all_time_period(): void {
+		$criteria = new ProductQueryCriteria();
+		$result   = $this->filter()->apply(
+			$criteria,
+			new ExportFilterSelection(
+				ProductDateFilter::FILTER_ID,
+				[
+					'period_provider' => MonthYearPeriodProvider::PROVIDER_ID,
+					'period'          => [
+						'month' => MonthYearPeriodProvider::PERIOD_ALL_TIME,
+					],
+					'resolved_period' => [
+						'start_at' => '2016-01-01 00:00:00',
+						'end_at'   => '2026-06-22 08:08:26',
+					],
+				]
+			),
+			new ExportPayload( 1, ProductExportAdapter::ADAPTER_ID )
+		);
+
+		self::assertTrue( $result );
+		self::assertNull( $criteria->period );
+	}
+
 	public function test_apply_resolves_period_through_configured_provider(): void {
 		$provider = new class() implements PeriodProviderInterface {
 			public function get_id(): string {

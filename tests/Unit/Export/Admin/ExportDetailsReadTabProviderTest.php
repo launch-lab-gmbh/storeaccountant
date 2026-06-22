@@ -194,6 +194,7 @@ final class ExportDetailsReadTabProviderTest extends TestCase {
 			static fn ( string $status ): object => (object) [ 'label' => ucfirst( $status ) ]
 		);
 		Functions\when( 'wp_date' )->alias( static fn ( string $format, int $timestamp ): string => gmdate( 'Y-m-d H:i:s', $timestamp ) );
+		Functions\when( 'get_user_locale' )->alias( static fn (): string => 'en_US' );
 		Functions\when( 'get_option' )->alias(
 			static fn ( string $option, mixed $default = false ): mixed => match ( $option ) {
 				'date_format' => 'Y-m-d',

@@ -2,12 +2,6 @@
 
 This document describes the current technical state of StoreAccountant.
 
-## Pre-1.0 Development Status
-
-StoreAccountant is still below version `1.0`. The architecture, extension APIs,
-hooks, stored meta keys, and service boundaries may change during this
-development phase without backward-compatibility guarantees.
-
 ## Bootstrap and Container
 
 `storeaccountant.php` is only the bootstrap:
@@ -322,8 +316,6 @@ storeaccountant_export_field_provider
 storeaccountant_export_field_value_provider
 storeaccountant_export_field_value_mutator
 storeaccountant_export_order_tax_field_provider
-storeaccountant_export_period_field_provider
-storeaccountant_export_period_view_provider
 storeaccountant_export_renderer
 storeaccountant_export_batch_size
 storeaccountant_export_queue_debug_delay_seconds

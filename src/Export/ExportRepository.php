@@ -22,11 +22,17 @@ use StoreAccountant\Export\Event\ExportEventDispatcher;
 use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\Filter\ExportFilterSelection;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
+use function add_option;
 use function array_slice;
 use function bin2hex;
+use function delete_option;
+use function get_option;
 use function is_string;
+use function max;
 use function random_bytes;
+use function time;
 use function trim;
+use function usleep;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -37,7 +43,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final readonly class ExportRepository {
 
-	private const DEFAULT_LOG_ENTRY_LIMIT = 250;
+	private const DEFAULT_LOG_ENTRY_LIMIT         = 250;
+	private const PROGRESS_LOCK_ATTEMPTS          = 100;
+	private const PROGRESS_LOCK_TTL               = 30;
+	private const PROGRESS_LOCK_WAIT_MICROSECONDS = 50000;
 
 	/**
 	 * Initializes the repository.
@@ -286,17 +295,62 @@ final readonly class ExportRepository {
 	 * @param int $items   Processed item count in the batch.
 	 */
 	public function mark_batch_processed( int $post_id, int $items ): void {
+		$this->with_progress_lock(
+			$post_id,
+			function () use ( $post_id, $items ): void {
+				$this->increment_meta_counter( $post_id, ExportPostType::META_PROCESSED_ITEMS, max( 0, $items ) );
+				$this->increment_meta_counter( $post_id, ExportPostType::META_PROCESSED_BATCHES, 1 );
+				update_post_meta( $post_id, ExportPostType::META_CURRENT_STEP, __( 'Processing export batches.', 'storeaccountant' ) );
+			}
+		);
+	}
+
+	/**
+	 * Runs a progress update while holding a short WordPress option lock.
+	 *
+	 * @param int      $post_id  Export post ID.
+	 * @param callable $callback Critical section.
+	 */
+	private function with_progress_lock( int $post_id, callable $callback ): void {
+		$lock_key = 'storeaccountant_export_progress_lock_' . $post_id;
+
+		for ( $attempt = 0; $attempt < self::PROGRESS_LOCK_ATTEMPTS; ++$attempt ) {
+			if ( add_option( $lock_key, (string) time(), '', 'no' ) ) {
+				try {
+					$callback();
+				} finally {
+					delete_option( $lock_key );
+				}
+
+				return;
+			}
+
+			$locked_at = (int) get_option( $lock_key, 0 );
+
+			if ( $locked_at > 0 && time() - $locked_at > self::PROGRESS_LOCK_TTL ) {
+				delete_option( $lock_key );
+				continue;
+			}
+
+			usleep( self::PROGRESS_LOCK_WAIT_MICROSECONDS );
+		}
+
+		$callback();
+	}
+
+	/**
+	 * Increments a numeric export meta counter.
+	 *
+	 * @param int    $post_id Export post ID.
+	 * @param string $key     Meta key.
+	 * @param int    $amount  Increment amount.
+	 */
+	private function increment_meta_counter( int $post_id, string $key, int $amount ): void {
 		update_post_meta(
 			$post_id,
-			ExportPostType::META_PROCESSED_ITEMS,
-			(string) ( (int) get_post_meta( $post_id, ExportPostType::META_PROCESSED_ITEMS, true ) + max( 0, $items ) )
+			$key,
+			(string) ( (int) get_post_meta( $post_id, $key, true ) + $amount )
 		);
-		update_post_meta(
-			$post_id,
-			ExportPostType::META_PROCESSED_BATCHES,
-			(string) ( (int) get_post_meta( $post_id, ExportPostType::META_PROCESSED_BATCHES, true ) + 1 )
-		);
-		update_post_meta( $post_id, ExportPostType::META_CURRENT_STEP, __( 'Processing export batches.', 'storeaccountant' ) );
 	}
 
 	/**

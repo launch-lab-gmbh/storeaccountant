@@ -143,7 +143,7 @@ final class PluginSettingsPageTest extends TestCase {
 		Functions\expect( 'add_action' )
 			->once()
 			->with( 'admin_post_storeaccountant_save_plugin_settings', [ $page, 'handle_save' ] );
-		Functions\expect( 'add_filter' )->once();
+		Functions\expect( 'add_filter' )->twice();
 
 		$page->register();
 
@@ -157,6 +157,33 @@ final class PluginSettingsPageTest extends TestCase {
 		self::assertStringContainsString( 'Settings', $links[0] );
 		self::assertStringContainsString( 'page=storeaccountant-settings', $links[0] );
 		self::assertSame( 'Deactivate', $links[1] );
+	}
+
+	public function test_filter_plugin_row_meta_replaces_plugin_site_link_and_adds_documentation_links(): void {
+		$links = $this->page()->filter_plugin_row_meta(
+			[
+				'Version 0.3.4',
+				'<a href="https://storeaccountant.launch-lab.de/">Visit plugin site</a>',
+			],
+			plugin_basename( STOREACCOUNTANT_FILE )
+		);
+
+		self::assertCount( 5, $links );
+		self::assertSame( 'Version 0.3.4', $links[0] );
+		self::assertStringContainsString( 'To Plugin Website', $links[1] );
+		self::assertStringContainsString( 'https://storeaccountant.launch-lab.de/', $links[1] );
+		self::assertStringContainsString( 'Guides', $links[2] );
+		self::assertStringContainsString( 'https://storeaccountant.launch-lab.de/en/documentation/', $links[2] );
+		self::assertStringContainsString( 'Developer Documentation', $links[3] );
+		self::assertStringContainsString( 'https://storeaccountant.launch-lab.de/en/documentation-developer/', $links[3] );
+		self::assertStringContainsString( 'GitHub', $links[4] );
+		self::assertStringContainsString( 'https://github.com/launch-lab-gmbh/storeaccountant', $links[4] );
+	}
+
+	public function test_filter_plugin_row_meta_ignores_other_plugins(): void {
+		$links = [ 'Version 1.0.0' ];
+
+		self::assertSame( $links, $this->page()->filter_plugin_row_meta( $links, 'other/plugin.php' ) );
 	}
 
 	public function test_render_defaults_to_storage_tab_and_shows_saved_notice(): void {

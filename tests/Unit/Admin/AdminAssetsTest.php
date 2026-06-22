@@ -18,6 +18,7 @@ use Brain\Monkey\Functions;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 use StoreAccountant\Admin\AdminAssets;
+use StoreAccountant\Admin\AccountingSupportPage;
 use StoreAccountant\Export\Admin\AccountingExportPage;
 use StoreAccountant\Export\ExportPostType;
 
@@ -55,7 +56,7 @@ final class AdminAssetsTest extends TestCase {
 
 	public function test_enqueue_ignores_unrelated_admin_screen(): void {
 		Functions\expect( 'filter_input' )
-			->times( 4 )
+			->times( 5 )
 			->with( INPUT_GET, 'page', FILTER_CALLBACK, [ 'options' => [ \StoreAccountant\Contract\WordPress\Request::class, 'sanitize_key_value' ] ] )
 			->andReturn( null );
 
@@ -147,6 +148,25 @@ final class AdminAssetsTest extends TestCase {
 		Functions\expect( 'wp_add_inline_script' )->never();
 
 		( new AdminAssets() )->enqueue( 'toplevel_page_storeaccountant-accounting' );
+
+		self::assertTrue( true );
+	}
+
+	public function test_enqueue_loads_admin_styles_for_support_page(): void {
+		$this->mock_asset_paths();
+
+		Functions\expect( 'filter_input' )
+			->times( 11 )
+			->with( INPUT_GET, 'page', FILTER_CALLBACK, [ 'options' => [ \StoreAccountant\Contract\WordPress\Request::class, 'sanitize_key_value' ] ] )
+			->andReturn( AccountingSupportPage::PAGE_SLUG );
+
+		Functions\expect( 'wp_enqueue_style' )
+			->once()
+			->with( 'storeaccountant-admin', 'https://example.test/plugin/assets/css/admin.css', [], Mockery::pattern( '/^0\.1\.0-\d+$/' ) );
+		Functions\expect( 'wp_enqueue_script' )->never();
+		Functions\expect( 'wp_add_inline_script' )->never();
+
+		( new AdminAssets() )->enqueue( 'settings_page_storeaccountant-support' );
 
 		self::assertTrue( true );
 	}

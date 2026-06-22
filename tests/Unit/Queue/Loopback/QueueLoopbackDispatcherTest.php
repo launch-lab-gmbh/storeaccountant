@@ -177,7 +177,7 @@ namespace StoreAccountant\Tests\Unit\Queue\Loopback {
 			->andReturn( null === $provider ? [] : [ $provider ] );
 			Functions\expect( 'get_option' )
 			->once()
-			->with( QueueTransportRegistry::OPTION_NAME, 'sync' )
+			->with( QueueTransportRegistry::OPTION_NAME, 'action_scheduler' )
 			->andReturn( null !== $provider ? $provider->get_id() : 'sync' );
 			Functions\expect( 'sanitize_key' )
 			->once()

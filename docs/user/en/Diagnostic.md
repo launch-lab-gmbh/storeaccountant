@@ -13,10 +13,11 @@ plugin settings.
 
 ## Enable Diagnostic Logging
 
-1. Open the StoreAccountant plugin settings in WordPress.
-2. Go to the diagnostics settings tab.
-3. Enable diagnostic logging.
-4. Save the settings.
+1. Open `Plugins > Installed Plugins` in the WordPress admin.
+2. Click `Settings` for StoreAccountant.
+3. Go to the `Diagnostics` tab.
+4. Enable diagnostic logging.
+5. Save the settings.
 
 After diagnostic logging is enabled, StoreAccountant can create a diagnostic package when a supported admin action fails,
 for example when saving an export configuration or running an export.
@@ -34,6 +35,9 @@ Send the downloaded file and the support ID to your StoreAccountant support cont
 If you only see the normal error message, diagnostic logging may be disabled, your user account may not have permission
 to download diagnostic packages, or no diagnostic package was created for that specific error.
 
+You manage diagnostic permissions under
+`Plugins > Installed Plugins > StoreAccountant > Settings > Permissions`.
+
 ## What the Package Contains
 
 The package contains technical information about the failed StoreAccountant action, such as the error source, support ID,
@@ -47,3 +51,9 @@ Review the file according to your company policy before sending it outside your 
 
 StoreAccountant also sends the diagnostic incident to the WordPress debug log mechanism as a fallback. This only appears
 in the WordPress debug log if the WordPress installation is configured to write debug logs.
+
+## Further Reading
+
+- [Plugin Configuration](plugin/configuration.md)
+- [Permissions](plugin/permissions.md)
+- [Manage and Download Exports](exports/manage-exports.md)

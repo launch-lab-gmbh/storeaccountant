@@ -57,7 +57,27 @@ final class QueueTransportRegistryTest extends TestCase {
 			->andReturn( [ $sync, $action_scheduler ] );
 		Functions\expect( 'get_option' )
 			->once()
-			->with( QueueTransportRegistry::OPTION_NAME, 'sync' )
+			->with( QueueTransportRegistry::OPTION_NAME, 'action_scheduler' )
+			->andReturn( 'action_scheduler' );
+		Functions\expect( 'sanitize_key' )
+			->once()
+			->with( 'action_scheduler' )
+			->andReturn( 'action_scheduler' );
+
+		self::assertSame( $action_scheduler, ( new QueueTransportRegistry() )->get_active() );
+	}
+
+	public function test_get_active_defaults_to_action_scheduler_when_no_transport_was_saved(): void {
+		$sync             = $this->provider( 'sync' );
+		$action_scheduler = $this->provider( 'action_scheduler' );
+
+		Functions\expect( 'apply_filters' )
+			->once()
+			->with( 'storeaccountant_queue_transport_provider', [] )
+			->andReturn( [ $sync, $action_scheduler ] );
+		Functions\expect( 'get_option' )
+			->once()
+			->with( QueueTransportRegistry::OPTION_NAME, 'action_scheduler' )
 			->andReturn( 'action_scheduler' );
 		Functions\expect( 'sanitize_key' )
 			->once()
@@ -76,7 +96,7 @@ final class QueueTransportRegistryTest extends TestCase {
 			->andReturn( [ $sync ] );
 		Functions\expect( 'get_option' )
 			->once()
-			->with( QueueTransportRegistry::OPTION_NAME, 'sync' )
+			->with( QueueTransportRegistry::OPTION_NAME, 'action_scheduler' )
 			->andReturn( 'missing' );
 		Functions\expect( 'sanitize_key' )
 			->once()
@@ -91,7 +111,7 @@ final class QueueTransportRegistryTest extends TestCase {
 			->andReturn( [] );
 		Functions\expect( 'get_option' )
 			->once()
-			->with( QueueTransportRegistry::OPTION_NAME, 'sync' )
+			->with( QueueTransportRegistry::OPTION_NAME, 'action_scheduler' )
 			->andReturn( 'sync' );
 		Functions\expect( 'sanitize_key' )
 			->once()

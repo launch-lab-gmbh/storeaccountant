@@ -25,6 +25,7 @@ use StoreAccountant\Export\ExportPayload;
 use StoreAccountant\Export\ExportPeriod;
 use StoreAccountant\Export\Filter\ExportFilterSelection;
 use StoreAccountant\Export\Filter\Period\Contract\PeriodProviderInterface;
+use StoreAccountant\Export\Filter\Period\MonthYearPeriodProvider;
 use StoreAccountant\Export\Filter\Period\PeriodProviderRegistry;
 use WP_Error;
 
@@ -77,6 +78,31 @@ final class CustomerDateFilterTest extends TestCase {
 		self::assertSame( CustomerDateFilter::FIELD_DATE_CREATED, $query->date_field );
 		self::assertSame( '2026-05-01 00:00:00', $query->period?->start_at );
 		self::assertSame( '2026-05-31 23:59:59', $query->period?->end_at );
+	}
+
+	public function test_apply_leaves_query_unrestricted_for_all_time_period(): void {
+		Functions\when( 'sanitize_key' )->alias( static fn ( string $value ): string => $value );
+		$query  = new CustomerQueryCriteria();
+		$result = ( new CustomerDateFilter( new PeriodProviderRegistry() ) )->apply(
+			$query,
+			new ExportFilterSelection(
+				CustomerDateFilter::FILTER_ID,
+				[
+					'period_provider' => MonthYearPeriodProvider::PROVIDER_ID,
+					'period'          => [
+						'month' => MonthYearPeriodProvider::PERIOD_ALL_TIME,
+					],
+					'resolved_period' => [
+						'start_at' => '2016-01-01 00:00:00',
+						'end_at'   => '2026-06-22 08:08:26',
+					],
+				]
+			),
+			new ExportPayload( 1, CustomerExportAdapter::ADAPTER_ID )
+		);
+
+		self::assertTrue( $result );
+		self::assertNull( $query->period );
 	}
 
 	public function test_apply_resolves_period_with_selected_provider(): void {

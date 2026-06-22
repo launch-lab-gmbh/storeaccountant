@@ -120,6 +120,11 @@ Hooks that extend the plugin settings page use
 for add-ons that need their own settings pages in the StoreAccountant settings
 area.
 
+Hooks that extend the main Accounting overview tabs use
+`storeaccountant_accounting_overview_*`. The built-in `Support` tab has a high
+priority so add-ons can place premium tabs between `Export Configurations` and
+`Support`.
+
 Permission actions use the shared hook `storeaccountant_permission_action`.
 Actions should describe a concrete admin operation such as viewing a page,
 saving a tab, or running a custom export button. Role lists shown in the
@@ -131,6 +136,7 @@ only roles intended for wp-admin access should be exposed there.
 | Hook | Purpose | Documentation |
 | --- | --- | --- |
 | `storeaccountant_export_completed` | Fires after a saved export has been successfully finalized and marked completed. | [Events](events.md) |
+| `storeaccountant_accounting_overview_tab_provider` | Registers tabs for the main Accounting overview. | [Accounting Overview Tab Providers](extension-points/accounting-overview-tab-providers.md) |
 | `storeaccountant_export_adapter` | Registers dataset-producing export adapters. | [Export Adapters](extension-points/export-adapters.md) |
 | `storeaccountant_export_configuration_form_field_provider` | Registers additional form fields for saved export configurations. | [Export Configuration Form Field Providers](extension-points/export-configuration-form-field-providers.md) |
 | `storeaccountant_export_configuration_tab_provider` | Registers additional tabs for saved export configurations. | [Export Configuration Tab Providers](extension-points/export-configuration-tab-providers.md) |
@@ -144,8 +150,6 @@ only roles intended for wp-admin access should be exposed there.
 | `storeaccountant_export_field_value_provider` | Registers value resolvers for export datasets. | [Field Value Providers](extension-points/field-value-providers.md) |
 | `storeaccountant_export_field_value_mutator` | Registers reusable field value mutators for export datasets. | [Field Value Mutators](extension-points/field-value-mutators.md) |
 | `storeaccountant_export_order_tax_field_provider` | Registers selectable tax field strategies for WooCommerce order exports. | [Order Tax Field Providers](extension-points/order-tax-field-providers.md) |
-| `storeaccountant_export_period_field_provider` | Replaces the period form provider. | [Period Providers](extension-points/period-providers.md) |
-| `storeaccountant_export_period_view_provider` | Replaces the period display provider. | [Period Providers](extension-points/period-providers.md) |
 | `storeaccountant_export_renderer` | Registers renderers for export formats such as CSV, JSON, or XML. | [Export Renderers](extension-points/export-writers.md) |
 | `storeaccountant_invoice_plugin` | Registers invoice plugin integrations. | [Invoice Plugins](extension-points/invoice-plugins.md) |
 | `storeaccountant_storage_adapter` | Registers storage destinations such as local zip, S3, or SFTP. | [Storage Adapters](extension-points/storage-adapters.md) |
@@ -160,6 +164,7 @@ only roles intended for wp-admin access should be exposed there.
 ## Extension Point Reference
 
 - [Export Adapters](extension-points/export-adapters.md)
+- [Accounting Overview Tab Providers](extension-points/accounting-overview-tab-providers.md)
 - [Export Configuration Form Field Providers](extension-points/export-configuration-form-field-providers.md)
 - [Export Configuration Tab Providers](extension-points/export-configuration-tab-providers.md)
 - [Export Read Tab Providers](extension-points/export-read-tab-providers.md)
@@ -172,7 +177,6 @@ only roles intended for wp-admin access should be exposed there.
 - [Field Value Mutators](extension-points/field-value-mutators.md)
 - [Invoice Plugins](extension-points/invoice-plugins.md)
 - [Order Tax Field Providers](extension-points/order-tax-field-providers.md)
-- [Period Providers](extension-points/period-providers.md)
 - [Queue Transports](extension-points/queue-transports.md)
 - [Storage Adapters](extension-points/storage-adapters.md)
 - [Permissions](permissions.md)
