@@ -3,13 +3,6 @@
 These notes describe the current development approach and technical decisions in
 the plugin.
 
-## Pre-1.0 Development Status
-
-StoreAccountant is still below version `1.0`. Until the first stable release,
-internal APIs, hook contracts, stored meta keys, database structures, service
-names, and documentation may change without a backward-compatibility guarantee.
-Changes during this phase are not treated as breaking changes.
-
 ## Code Style
 
 - New PHP files belong below `src`.

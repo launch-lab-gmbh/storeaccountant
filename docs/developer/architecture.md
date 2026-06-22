@@ -2,12 +2,6 @@
 
 This document describes the current technical state of StoreAccountant.
 
-## Pre-1.0 Development Status
-
-StoreAccountant is still below version `1.0`. The architecture, extension APIs,
-hooks, stored meta keys, and service boundaries may change during this
-development phase without backward-compatibility guarantees.
-
 ## Bootstrap and Container
 
 `storeaccountant.php` is only the bootstrap:
