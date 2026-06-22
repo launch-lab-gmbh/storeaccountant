@@ -16,6 +16,7 @@ namespace StoreAccountant\Export;
 use WP_Post;
 use Throwable;
 use Symfony\Component\Messenger\MessageBusInterface;
+use StoreAccountant\Admin\AdminDateFormatter;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
 use StoreAccountant\Diagnostic\Admin\DiagnosticIncidentDownloadController;
@@ -979,20 +980,7 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	 * @param string $datetime Date and time in MySQL format.
 	 */
 	private function format_datetime( string $datetime ): string {
-		$timestamp = strtotime( $datetime . ' UTC' );
-
-		if ( false === $timestamp ) {
-			return '';
-		}
-
-		return wp_date(
-			sprintf(
-				'%1$s %2$s',
-				get_option( 'date_format' ),
-				get_option( 'time_format' )
-			),
-			$timestamp
-		);
+		return AdminDateFormatter::format_mysql_datetime( $datetime );
 	}
 
 	/**

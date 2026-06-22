@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace StoreAccountant\Export\Admin;
 
 use WP_Post;
+use StoreAccountant\Admin\AdminDateFormatter;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Export\Contract\ExportReadTabProviderInterface;
 use StoreAccountant\Export\ExportAdapterRegistry;
@@ -322,20 +323,7 @@ final readonly class ExportDetailsReadTabProvider implements ExportReadTabProvid
 	}
 
 	private function format_datetime( string $datetime ): string {
-		$timestamp = strtotime( $datetime . ' UTC' );
-
-		if ( false === $timestamp ) {
-			return '';
-		}
-
-		return wp_date(
-			sprintf(
-				'%1$s %2$s',
-				(string) get_option( 'date_format' ),
-				(string) get_option( 'time_format' )
-			),
-			$timestamp
-		);
+		return AdminDateFormatter::format_mysql_datetime( $datetime );
 	}
 
 	private function get_export_adapter_id( int $post_id ): string {

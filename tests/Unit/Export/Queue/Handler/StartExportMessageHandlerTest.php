@@ -68,6 +68,9 @@ final class StartExportMessageHandlerTest extends TestCase {
 		Functions\when( 'is_wp_error' )->alias( static fn ( mixed $value ): bool => $value instanceof WP_Error );
 		Functions\when( 'sanitize_text_field' )->alias( static fn ( string $value ): string => $value );
 		Functions\when( 'sanitize_key' )->alias( static fn ( string $value ): string => strtolower( $value ) );
+		Functions\when( 'add_option' )->justReturn( true );
+		Functions\when( 'delete_option' )->justReturn( true );
+		Functions\when( 'get_option' )->justReturn( 0 );
 		Functions\when( 'do_action' )->justReturn();
 	}
 

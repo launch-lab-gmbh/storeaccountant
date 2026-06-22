@@ -19,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Admin\AccountingOverviewTabProviderRegistry;
 use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
 use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
@@ -166,7 +167,7 @@ final class ExportConfigurationPageTest extends TestCase {
 			new ExportRendererRegistry(),
 			$field_registry,
 			$filter_registry,
-			new AccountingHeaderBar( $permissions ),
+			new AccountingHeaderBar( $permissions, new AccountingOverviewTabProviderRegistry() ),
 			new ExportConfigurationTabProviderRegistry(),
 			$tax_field,
 			$permissions,

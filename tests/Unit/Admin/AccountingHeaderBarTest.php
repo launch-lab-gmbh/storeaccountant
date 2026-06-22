@@ -17,6 +17,11 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
 use StoreAccountant\Admin\AccountingHeaderBar;
+use StoreAccountant\Admin\AccountingOverviewTabProviderRegistry;
+use StoreAccountant\Admin\AccountingSupportAccess;
+use StoreAccountant\Admin\ExportConfigurationOverviewTabProvider;
+use StoreAccountant\Admin\ExportOverviewTabProvider;
+use StoreAccountant\Admin\SupportOverviewTabProvider;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Security\Permission\PermissionAction;
@@ -74,6 +79,9 @@ final class AccountingHeaderBarTest extends TestCase {
 		self::assertStringContainsString( 'href="https://example.test/wp-admin/edit.php?post_type=' . ExportPostType::POST_TYPE . '"', $output );
 		self::assertStringContainsString( 'nav-tab nav-tab-active', $output );
 		self::assertStringContainsString( 'href="https://example.test/wp-admin/edit.php?post_type=' . ExportConfigurationPostType::POST_TYPE . '"', $output );
+		self::assertStringContainsString( 'href="https://example.test/wp-admin/admin.php?page=storeaccountant-support"', $output );
+		self::assertLessThan( strpos( $output, 'Export Configurations' ), strpos( $output, 'Exports' ) );
+		self::assertLessThan( strpos( $output, 'Support' ), strpos( $output, 'Export Configurations' ) );
 		self::assertStringContainsString( 'action="https://example.test/wp-admin/admin-post.php"', $output );
 		self::assertStringContainsString( 'name="action" value="storeaccountant_start_export_from_overview"', $output );
 		self::assertStringContainsString( 'name="storeaccountant_export_overview_nonce" value="nonce-storeaccountant_start_export_from_overview"', $output );
@@ -100,6 +108,7 @@ final class AccountingHeaderBarTest extends TestCase {
 		self::assertStringContainsString( 'href="https://example.test/wp-admin/admin.php?page=storeaccountant-export-configuration"', $output );
 		self::assertStringContainsString( 'Create New Export Configuration', $output );
 		self::assertStringContainsString( 'Export Configurations', $output );
+		self::assertStringContainsString( 'Support', $output );
 		self::assertStringContainsString( 'nav-tab nav-tab-active', $output );
 	}
 
@@ -157,8 +166,10 @@ final class AccountingHeaderBarTest extends TestCase {
 	 * @param callable(AccountingHeaderBar): void $callback Render callback.
 	 */
 	private function render( callable $callback ): string {
+		$permissions = new PermissionChecker( new PermissionActionRegistry() );
+
 		ob_start();
-		$callback( new AccountingHeaderBar( new PermissionChecker( new PermissionActionRegistry() ) ) );
+		$callback( new AccountingHeaderBar( $permissions, new AccountingOverviewTabProviderRegistry() ) );
 
 		return (string) ob_get_clean();
 	}
@@ -208,7 +219,21 @@ final class AccountingHeaderBarTest extends TestCase {
 
 		Functions\when( 'apply_filters' )->alias(
 			static function ( string $hook, mixed $value ) use ( $actions ): mixed {
-				return 'storeaccountant_permission_action' === $hook ? $actions : $value;
+				if ( 'storeaccountant_permission_action' === $hook ) {
+					return $actions;
+				}
+
+				if ( 'storeaccountant_accounting_overview_tab_provider' === $hook ) {
+					$permissions = new PermissionChecker( new PermissionActionRegistry() );
+
+					return [
+						ExportOverviewTabProvider::TAB_ID              => new ExportOverviewTabProvider( $permissions ),
+						ExportConfigurationOverviewTabProvider::TAB_ID => new ExportConfigurationOverviewTabProvider( $permissions ),
+						SupportOverviewTabProvider::TAB_ID             => new SupportOverviewTabProvider( new AccountingSupportAccess() ),
+					];
+				}
+
+				return $value;
 			}
 		);
 	}

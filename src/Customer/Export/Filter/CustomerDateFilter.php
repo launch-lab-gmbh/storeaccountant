@@ -25,6 +25,7 @@ use StoreAccountant\Export\Filter\Period\MonthYearPeriodProvider;
 use StoreAccountant\Export\Filter\Period\PeriodProviderRegistry;
 use function is_array;
 use function is_scalar;
+use function sanitize_key;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -83,6 +84,10 @@ final readonly class CustomerDateFilter implements ExportFilterInterface, HookRe
 			return new WP_Error( 'storeaccountant_invalid_customer_query', __( 'The customer date filter requires a WooCommerce customer query.', 'storeaccountant' ) );
 		}
 
+		if ( $this->is_all_time_period( $selection ) ) {
+			return true;
+		}
+
 		$period = $this->get_period( $selection );
 
 		if ( is_wp_error( $period ) ) {
@@ -138,5 +143,20 @@ final readonly class CustomerDateFilter implements ExportFilterInterface, HookRe
 		}
 
 		return new ExportPeriod( $start_at, $end_at );
+	}
+
+	/**
+	 * Checks whether the selected period intentionally leaves dates unrestricted.
+	 *
+	 * @param ExportFilterSelection $selection Filter selection.
+	 */
+	private function is_all_time_period( ExportFilterSelection $selection ): bool {
+		$period_selection = $selection->settings['period'] ?? null;
+
+		if ( ! is_array( $period_selection ) || ! isset( $period_selection['month'] ) || ! is_scalar( $period_selection['month'] ) ) {
+			return false;
+		}
+
+		return MonthYearPeriodProvider::PERIOD_ALL_TIME === sanitize_key( (string) $period_selection['month'] );
 	}
 }

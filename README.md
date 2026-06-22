@@ -13,7 +13,11 @@
 ## Links
 
 Homepage: [storeaccountant.launch-lab.de](https://storeaccountant.launch-lab.de)  
-Wordpress Listing: [wordpress.org/plugins/storeaccountant](https://wordpress.org/plugins/storeaccountant)
+Wordpress Listing: [wordpress.org/plugins/storeaccountant](https://wordpress.org/plugins/storeaccountant)  
+Documentation
+developers: [storeaccountant.launch-lab.de/en/documentation-developer/](https://storeaccountant.launch-lab.de/en/documentation-developer/)  
+Documentation
+users: [storeaccountant.launch-lab.de/en/documentation/](https://storeaccountant.launch-lab.de/en/documentation/)
 
 ## Features
 
@@ -48,6 +52,19 @@ You can assign additional permissions to backend roles for every action.
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+## Breaking Changes Policy
+
+StoreAccountant treats documented WordPress hooks, including actions and filters,
+as the supported public extension surface. Incompatible changes to documented
+hook names, accepted arguments, execution timing, return contracts, or documented
+behavior are treated as breaking changes once a stable release line guarantees
+backward compatibility.
+
+Public PHP classes and methods inside the plugin are not covered by this
+backward-compatibility guarantee unless they are explicitly documented as
+extension contracts. Integrations should use the documented WordPress hooks
+instead of relying on plugin internals.
 
 ## Agents Development
 

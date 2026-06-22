@@ -81,7 +81,7 @@ final class QueueTransportsSettingsFormTest extends TestCase {
 			->andReturn( [ $sync, $action_scheduler ] );
 		Functions\expect( 'get_option' )
 			->once()
-			->with( QueueTransportRegistry::OPTION_NAME, 'sync' )
+			->with( QueueTransportRegistry::OPTION_NAME, 'action_scheduler' )
 			->andReturn( 'action_scheduler' );
 
 		$output = $this->render_form();
@@ -102,7 +102,7 @@ final class QueueTransportsSettingsFormTest extends TestCase {
 			->andReturn( [] );
 		Functions\expect( 'get_option' )
 			->once()
-			->with( QueueTransportRegistry::OPTION_NAME, 'sync' )
+			->with( QueueTransportRegistry::OPTION_NAME, 'action_scheduler' )
 			->andReturn( 'sync' );
 
 		$output = $this->render_form();

@@ -7,32 +7,51 @@ description: Erfahren Sie, wie Sie mit StoreAccountant Ihre WooCommerce-Daten fl
 
 # StoreAccountant Anleitungen
 
-> Willkommen in der deutschen Anleitung zum StoreAccountant Wordpress Plugin.
+> Willkommen in der deutschen Anleitung zum StoreAccountant WordPress-Plugin.
 
-StoreAccountant erweitert WooCommerce um flexible Exportfunktionen für Bestellungen und Kunden. Mit wenigen Klicks
-können Sie Ihre Daten exportieren und für Buchhaltung, Controlling, CRM-Systeme oder individuelle Weiterverarbeitung
-bereitstellen.
+StoreAccountant erweitert WooCommerce um flexible Exportfunktionen für Bestellungen, Kunden und Produkte. Jeder Export
+wird als eigener Datensatz gespeichert, im Hintergrund verarbeitet und anschließend mit Status, Details und geschütztem
+Download in der WordPress-Administration angezeigt.
 
-Aktuell unterstützt StoreAccountant den Export von Bestellungen und Kundendaten in den Formaten CSV und JSON. Dabei
-können Sie selbst festlegen, welche Spalten exportiert werden und wie die enthaltenen Werte aufbereitet werden sollen.
+Die wichtigsten Bereiche im WordPress-Backend sind:
 
-Exportdateien können bei Bedarf passwortgeschützt bereitgestellt werden, sodass sensible Daten sicher mit
-Steuerberatern, Mitarbeitern oder externen Dienstleistern geteilt werden können.
+- `Buchhaltung > Exporte`: Exportübersicht, Quick Exports und Exporte aus gespeicherten Konfigurationen.
+- `Buchhaltung > Exporte > Exportkonfigurationen`: wiederverwendbare Exportvorlagen mit Filtern, Format,
+  Speicherort, Passwort und Feldzuordnung.
+- `Plugins > Installierte Plugins > StoreAccountant > Einstellungen`: Speicherorte, Rechnungsanbieter,
+  Hintergrundverarbeitung, Berechtigungen, Sicherheit und Diagnose.
 
-Zu den wichtigsten Funktionen gehören:
+## Schnellstart
 
-* Export von WooCommerce-Bestellungen
-* Export von WooCommerce-Kunden
-* CSV- und JSON-Export
-* Individuell konfigurierbare Spalten
-* Anpassung von Exportwerten durch Mutatoren
-* Passwortgeschützte Downloads
-* Diagnosepakete für Supportfälle
-* Erweiterbare Architektur für individuelle Anforderungen
+1. Installieren und aktivieren Sie StoreAccountant wie in [Installation](installation.md) beschrieben.
+2. Prüfen Sie unter [Plugin konfigurieren](plugin/konfiguration.md), ob mindestens ein Speicherort aktiv ist.
+3. Erstellen Sie für einmalige Aufgaben einen [Quick Export](exports/export-anlegen.md).
+4. Legen Sie für wiederkehrende Abläufe eine [Exportkonfiguration](exports/export-konfiguration-anlegen.md) an.
+5. Passen Sie bei Bedarf die [Feldzuordnung](exports/feldzuordnung.md) an.
+6. Laden Sie fertige Dateien aus der [Exportübersicht](exports/exporte-verwalten.md) herunter.
 
-Diese Dokumentation begleitet Sie von der Einrichtung bis zur Erstellung eigener Exportkonfigurationen und hilft Ihnen
-dabei, StoreAccountant optimal für Ihre Geschäftsprozesse einzusetzen.
+## Unterstützte Funktionen
 
-## Weitere Informationen
+- Exporte für WooCommerce-Bestellungen, Kunden und Produkte.
+- Exportformate CSV und JSON.
+- Filter nach Zeitraum, Bestellstatus, Kundenland und produktbezogenen Einstellungen.
+- Konfigurierbare Spalten und Feldreihenfolge über Feldzuordnungen.
+- Steuerfelder für Bestellexporte in einfacher oder erweiterter Form.
+- Rechnungsfelder und Rechnungsanhänge, wenn ein unterstütztes Rechnungsplugin aktiv ist.
+- Passwortgeschützte Downloadlinks für erzeugte Exportarchive.
+- Hintergrundverarbeitung mit sichtbarem Fortschritt in der Exportliste.
+- Rollenbasierte StoreAccountant-Berechtigungen für Backend-Benutzer.
+- Diagnosepakete für Supportfälle.
 
-* [Diagnosepakete](Diagnostik.md)
+## Dokumentation
+
+- [Installation](installation.md)
+- [Exporte](exports/index.md)
+- [Export anlegen](exports/export-anlegen.md)
+- [Exportkonfiguration anlegen](exports/export-konfiguration-anlegen.md)
+- [Feldzuordnung](exports/feldzuordnung.md)
+- [Exporte verwalten und herunterladen](exports/exporte-verwalten.md)
+- [Download-Passwortschutz](exports/downloads-passwortschutz.md)
+- [Plugin konfigurieren](plugin/konfiguration.md)
+- [Berechtigungen](plugin/berechtigungen.md)
+- [Diagnosepakete](Diagnostik.md)

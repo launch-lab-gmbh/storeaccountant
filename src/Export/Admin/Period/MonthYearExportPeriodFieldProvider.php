@@ -16,9 +16,6 @@ namespace StoreAccountant\Export\Admin\Period;
 use DateTimeImmutable;
 use DateTimeZone;
 use WP_Error;
-use StoreAccountant\Contract\HookRegistrarInterface;
-use StoreAccountant\Export\Admin\Period\Contract\ExportPeriodFieldProviderInterface;
-use StoreAccountant\Export\Admin\Period\Contract\ExportPeriodViewProviderInterface;
 use StoreAccountant\Export\ExportPeriod;
 use StoreAccountant\Export\Filter\Period\MonthYearPeriodProvider;
 use function ctype_digit;
@@ -35,31 +32,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Provides the free month/year period fields.
  */
-final readonly class MonthYearExportPeriodFieldProvider implements ExportPeriodFieldProviderInterface, HookRegistrarInterface {
+final readonly class MonthYearExportPeriodFieldProvider {
 	private const PAST_YEAR_COUNT      = 10;
 	private const PERIOD_ALL_TIME      = MonthYearPeriodProvider::PERIOD_ALL_TIME;
 	private const PERIOD_CURRENT_MONTH = 'current_month';
 	private const PERIOD_LAST_MONTH    = 'last_month';
 
 	/**
-	 * {@inheritDoc}
-	 */
-	public function register(): void {
-		add_filter(
-			'storeaccountant_export_period_field_provider',
-			fn (): ExportPeriodFieldProviderInterface => $this,
-			HookRegistrarInterface::DEFAULT_PRIORITY
-		);
-
-		add_filter(
-			'storeaccountant_export_period_view_provider',
-			fn (): ExportPeriodViewProviderInterface => $this,
-			HookRegistrarInterface::DEFAULT_PRIORITY
-		);
-	}
-
-	/**
-	 * {@inheritDoc}
+	 * Renders period fields.
+	 *
+	 * @param ExportPeriod|null    $period                Current period.
+	 * @param array<string, mixed> $selection             Current stored selection.
+	 * @param bool                 $read_only             Whether fields should be rendered read-only.
+	 * @param bool                 $allow_concrete_months Whether concrete month/year selections are available.
 	 */
 	public function render( ?ExportPeriod $period = null, array $selection = [], bool $read_only = false, bool $allow_concrete_months = true ): void {
 		$current_year    = (int) current_time( 'Y' );
@@ -146,14 +131,11 @@ final readonly class MonthYearExportPeriodFieldProvider implements ExportPeriodF
 	}
 
 	/**
-	 * {@inheritDoc}
-	 */
-	public function get_period_from_request( array $request ): ExportPeriod|WP_Error {
-		return $this->get_period_from_selection( $this->get_period_selection_from_request( $request ) );
-	}
-
-	/**
-	 * {@inheritDoc}
+	 * Gets a storable period selection from submitted request data.
+	 *
+	 * @param array<string, mixed> $request Request data.
+	 *
+	 * @return array<string, mixed>
 	 */
 	public function get_period_selection_from_request( array $request ): array {
 		$month_value = isset( $request['storeaccountant_export_month'] ) ? sanitize_key( wp_unslash( $request['storeaccountant_export_month'] ) ) : '';
@@ -170,7 +152,11 @@ final readonly class MonthYearExportPeriodFieldProvider implements ExportPeriodF
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Resolves a stored period selection to concrete UTC bounds.
+	 *
+	 * @param array<string, mixed> $selection Stored period selection.
+	 *
+	 * @return ExportPeriod|WP_Error
 	 */
 	public function get_period_from_selection( array $selection ): ExportPeriod|WP_Error {
 		$month_value = isset( $selection['month'] ) && is_scalar( $selection['month'] ) ? sanitize_key( (string) $selection['month'] ) : '';
@@ -209,42 +195,6 @@ final readonly class MonthYearExportPeriodFieldProvider implements ExportPeriodF
 		}
 
 		return $this->get_period_from_start( $start );
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public function stores_concrete_period( array $selection ): bool {
-		$month_value = isset( $selection['month'] ) && is_scalar( $selection['month'] ) ? sanitize_key( (string) $selection['month'] ) : '';
-
-		return ! in_array( $month_value, [ self::PERIOD_ALL_TIME, self::PERIOD_CURRENT_MONTH, self::PERIOD_LAST_MONTH ], true );
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public function get_default_title_suffix(): string {
-		$current_month = (int) current_time( 'n' );
-		$current_year  = (int) current_time( 'Y' );
-
-		return sprintf(
-			'%1$s %2$s',
-			$this->get_months()[ $current_month ] ?? (string) $current_month,
-			(string) $current_year
-		);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public function format_period_label( ExportPeriod $period ): string {
-		$start = DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $period->start_at, new DateTimeZone( 'UTC' ) );
-
-		if ( false === $start ) {
-			return '';
-		}
-
-		return wp_date( 'F Y', $start->setTimezone( wp_timezone() )->getTimestamp() );
 	}
 
 	/**

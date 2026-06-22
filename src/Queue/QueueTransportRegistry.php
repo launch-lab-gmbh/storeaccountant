@@ -24,14 +24,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Provides configured queue transport providers.
  */
 final readonly class QueueTransportRegistry extends Registry {
-	public const OPTION_NAME = 'storeaccountant_queue_transport_provider';
+	public const OPTION_NAME          = 'storeaccountant_queue_transport_provider';
+	private const DEFAULT_PROVIDER_ID = 'action_scheduler';
 
 	/**
 	 * Gets the active queue transport provider.
 	 */
 	public function get_active(): ?QueueTransportProviderInterface {
 		$providers = $this->get_all();
-		$active_id = sanitize_key( (string) get_option( self::OPTION_NAME, 'sync' ) );
+		$active_id = sanitize_key( (string) get_option( self::OPTION_NAME, self::DEFAULT_PROVIDER_ID ) );
 
 		if ( isset( $providers[ $active_id ] ) && $providers[ $active_id ] instanceof QueueTransportProviderInterface ) {
 			return $providers[ $active_id ];

@@ -19,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
+use StoreAccountant\Admin\AccountingOverviewTabProviderRegistry;
 use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
 use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
 use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
@@ -237,7 +238,7 @@ final class AccountingExportPageTest extends TestCase {
 			new ExportFilterFieldProviderRegistry(),
 			new ExportFilterSelectionSerializer(),
 			new ExportFilterSnapshotter( new PeriodProviderRegistry() ),
-			new AccountingHeaderBar( $permissions ),
+			new AccountingHeaderBar( $permissions, new AccountingOverviewTabProviderRegistry() ),
 			$permissions,
 			new QueueLoopbackDispatcher( new QueueTransportRegistry() ),
 			$passwords,

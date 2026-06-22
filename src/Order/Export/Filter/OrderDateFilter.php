@@ -27,6 +27,7 @@ use StoreAccountant\Export\Filter\Period\PeriodProviderRegistry;
 use function in_array;
 use function is_array;
 use function is_scalar;
+use function sanitize_key;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -91,6 +92,10 @@ final readonly class OrderDateFilter implements ExportFilterInterface, HookRegis
 		$date_field      = $this->get_date_field( $selection->settings['date_field'] ?? self::FIELD_DATE_CREATED );
 		$resolved_period = $selection->settings['resolved_period'] ?? null;
 		$period          = is_array( $resolved_period ) ? $this->get_period_from_snapshot( $resolved_period ) : null;
+
+		if ( $this->is_all_time_period( $selection ) ) {
+			return true;
+		}
 
 		if ( null === $period ) {
 			$provider_id = isset( $selection->settings['period_provider'] ) && is_scalar( $selection->settings['period_provider'] )
@@ -161,5 +166,20 @@ final readonly class OrderDateFilter implements ExportFilterInterface, HookRegis
 		}
 
 		return new \StoreAccountant\Export\ExportPeriod( $start_at, $end_at );
+	}
+
+	/**
+	 * Checks whether the selected period intentionally leaves dates unrestricted.
+	 *
+	 * @param ExportFilterSelection $selection Filter selection.
+	 */
+	private function is_all_time_period( ExportFilterSelection $selection ): bool {
+		$period_selection = $selection->settings['period'] ?? null;
+
+		if ( ! is_array( $period_selection ) || ! isset( $period_selection['month'] ) || ! is_scalar( $period_selection['month'] ) ) {
+			return false;
+		}
+
+		return MonthYearPeriodProvider::PERIOD_ALL_TIME === sanitize_key( (string) $period_selection['month'] );
 	}
 }
