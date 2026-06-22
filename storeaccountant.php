@@ -3,7 +3,7 @@
  * Plugin Name: StoreAccountant
  * Plugin URI: https://storeaccountant.launch-lab.de/
  * Description: Accounting workflow plugin for WooCommerce.
- * Version: 0.4.1
+ * Version: 0.4.2
  * Author: LaunchLab GmbH
  * Author URI: https://launch-lab.de
  * Text Domain: storeaccountant
@@ -47,7 +47,7 @@ final readonly class StoreAccountant {
 	/**
 	 * Current plugin version.
 	 */
-	public const PLUGIN_VERSION = '0.4.1';
+	public const PLUGIN_VERSION = '0.4.2';
 
 	/**
 	 * Minimum supported PHP version.
