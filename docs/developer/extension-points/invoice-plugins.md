@@ -15,6 +15,7 @@ Methods:
 
 - `get_id(): string`
 - `is_active(): bool`
+- `has_invoice(\WC_Order $order): bool`
 - `get_invoice_number(\WC_Order $order): string`
 - `get_invoice_date(\WC_Order $order): string`
 - `get_invoice_file_types(): array`
@@ -111,6 +112,10 @@ final class AcmeInvoicePlugin implements InvoicePluginInterface {
 
 	public function is_active(): bool {
 		return class_exists( \Acme_Invoices::class );
+	}
+
+	public function has_invoice( \WC_Order $order ): bool {
+		return '' !== $this->get_invoice_number( $order );
 	}
 
 	public function get_invoice_number( \WC_Order $order ): string {

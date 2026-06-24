@@ -149,6 +149,7 @@ final class InvoiceAttachmentProviderTest extends TestCase {
 		$plugin = $this->createMock( InvoicePluginInterface::class );
 		$plugin->method( 'get_id' )->willReturn( 'pdf_plugin' );
 		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'has_invoice' )->willReturn( true );
 		$plugin->method( 'get_invoice_file_types' )->willReturn(
 			[
 				new InvoiceFileType( 'pdf', 'PDF' ),
@@ -213,6 +214,31 @@ final class InvoiceAttachmentProviderTest extends TestCase {
 		self::assertSame( $exception, $events[0][5] );
 	}
 
+	public function test_get_attachments_skips_orders_without_existing_invoice(): void {
+		$plugin = $this->createMock( InvoicePluginInterface::class );
+		$plugin->method( 'get_id' )->willReturn( 'pdf_plugin' );
+		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'has_invoice' )->willReturn( false );
+		$plugin->expects( self::never() )->method( 'get_invoice_file' );
+
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'storeaccountant_enabled_invoice_plugin', '' )
+			->andReturn( 'pdf_plugin' );
+		Functions\expect( 'apply_filters' )
+			->once()
+			->with( 'storeaccountant_invoice_plugin', [] )
+			->andReturn( [ $plugin ] );
+
+		$attachments = $this->provider( null )->get_attachments(
+			new WC_Order( 1001 ),
+			new ExportPayload( 123, OrderExportAdapter::ADAPTER_ID ),
+			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77 )
+		);
+
+		self::assertSame( [], $attachments );
+	}
+
 	public function test_get_attachments_ignores_non_order_or_missing_plugin(): void {
 		Functions\expect( 'get_option' )->once()->with( 'storeaccountant_enabled_invoice_plugin', '' )->andReturn( '' );
 
@@ -234,6 +260,7 @@ final class InvoiceAttachmentProviderTest extends TestCase {
 		$plugin = $this->createMock( InvoicePluginInterface::class );
 		$plugin->method( 'get_id' )->willReturn( 'pdf_plugin' );
 		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'has_invoice' )->willReturn( true );
 		$plugin->method( 'get_invoice_file_types' )
 			->willReturn( array_map( static fn ( string $id ): InvoiceFileType => new InvoiceFileType( $id, strtoupper( $id ) ), $file_types ) );
 		$plugin->method( 'get_invoice_file' )

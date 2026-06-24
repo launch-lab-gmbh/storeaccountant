@@ -32,6 +32,13 @@ interface InvoicePluginInterface extends RegistryItemInterface {
 	public function is_active(): bool;
 
 	/**
+	 * Checks whether an order already has an invoice.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 */
+	public function has_invoice( WC_Order $order ): bool;
+
+	/**
 	 * Gets the invoice number for an order.
 	 *
 	 * @param WC_Order $order WooCommerce order.

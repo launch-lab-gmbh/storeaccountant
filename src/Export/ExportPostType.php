@@ -100,7 +100,7 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	public const META_DOWNLOAD_PASSWORD        = '_storeaccountant_download_password';
 	public const META_DOWNLOAD_PASSWORD_HASH   = '_storeaccountant_download_password_hash';
 	public const MIN_BATCH_SIZE                = 10;
-	public const DEFAULT_BATCH_SIZE            = 100;
+	public const DEFAULT_BATCH_SIZE            = 50;
 
 	/**
 	 * Initializes the export post type.

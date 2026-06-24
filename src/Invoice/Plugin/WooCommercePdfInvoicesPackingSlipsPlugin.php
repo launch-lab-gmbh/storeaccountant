@@ -92,6 +92,13 @@ final readonly class WooCommercePdfInvoicesPackingSlipsPlugin implements Invoice
 	/**
 	 * {@inheritDoc}
 	 */
+	public function has_invoice( WC_Order $order ): bool {
+		return '' !== $this->get_invoice_number( $order );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
 	public function get_invoice_number( WC_Order $order ): string {
 		$invoice_number = $this->get_invoice_number_from_plugin_api( $order );
 
@@ -138,6 +145,10 @@ final readonly class WooCommercePdfInvoicesPackingSlipsPlugin implements Invoice
 			return '';
 		}
 
+		if ( ! $this->has_invoice( $order ) ) {
+			return '';
+		}
+
 		$invoice = $this->get_invoice_document( $order );
 
 		if ( is_object( $invoice ) && method_exists( $invoice, 'get_filename' ) ) {
@@ -169,6 +180,10 @@ final readonly class WooCommercePdfInvoicesPackingSlipsPlugin implements Invoice
 	 */
 	public function get_invoice_file( WC_Order $order, string $type ): ?StorageFile {
 		if ( ! in_array( $type, [ self::FILE_TYPE_PDF, self::FILE_TYPE_XML ], true ) ) {
+			return null;
+		}
+
+		if ( ! $this->has_invoice( $order ) ) {
 			return null;
 		}
 

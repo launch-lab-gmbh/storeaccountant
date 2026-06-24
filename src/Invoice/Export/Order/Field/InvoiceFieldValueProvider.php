@@ -113,29 +113,50 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 		}
 
 		if ( $fields->has( 'invoice_file_name' ) ) {
-			try {
-				$file_types = $this->settings->get_selected_file_types( $this->get_configuration_id( $context ), $plugin, $this->get_export_id( $context ) );
-			} catch ( Throwable $exception ) {
-				$this->log_invoice_plugin_warning( $context, $item, $plugin->get_id(), 'invoice_file_name', '', $exception );
-				$file_types = [];
-			}
-
 			$values['invoice_file_name'] = new FieldValue(
 				'invoice_file_name',
-				implode(
-					', ',
-					array_filter(
-						array_map(
-							fn ( string $file_type ): string => $this->get_invoice_file_name( $item, $context, $plugin, $file_type ),
-							$file_types
-						),
-						static fn ( string $file_name ): bool => '' !== $file_name
-					)
-				)
+				$this->get_invoice_file_names( $item, $context, $plugin )
 			);
 		}
 
 		return $values;
+	}
+
+	/**
+	 * Gets selected invoice file names for an order with an existing invoice.
+	 *
+	 * @param WC_Order               $order   WooCommerce order.
+	 * @param ExportContext         $context Export context.
+	 * @param InvoicePluginInterface $plugin  Invoice plugin.
+	 */
+	private function get_invoice_file_names( WC_Order $order, ExportContext $context, InvoicePluginInterface $plugin ): string {
+		try {
+			if ( ! $plugin->has_invoice( $order ) ) {
+				return '';
+			}
+		} catch ( Throwable $exception ) {
+			$this->log_invoice_plugin_warning( $context, $order, $plugin->get_id(), 'invoice_file_name', '', $exception );
+
+			return '';
+		}
+
+		try {
+			$file_types = $this->settings->get_selected_file_types( $this->get_configuration_id( $context ), $plugin, $this->get_export_id( $context ) );
+		} catch ( Throwable $exception ) {
+			$this->log_invoice_plugin_warning( $context, $order, $plugin->get_id(), 'invoice_file_name', '', $exception );
+			$file_types = [];
+		}
+
+		return implode(
+			', ',
+			array_filter(
+				array_map(
+					fn ( string $file_type ): string => $this->get_invoice_file_name( $order, $context, $plugin, $file_type ),
+					$file_types
+				),
+				static fn ( string $file_name ): bool => '' !== $file_name
+			)
+		);
 	}
 
 	/**

@@ -99,6 +99,16 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 			return [];
 		}
 
+		try {
+			if ( ! $plugin->has_invoice( $item ) ) {
+				return [];
+			}
+		} catch ( Throwable $exception ) {
+			$this->log_invoice_plugin_warning( $payload->export_id, $item, $plugin->get_id(), '', $exception );
+
+			return [];
+		}
+
 		$attachments = [];
 
 		try {

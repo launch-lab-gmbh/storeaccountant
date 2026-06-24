@@ -152,6 +152,7 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 				return 'invoice-1001.xml';
 			}
 		);
+		$plugin->method( 'has_invoice' )->willReturn( true );
 
 		Functions\expect( 'get_option' )
 			->once()
@@ -214,6 +215,37 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 		self::assertSame( $file_exception, $events[1][5] );
 	}
 
+	public function test_get_values_returns_empty_invoice_file_name_without_existing_invoice(): void {
+		$plugin = $this->createMock( InvoicePluginInterface::class );
+		$order  = new WC_Order( [ 'id' => 1001 ] );
+
+		$plugin->method( 'get_id' )->willReturn( 'pdf' );
+		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'has_invoice' )->willReturn( false );
+		$plugin->expects( self::never() )->method( 'get_invoice_file_name' );
+
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'storeaccountant_enabled_invoice_plugin', '' )
+			->andReturn( 'pdf' );
+		Functions\expect( 'apply_filters' )
+			->once()
+			->with( 'storeaccountant_invoice_plugin', [] )
+			->andReturn( [ $plugin ] );
+
+		$values = $this->provider()->get_values(
+			$order,
+			new FieldCollection(
+				[
+					new Field( 'invoice_file_name', 'invoice_file_name' ),
+				]
+			),
+			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77, [], [ 'export_id' => 123 ] )
+		);
+
+		self::assertSame( '', $values['invoice_file_name']->value );
+	}
+
 	public function test_get_values_returns_empty_array_without_order_context_or_enabled_plugin(): void {
 		Functions\expect( 'get_option' )
 			->twice()
@@ -237,6 +269,7 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 		$plugin = $this->createMock( InvoicePluginInterface::class );
 		$plugin->method( 'get_id' )->willReturn( 'pdf' );
 		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'has_invoice' )->willReturn( true );
 		$plugin->method( 'get_invoice_number' )->willReturn( 'INV-1001' );
 		$plugin->method( 'get_invoice_date' )->willReturn( '2026-05-04' );
 		$plugin->method( 'get_invoice_file_types' )->willReturn(

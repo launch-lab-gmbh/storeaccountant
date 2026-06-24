@@ -90,6 +90,7 @@ final class WooCommercePdfInvoicesPackingSlipsPluginTest extends TestCase {
 		$plugin = $this->plugin();
 		$order  = new WC_Order( [ 'id' => 1001 ] );
 
+		self::assertTrue( $plugin->has_invoice( $order ) );
 		self::assertSame( 'INV-1001', $plugin->get_invoice_number( $order ) );
 		self::assertSame( '2026-03-04 12:30:00', $plugin->get_invoice_date( $order ) );
 		self::assertSame( 'invoice-1001.pdf', $plugin->get_invoice_file_name( $order, 'pdf' ) );
@@ -115,12 +116,39 @@ final class WooCommercePdfInvoicesPackingSlipsPluginTest extends TestCase {
 			]
 		);
 
+		self::assertTrue( $plugin->has_invoice( $order ) );
 		self::assertSame( 'META-1002', $plugin->get_invoice_number( $order ) );
 		self::assertSame( '2026-01-02', $plugin->get_invoice_date( $order ) );
 		self::assertSame( 'invoice-META-1002.pdf', $plugin->get_invoice_file_name( $order, 'pdf' ) );
 		self::assertNull( $plugin->get_invoice_file( $order, 'pdf' ) );
 		self::assertSame( '', $plugin->get_invoice_file_name( $order, 'unknown' ) );
 		self::assertNull( $plugin->get_invoice_file( $order, 'unknown' ) );
+	}
+
+	public function test_order_without_invoice_number_does_not_generate_invoice_files(): void {
+		$invoice = new class() {
+			public function get_number(): string {
+				return '';
+			}
+
+			public function get_filename(): string {
+				return 'invoice-1003';
+			}
+
+			public function get_pdf(): string {
+				return '%PDF-content';
+			}
+		};
+
+		Functions\when( 'wcpdf_get_document' )->alias( static fn (): object => $invoice );
+
+		$plugin = $this->plugin();
+		$order  = new WC_Order( [ 'id' => 1003 ] );
+
+		self::assertFalse( $plugin->has_invoice( $order ) );
+		self::assertSame( '', $plugin->get_invoice_number( $order ) );
+		self::assertSame( '', $plugin->get_invoice_file_name( $order, 'pdf' ) );
+		self::assertNull( $plugin->get_invoice_file( $order, 'pdf' ) );
 	}
 
 	public function test_file_types_include_pdf_and_xml_only_when_xml_api_is_available(): void {
