@@ -90,7 +90,8 @@ final class ExportListPollingAjaxControllerTest extends TestCase {
 		$_POST['export_ids'] = [ '0', '77', '88', '99' ];
 
 		$this->meta[77] = [
-			ExportPostType::META_STATUS => ExportStatus::PROCESSING,
+			ExportPostType::META_STATUS      => ExportStatus::PROCESSING,
+			ExportPostType::META_EXPORTED_AT => '2026-06-24 09:00:00',
 		];
 
 		Functions\expect( 'check_ajax_referer' )
@@ -131,6 +132,10 @@ final class ExportListPollingAjaxControllerTest extends TestCase {
 		Functions\when( 'absint' )->alias( static fn ( mixed $value ): int => abs( (int) $value ) );
 		Functions\when( 'sanitize_key' )->alias( static fn ( string $key ): string => strtolower( preg_replace( '/[^a-z0-9_\\-]/i', '', $key ) ?? '' ) );
 		Functions\when( 'sanitize_text_field' )->returnArg( 1 );
+		Functions\when( 'current_time' )->alias(
+			static fn ( string $format = 'mysql', bool $gmt = false ): string => 'Y-m-d' === $format ? '2026-06-24' : '2026-06-24 12:00:00'
+		);
+		Functions\when( 'wp_date' )->alias( static fn ( string $format, int $timestamp ): string => gmdate( $format, $timestamp ) );
 		Functions\when( 'filter_input' )->alias(
 			static fn ( int $type, string $name, int $filter = FILTER_DEFAULT, mixed $options = null ): mixed => INPUT_POST === $type ? ( $_POST[ $name ] ?? null ) : ( $_GET[ $name ] ?? null )
 		);

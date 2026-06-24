@@ -26,6 +26,7 @@ use function admin_url;
 use function apply_filters;
 use function array_filter;
 use function array_map;
+use function current_time;
 use function explode;
 use function esc_url_raw;
 use function get_post_meta;
@@ -45,6 +46,7 @@ use function strlen;
 use function substr;
 use function time;
 use function wp_create_nonce;
+use function wp_date;
 use function __;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -179,7 +181,7 @@ final readonly class ExportListPollingResponseFactory {
 	 */
 	private function is_pollable( string $status, ?string $scheduled_for, int $export_id ): bool {
 		if ( ExportStatus::QUEUED === $status || ExportStatus::PROCESSING === $status ) {
-			return true;
+			return $this->was_triggered_today( $export_id );
 		}
 
 		if ( ExportStatus::SCHEDULED !== $status || null === $scheduled_for ) {
@@ -201,6 +203,27 @@ final readonly class ExportListPollingResponseFactory {
 		);
 
 		return $scheduled_timestamp <= time() + $window;
+	}
+
+	/**
+	 * Checks whether the export run was created on the current WordPress day.
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	private function was_triggered_today( int $export_id ): bool {
+		$exported_at = (string) get_post_meta( $export_id, ExportPostType::META_EXPORTED_AT, true );
+
+		if ( '' === $exported_at ) {
+			return false;
+		}
+
+		$timestamp = strtotime( $exported_at . ' UTC' );
+
+		if ( false === $timestamp ) {
+			return false;
+		}
+
+		return wp_date( 'Y-m-d', $timestamp ) === current_time( 'Y-m-d' );
 	}
 
 	/**
