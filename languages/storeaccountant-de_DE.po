@@ -977,18 +977,22 @@ msgid "invoice_date"
 msgstr "Rechnungsdatum"
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:444
-msgid "invoice_file_name"
-msgstr "Rechnungsdateiname"
+msgid "invoice_file_name_pdf"
+msgstr "PDF-Rechnungsdateiname"
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:445
+msgid "invoice_file_name_xml"
+msgstr "XML-Rechnungsdateiname"
+
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:446
 msgid "order_date"
 msgstr "Bestelldatum"
 
-#: src/Order/Admin/OrderFieldMappingTabProvider.php:446
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:447
 msgid "order_status"
 msgstr "Bestellstatus"
 
-#: src/Order/Admin/OrderFieldMappingTabProvider.php:447
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:448
 msgid "currency"
 msgstr "Währung"
 

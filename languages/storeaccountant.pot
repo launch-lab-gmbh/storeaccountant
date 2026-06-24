@@ -1474,18 +1474,22 @@ msgid "invoice_date"
 msgstr ""
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:444
-msgid "invoice_file_name"
+msgid "invoice_file_name_pdf"
 msgstr ""
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:445
-msgid "order_date"
+msgid "invoice_file_name_xml"
 msgstr ""
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:446
-msgid "order_status"
+msgid "order_date"
 msgstr ""
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:447
+msgid "order_status"
+msgstr ""
+
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:448
 msgid "currency"
 msgstr ""
 

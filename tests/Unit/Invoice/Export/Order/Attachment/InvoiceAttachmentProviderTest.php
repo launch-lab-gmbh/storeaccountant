@@ -21,6 +21,7 @@ use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\ExportPayload;
+use StoreAccountant\Export\Field\Mapping\FieldMappingRepository;
 use StoreAccountant\Invoice\Contract\InvoicePluginInterface;
 use StoreAccountant\Invoice\Export\Order\Attachment\InvoiceAttachmentProvider;
 use StoreAccountant\Invoice\Export\Order\InvoiceExportAttachmentSettings;
@@ -35,11 +36,17 @@ use WC_Order;
  * Tests invoice attachment export provider.
  */
 final class InvoiceAttachmentProviderTest extends TestCase {
+	/** @var array<string, mixed> */
+	private array $meta = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
 		Monkey\setUp();
 
+		Functions\when( 'get_post_meta' )->alias(
+			fn ( int $post_id, string $key, bool $single = false ): mixed => $this->meta[ $key ] ?? ''
+		);
 		Functions\when( '__' )->returnArg( 1 );
 		Functions\when( 'sanitize_file_name' )->alias(
 			static fn ( string $value ): string => trim( preg_replace( '/[^A-Za-z0-9._-]+/', '-', $value ) ?? '', '-' )
@@ -111,18 +118,7 @@ final class InvoiceAttachmentProviderTest extends TestCase {
 			->once()
 			->with( 'storeaccountant_invoice_plugin', [] )
 			->andReturn( [ $plugin ] );
-		Functions\expect( 'get_post_meta' )
-			->once()
-			->with( 77, ExportConfigurationPostType::META_ADDITIONAL_SETTINGS, true )
-			->andReturn(
-				json_encode(
-					[
-						InvoiceExportAttachmentSettings::PROVIDER_ID => [
-							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'pdf', 'xml', 'missing', 'unknown' ],
-						],
-					]
-				)
-			);
+		$this->store_attachment_settings( [ 'pdf', 'xml', 'missing', 'unknown' ] );
 
 		$attachments = $this->provider( null )->get_attachments(
 			new WC_Order( 1001 ),
@@ -174,18 +170,7 @@ final class InvoiceAttachmentProviderTest extends TestCase {
 			->once()
 			->with( 'storeaccountant_invoice_plugin', [] )
 			->andReturn( [ $plugin ] );
-		Functions\expect( 'get_post_meta' )
-			->once()
-			->with( 77, ExportConfigurationPostType::META_ADDITIONAL_SETTINGS, true )
-			->andReturn(
-				json_encode(
-					[
-						InvoiceExportAttachmentSettings::PROVIDER_ID => [
-							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'pdf', 'xml' ],
-						],
-					]
-				)
-			);
+		$this->store_attachment_settings( [ 'pdf', 'xml' ] );
 		Functions\when( 'do_action' )->alias(
 			static function ( mixed ...$args ) use ( &$events ): void {
 				$events[] = $args;
@@ -212,6 +197,123 @@ final class InvoiceAttachmentProviderTest extends TestCase {
 		self::assertSame( 'pdf', $events[0][4]['invoice_file_type'] );
 		self::assertSame( 'PDF invoice failed', $events[0][4]['exception_message'] );
 		self::assertSame( $exception, $events[0][5] );
+	}
+
+	public function test_get_attachments_requires_selected_invoice_file_mapping_fields(): void {
+		$pdf_stream = fopen( 'php://temp', 'rb+' );
+		$xml_stream = fopen( 'php://temp', 'rb+' );
+		$calls      = [];
+
+		self::assertIsResource( $pdf_stream );
+		self::assertIsResource( $xml_stream );
+
+		$plugin = $this->createMock( InvoicePluginInterface::class );
+		$plugin->method( 'get_id' )->willReturn( 'pdf_plugin' );
+		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'has_invoice' )->willReturn( true );
+		$plugin->method( 'get_invoice_file_types' )->willReturn(
+			[
+				new InvoiceFileType( 'pdf', 'PDF' ),
+				new InvoiceFileType( 'xml', 'XML' ),
+			]
+		);
+		$plugin->method( 'get_invoice_file' )->willReturnCallback(
+			static function ( WC_Order $order, string $type ) use ( &$calls, $pdf_stream, $xml_stream ): ?StorageFile {
+				$calls[] = $type;
+
+				return 'pdf' === $type
+					? new StorageFile( $pdf_stream, 'Invoice 1001.pdf', 'application/pdf' )
+					: new StorageFile( $xml_stream, 'Invoice 1001.xml', 'application/xml' );
+			}
+		);
+
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'storeaccountant_enabled_invoice_plugin', '' )
+			->andReturn( 'pdf_plugin' );
+		Functions\expect( 'apply_filters' )
+			->once()
+			->with( 'storeaccountant_invoice_plugin', [] )
+			->andReturn( [ $plugin ] );
+
+		$this->store_attachment_settings( [ 'pdf', 'xml' ] );
+		$this->store_field_mapping(
+			[
+				[
+					'field_id' => 'invoice_file_name_pdf',
+					'enabled'  => false,
+					'label'    => 'PDF Invoice',
+					'options'  => [],
+				],
+				[
+					'field_id' => 'invoice_file_name_xml',
+					'enabled'  => true,
+					'label'    => 'XML Invoice',
+					'options'  => [],
+				],
+			]
+		);
+
+		$attachments = $this->provider( null )->get_attachments(
+			new WC_Order( 1001 ),
+			new ExportPayload( 123, OrderExportAdapter::ADAPTER_ID ),
+			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77 )
+		);
+
+		$attachments = is_array( $attachments ) ? $attachments : iterator_to_array( $attachments );
+
+		self::assertSame( [ 'xml' ], $calls );
+		self::assertCount( 1, $attachments );
+		self::assertSame( 'Invoice-1001.xml', $attachments[0]->file_name );
+	}
+
+	public function test_get_attachments_skips_invoice_lookup_when_all_invoice_file_mapping_fields_are_disabled(): void {
+		$plugin = $this->createMock( InvoicePluginInterface::class );
+		$plugin->method( 'get_id' )->willReturn( 'pdf_plugin' );
+		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'get_invoice_file_types' )->willReturn(
+			[
+				new InvoiceFileType( 'pdf', 'PDF' ),
+				new InvoiceFileType( 'xml', 'XML' ),
+			]
+		);
+		$plugin->expects( self::never() )->method( 'has_invoice' );
+		$plugin->expects( self::never() )->method( 'get_invoice_file' );
+
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'storeaccountant_enabled_invoice_plugin', '' )
+			->andReturn( 'pdf_plugin' );
+		Functions\expect( 'apply_filters' )
+			->once()
+			->with( 'storeaccountant_invoice_plugin', [] )
+			->andReturn( [ $plugin ] );
+
+		$this->store_attachment_settings( [ 'pdf', 'xml' ] );
+		$this->store_field_mapping(
+			[
+				[
+					'field_id' => 'invoice_file_name_pdf',
+					'enabled'  => false,
+					'label'    => 'PDF Invoice',
+					'options'  => [],
+				],
+				[
+					'field_id' => 'invoice_file_name_xml',
+					'enabled'  => false,
+					'label'    => 'XML Invoice',
+					'options'  => [],
+				],
+			]
+		);
+
+		$attachments = $this->provider( null )->get_attachments(
+			new WC_Order( 1001 ),
+			new ExportPayload( 123, OrderExportAdapter::ADAPTER_ID ),
+			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77 )
+		);
+
+		self::assertSame( [], $attachments );
 	}
 
 	public function test_get_attachments_skips_orders_without_existing_invoice(): void {
@@ -272,7 +374,28 @@ final class InvoiceAttachmentProviderTest extends TestCase {
 	private function provider( ?InvoicePluginInterface $plugin ): InvoiceAttachmentProvider {
 		return new InvoiceAttachmentProvider(
 			new InvoicePluginDetector( new InvoicePluginRegistry() ),
-			new InvoiceExportAttachmentSettings()
+			new InvoiceExportAttachmentSettings(),
+			new FieldMappingRepository()
 		);
+	}
+
+	/**
+	 * @param array<int, string> $file_types Invoice file type IDs.
+	 */
+	private function store_attachment_settings( array $file_types ): void {
+		$this->meta[ ExportConfigurationPostType::META_ADDITIONAL_SETTINGS ] = json_encode(
+			[
+				InvoiceExportAttachmentSettings::PROVIDER_ID => [
+					InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => $file_types,
+				],
+			]
+		);
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $mapping Mapping items.
+	 */
+	private function store_field_mapping( array $mapping ): void {
+		$this->meta[ ExportConfigurationPostType::META_FIELD_MAPPING ] = json_encode( $mapping );
 	}
 }

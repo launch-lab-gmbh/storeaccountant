@@ -20,6 +20,7 @@ use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\Field\Field;
 use StoreAccountant\Export\Field\Type\DateTimeFieldType;
 use StoreAccountant\Invoice\InvoicePluginDetector;
+use function sanitize_key;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -29,7 +30,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Provides invoice fields for WooCommerce order exports.
  */
 final readonly class InvoiceFieldProvider implements FieldProviderInterface, HookRegistrarInterface {
-	public const PROVIDER_ID = 'order_invoices';
+	public const PROVIDER_ID              = 'order_invoices';
+	public const OPTION_INVOICE_FILE_TYPE = 'invoice_file_type';
 
 	/**
 	 * Initializes the provider.
@@ -73,10 +75,34 @@ final readonly class InvoiceFieldProvider implements FieldProviderInterface, Hoo
 	 * {@inheritDoc}
 	 */
 	public function get_fields( ExportContext $context ): array {
-		return [
-			'invoice_number'    => new Field( 'invoice_number', 'invoice_number' ),
-			'invoice_date'      => new Field( 'invoice_date', 'invoice_date', new DateTimeFieldType() ),
-			'invoice_file_name' => new Field( 'invoice_file_name', 'invoice_file_name' ),
+		$fields = [
+			'invoice_number' => new Field( 'invoice_number', 'invoice_number' ),
+			'invoice_date'   => new Field( 'invoice_date', 'invoice_date', new DateTimeFieldType() ),
 		];
+
+		$plugin = $this->detector->get_enabled();
+
+		if ( null === $plugin ) {
+			return $fields;
+		}
+
+		foreach ( $plugin->get_invoice_file_types() as $file_type ) {
+			$type_id = sanitize_key( $file_type->id );
+
+			if ( '' === $type_id ) {
+				continue;
+			}
+
+			$field_id            = 'invoice_file_name_' . $type_id;
+			$fields[ $field_id ] = new Field(
+				$field_id,
+				$field_id,
+				options: [
+					self::OPTION_INVOICE_FILE_TYPE => $file_type->id,
+				]
+			);
+		}
+
+		return $fields;
 	}
 }

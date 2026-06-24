@@ -17,6 +17,7 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
 use StoreAccountant\PluginActivator;
+use StoreAccountant\Queue\Loopback\QueueLoopbackEndpoint;
 
 /**
  * Tests plugin activation behavior.
@@ -85,6 +86,13 @@ final class PluginActivatorTest extends TestCase {
 			->with(
 				'^storeaccountant/export-download/([^/]+)/?$',
 				'index.php?storeaccountant_export_download=$matches[1]',
+				'top'
+			);
+		Functions\expect( 'add_rewrite_rule' )
+			->once()
+			->with(
+				'^' . QueueLoopbackEndpoint::ROUTE_PATH . '/?$',
+				'index.php?storeaccountant_queue_loopback=1',
 				'top'
 			);
 		Functions\expect( 'flush_rewrite_rules' )->once();

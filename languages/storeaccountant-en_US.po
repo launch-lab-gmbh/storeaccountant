@@ -861,18 +861,22 @@ msgid "invoice_date"
 msgstr "Invoice date"
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:444
-msgid "invoice_file_name"
-msgstr "Invoice file name"
+msgid "invoice_file_name_pdf"
+msgstr "Invoice PDF file name"
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:445
+msgid "invoice_file_name_xml"
+msgstr "Invoice XML file name"
+
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:446
 msgid "order_date"
 msgstr "Order date"
 
-#: src/Order/Admin/OrderFieldMappingTabProvider.php:446
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:447
 msgid "order_status"
 msgstr "Order status"
 
-#: src/Order/Admin/OrderFieldMappingTabProvider.php:447
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:448
 msgid "currency"
 msgstr "Currency"
 

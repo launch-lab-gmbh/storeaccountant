@@ -49,6 +49,21 @@ In most cases, the Action Scheduler transport is the right choice because it wor
 WordPress infrastructure. A synchronous transport can be useful for simple local tests, but it is usually not the best
 choice for real shops.
 
+### Loopback Requests on Protected Sites
+
+For manually started background exports, StoreAccountant triggers its queue runner through an internal HTTP loopback
+request to:
+
+`/storeaccountant/queue-loopback/`
+
+If the site is protected by Basic Auth, `.htaccess` rules, IP restrictions, maintenance mode, or similar server-level
+access protection, this request must be allowed from the server itself. Otherwise export batches may not start
+immediately and processing depends on another queue runner or WordPress cron picking up the pending jobs later.
+
+The loopback endpoint does not accept arbitrary requests. Each request must include the export ID and a temporary token
+that is valid only for that export. You can therefore whitelist the path above without exposing the WordPress admin
+area or the generic `wp-admin/admin-post.php` endpoint.
+
 ## Permissions
 
 Backend path:

@@ -27,10 +27,13 @@ use StoreAccountant\Export\Field\FieldValue;
 use StoreAccountant\Invoice\Contract\InvoicePluginInterface;
 use StoreAccountant\Invoice\Export\Order\InvoiceExportAttachmentSettings;
 use StoreAccountant\Invoice\InvoicePluginDetector;
-use function array_filter;
-use function array_map;
-use function implode;
+use function array_key_first;
+use function array_keys;
 use function in_array;
+use function is_string;
+use function strlen;
+use function str_starts_with;
+use function substr;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -40,7 +43,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Resolves invoice field values for WooCommerce order exports.
  */
 final readonly class InvoiceFieldValueProvider implements FieldValueProviderInterface, HookRegistrarInterface {
-	public const PROVIDER_ID = 'order_invoice_values';
+	public const PROVIDER_ID                     = 'order_invoice_values';
+	private const INVOICE_FILE_NAME_FIELD_PREFIX = 'invoice_file_name_';
 
 	/**
 	 * Initializes the provider.
@@ -79,7 +83,9 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 	 * {@inheritDoc}
 	 */
 	public function supports( Field $field, ExportContext $context ): bool {
-		return OrderExportAdapter::ADAPTER_ID === $context->export_type && in_array( $field->id, [ 'invoice_number', 'invoice_date', 'invoice_file_name' ], true ) && $this->detector->is_enabled();
+		return OrderExportAdapter::ADAPTER_ID === $context->export_type
+			&& ( in_array( $field->id, [ 'invoice_number', 'invoice_date' ], true ) || $this->is_invoice_file_name_field( $field->id ) )
+			&& $this->detector->is_enabled();
 	}
 
 	/**
@@ -112,10 +118,70 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 			}
 		}
 
-		if ( $fields->has( 'invoice_file_name' ) ) {
-			$values['invoice_file_name'] = new FieldValue(
-				'invoice_file_name',
-				$this->get_invoice_file_names( $item, $context, $plugin )
+		$invoice_file_field_types = [];
+
+		foreach ( $fields as $field ) {
+			if ( $this->is_invoice_file_name_field( $field->id ) ) {
+				$invoice_file_field_types[ $field->id ] = $this->get_invoice_file_type_from_field( $field );
+			}
+		}
+
+		foreach ( $this->get_invoice_file_values( $item, $context, $plugin, $invoice_file_field_types ) as $field_id => $value ) {
+			$values[ $field_id ] = $value;
+		}
+
+		return $values;
+	}
+
+	/**
+	 * Gets selected invoice file values for an order with an existing invoice.
+	 *
+	 * @param WC_Order               $order   WooCommerce order.
+	 * @param ExportContext         $context Export context.
+	 * @param InvoicePluginInterface $plugin  Invoice plugin.
+	 * @param array<string, string>  $field_types Invoice file types keyed by export field ID.
+	 *
+	 * @return array<string, FieldValue>
+	 */
+	private function get_invoice_file_values( WC_Order $order, ExportContext $context, InvoicePluginInterface $plugin, array $field_types ): array {
+		$values = [];
+
+		foreach ( array_keys( $field_types ) as $field_id ) {
+			$values[ $field_id ] = new FieldValue( $field_id, '' );
+		}
+
+		if ( [] === $values ) {
+			return [];
+		}
+
+		$first_field_id = (string) array_key_first( $field_types );
+		$first_type     = $field_types[ $first_field_id ];
+
+		try {
+			if ( ! $plugin->has_invoice( $order ) ) {
+				return $values;
+			}
+		} catch ( Throwable $exception ) {
+			$this->log_invoice_plugin_warning( $context, $order, $plugin->get_id(), $first_field_id, $first_type, $exception );
+
+			return $values;
+		}
+
+		try {
+			$file_types = $this->settings->get_selected_file_types( $this->get_configuration_id( $context ), $plugin, $this->get_export_id( $context ) );
+		} catch ( Throwable $exception ) {
+			$this->log_invoice_plugin_warning( $context, $order, $plugin->get_id(), $first_field_id, $first_type, $exception );
+			$file_types = [];
+		}
+
+		foreach ( $field_types as $field_id => $file_type ) {
+			if ( ! in_array( $file_type, $file_types, true ) ) {
+				continue;
+			}
+
+			$values[ $field_id ] = new FieldValue(
+				$field_id,
+				$this->get_invoice_file_name( $order, $context, $plugin, $field_id, $file_type )
 			);
 		}
 
@@ -123,58 +189,56 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 	}
 
 	/**
-	 * Gets selected invoice file names for an order with an existing invoice.
-	 *
-	 * @param WC_Order               $order   WooCommerce order.
-	 * @param ExportContext         $context Export context.
-	 * @param InvoicePluginInterface $plugin  Invoice plugin.
-	 */
-	private function get_invoice_file_names( WC_Order $order, ExportContext $context, InvoicePluginInterface $plugin ): string {
-		try {
-			if ( ! $plugin->has_invoice( $order ) ) {
-				return '';
-			}
-		} catch ( Throwable $exception ) {
-			$this->log_invoice_plugin_warning( $context, $order, $plugin->get_id(), 'invoice_file_name', '', $exception );
-
-			return '';
-		}
-
-		try {
-			$file_types = $this->settings->get_selected_file_types( $this->get_configuration_id( $context ), $plugin, $this->get_export_id( $context ) );
-		} catch ( Throwable $exception ) {
-			$this->log_invoice_plugin_warning( $context, $order, $plugin->get_id(), 'invoice_file_name', '', $exception );
-			$file_types = [];
-		}
-
-		return implode(
-			', ',
-			array_filter(
-				array_map(
-					fn ( string $file_type ): string => $this->get_invoice_file_name( $order, $context, $plugin, $file_type ),
-					$file_types
-				),
-				static fn ( string $file_name ): bool => '' !== $file_name
-			)
-		);
-	}
-
-	/**
 	 * Gets one invoice file name without failing the export on plugin errors.
 	 *
-	 * @param WC_Order      $order     WooCommerce order.
-	 * @param ExportContext $context   Export context.
+	 * @param WC_Order               $order     WooCommerce order.
+	 * @param ExportContext         $context   Export context.
 	 * @param InvoicePluginInterface $plugin Invoice plugin.
-	 * @param string        $file_type Invoice file type.
+	 * @param string                 $field_id  Export field ID.
+	 * @param string                 $file_type Invoice file type.
 	 */
-	private function get_invoice_file_name( WC_Order $order, ExportContext $context, InvoicePluginInterface $plugin, string $file_type ): string {
+	private function get_invoice_file_name( WC_Order $order, ExportContext $context, InvoicePluginInterface $plugin, string $field_id, string $file_type ): string {
 		try {
 			return $plugin->get_invoice_file_name( $order, $file_type );
 		} catch ( Throwable $exception ) {
-			$this->log_invoice_plugin_warning( $context, $order, $plugin->get_id(), 'invoice_file_name', $file_type, $exception );
+			$this->log_invoice_plugin_warning( $context, $order, $plugin->get_id(), $field_id, $file_type, $exception );
 
 			return '';
 		}
+	}
+
+	/**
+	 * Checks whether a field is an invoice file name field.
+	 *
+	 * @param string $field_id Export field ID.
+	 */
+	private function is_invoice_file_name_field( string $field_id ): bool {
+		return str_starts_with( $field_id, self::INVOICE_FILE_NAME_FIELD_PREFIX )
+			&& '' !== $this->get_invoice_file_type_from_field_id( $field_id );
+	}
+
+	/**
+	 * Gets an invoice file type from a field.
+	 *
+	 * @param Field $field Export field.
+	 */
+	private function get_invoice_file_type_from_field( Field $field ): string {
+		$file_type = $field->options[ InvoiceFieldProvider::OPTION_INVOICE_FILE_TYPE ] ?? null;
+
+		if ( is_string( $file_type ) && '' !== $file_type ) {
+			return $file_type;
+		}
+
+		return $this->get_invoice_file_type_from_field_id( $field->id );
+	}
+
+	/**
+	 * Gets an invoice file type from a field ID.
+	 *
+	 * @param string $field_id Export field ID.
+	 */
+	private function get_invoice_file_type_from_field_id( string $field_id ): string {
+		return substr( $field_id, strlen( self::INVOICE_FILE_NAME_FIELD_PREFIX ) );
 	}
 
 	/**

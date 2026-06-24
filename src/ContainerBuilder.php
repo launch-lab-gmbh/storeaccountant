@@ -541,7 +541,8 @@ final readonly class ContainerBuilder {
 			->addArgument( InvoiceExportAttachmentSettings::class );
 		$container->addShared( InvoiceAttachmentProvider::class )
 			->addArgument( InvoicePluginDetector::class )
-			->addArgument( InvoiceExportAttachmentSettings::class );
+			->addArgument( InvoiceExportAttachmentSettings::class )
+			->addArgument( FieldMappingRepository::class );
 		$container->addShared( InvoiceAttachmentConfigurationFieldProvider::class )
 			->addArgument( InvoicePluginDetector::class );
 		$container->addShared( SimpleOrderTaxFieldProvider::class );

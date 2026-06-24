@@ -358,10 +358,12 @@ WooCommerce PDF Invoices & Packing Slips integration registers itself through
 `storeaccountant_invoice_plugin` with the plugin ID
 `woocommerce-pdf-invoices-packing-slips`. Administrators enable at most one
 active invoice plugin integration on the plugin settings page. The generic
-invoice field provider contributes `invoice_number`, `invoice_date`, and
-`invoice_file_name` for the `orders` export type only when an invoice plugin
-integration is enabled, and its value provider reads through that enabled
-integration. The bundled integration reads the invoice document API without
+invoice field provider contributes `invoice_number`, `invoice_date`, and one
+typed `invoice_file_name_{type}` field per invoice file type, for example
+`invoice_file_name_pdf` and `invoice_file_name_xml`, for the `orders` export
+type only when an invoice plugin integration is enabled. Its value provider
+reads through that enabled integration. The bundled integration reads the
+invoice document API without
 creating a missing invoice, with stored order metadata as fallback. It also
 exposes invoice files through `get_invoice_file()` for workflows that need the
 source document rather than a CSV-safe field value. The WooCommerce PDF Invoices
@@ -396,8 +398,10 @@ as separate export rows alongside products.
 
 Selected invoice files are written below the localized invoice attachment
 directory in the generated zip archive. In English this is `Invoices/{type}/`;
-in German it is `Rechnungen/{type}/`. The `invoice_file_name` export field
-lists the same file names used for those attachments. Extended tax
+in German it is `Rechnungen/{type}/`. The typed `invoice_file_name_{type}`
+export fields list the same file names used for those attachments. Invoice
+attachments are generated only for file types that are both selected in the
+invoice attachment settings and enabled in the field mapping. Extended tax
 columns are based on all configured WooCommerce tax rates, not only rates
 present in the exported orders. Their headers follow
 `tax_{rate}_{tax-name-slug}_{country}_{items|shipping|total}`.

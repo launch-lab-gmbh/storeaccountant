@@ -117,13 +117,13 @@ namespace StoreAccountant\Tests\Unit\Queue\Loopback {
 			->once()
 			->with( 123 )
 			->andReturn( ExportPostType::POST_TYPE );
-			Functions\expect( 'admin_url' )
+			Functions\expect( 'home_url' )
 			->once()
-			->with( 'admin-post.php' )
-			->andReturn( 'https://example.test/wp-admin/admin-post.php' );
+			->with( '/' . QueueLoopbackEndpoint::ROUTE_PATH . '/' )
+			->andReturn( 'https://example.test/storeaccountant/queue-loopback/' );
 			Functions\expect( 'wp_remote_post' )
 			->once()
-			->with( 'https://example.test/wp-admin/admin-post.php', Mockery::type( 'array' ) )
+			->with( 'https://example.test/storeaccountant/queue-loopback/', Mockery::type( 'array' ) )
 			->andReturn( $error );
 			Functions\expect( 'is_wp_error' )
 			->once()
@@ -197,19 +197,18 @@ namespace StoreAccountant\Tests\Unit\Queue\Loopback {
 			->once()
 			->with( $export_id )
 			->andReturn( ExportPostType::POST_TYPE );
-			Functions\expect( 'admin_url' )
+			Functions\expect( 'home_url' )
 			->once()
-			->with( 'admin-post.php' )
-			->andReturn( 'https://example.test/wp-admin/admin-post.php' );
+			->with( '/' . QueueLoopbackEndpoint::ROUTE_PATH . '/' )
+			->andReturn( 'https://example.test/storeaccountant/queue-loopback/' );
 			Functions\expect( 'wp_remote_post' )
 			->once()
 			->with(
-				'https://example.test/wp-admin/admin-post.php',
+				'https://example.test/storeaccountant/queue-loopback/',
 				[
 					'blocking' => false,
 					'timeout'  => 1,
 					'body'     => [
-						'action'    => QueueLoopbackEndpoint::ACTION,
 						'export_id' => (string) $export_id,
 						'token'     => $token,
 					],

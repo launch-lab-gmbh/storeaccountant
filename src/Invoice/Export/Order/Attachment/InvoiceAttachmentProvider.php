@@ -23,8 +23,17 @@ use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\ExportPayload;
 use StoreAccountant\Export\Event\ExportEventDispatcher;
 use StoreAccountant\Export\Event\ExportEvents;
+use StoreAccountant\Export\Field\Field;
+use StoreAccountant\Export\Field\FieldCollection;
+use StoreAccountant\Export\Field\Mapping\FieldMappingRepository;
+use StoreAccountant\Invoice\Export\Order\Field\InvoiceFieldProvider;
 use StoreAccountant\Invoice\Export\Order\InvoiceExportAttachmentSettings;
+use StoreAccountant\Invoice\Contract\InvoicePluginInterface;
 use StoreAccountant\Invoice\InvoicePluginDetector;
+use function array_filter;
+use function array_values;
+use function in_array;
+use function is_string;
 use function ltrim;
 use function sanitize_file_name;
 use function sanitize_key;
@@ -47,10 +56,12 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 	 *
 	 * @param InvoicePluginDetector           $detector Invoice plugin detector.
 	 * @param InvoiceExportAttachmentSettings $settings Invoice attachment settings.
+	 * @param FieldMappingRepository          $field_mapping Field mapping repository.
 	 */
 	public function __construct(
 		private InvoicePluginDetector $detector,
-		private InvoiceExportAttachmentSettings $settings
+		private InvoiceExportAttachmentSettings $settings,
+		private FieldMappingRepository $field_mapping
 	) {}
 
 	/**
@@ -100,6 +111,18 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 		}
 
 		try {
+			$file_types = $this->get_exported_file_types( $context, $plugin, $payload->export_id );
+		} catch ( Throwable $exception ) {
+			$this->log_invoice_plugin_warning( $payload->export_id, $item, $plugin->get_id(), '', $exception );
+
+			return [];
+		}
+
+		if ( [] === $file_types ) {
+			return [];
+		}
+
+		try {
 			if ( ! $plugin->has_invoice( $item ) ) {
 				return [];
 			}
@@ -110,14 +133,6 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 		}
 
 		$attachments = [];
-
-		try {
-			$file_types = $this->settings->get_selected_file_types( $context->configuration_id, $plugin, $payload->export_id );
-		} catch ( Throwable $exception ) {
-			$this->log_invoice_plugin_warning( $payload->export_id, $item, $plugin->get_id(), '', $exception );
-
-			return [];
-		}
 
 		foreach ( $file_types as $file_type ) {
 			try {
@@ -147,6 +162,68 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 		}
 
 		return $attachments;
+	}
+
+	/**
+	 * Gets invoice file types selected in settings and enabled in field mapping.
+	 *
+	 * @param ExportContext          $context   Export context.
+	 * @param InvoicePluginInterface $plugin    Invoice plugin.
+	 * @param int                    $export_id Export post ID.
+	 *
+	 * @return array<int, string>
+	 */
+	private function get_exported_file_types( ExportContext $context, InvoicePluginInterface $plugin, int $export_id ): array {
+		$selected_file_types = $this->settings->get_selected_file_types( $context->configuration_id, $plugin, $export_id );
+		$mapped_file_types   = $this->get_mapped_file_types( $context, $plugin );
+
+		return array_values(
+			array_filter(
+				$selected_file_types,
+				static fn ( string $file_type ): bool => in_array( $file_type, $mapped_file_types, true )
+			)
+		);
+	}
+
+	/**
+	 * Gets invoice file types that are enabled in the final field mapping.
+	 *
+	 * @param ExportContext          $context Export context.
+	 * @param InvoicePluginInterface $plugin  Invoice plugin.
+	 *
+	 * @return array<int, string>
+	 */
+	private function get_mapped_file_types( ExportContext $context, InvoicePluginInterface $plugin ): array {
+		$available_fields = [];
+
+		foreach ( $plugin->get_invoice_file_types() as $file_type ) {
+			$type_id = sanitize_key( $file_type->id );
+
+			if ( '' === $type_id ) {
+				continue;
+			}
+
+			$field_id                      = 'invoice_file_name_' . $type_id;
+			$available_fields[ $field_id ] = new Field(
+				$field_id,
+				$field_id,
+				options: [
+					InvoiceFieldProvider::OPTION_INVOICE_FILE_TYPE => $file_type->id,
+				]
+			);
+		}
+
+		$mapped_file_types = [];
+
+		foreach ( $this->field_mapping->get_mapped_fields( $context->configuration_id, new FieldCollection( $available_fields ) ) as $field ) {
+			$file_type = $field->options[ InvoiceFieldProvider::OPTION_INVOICE_FILE_TYPE ] ?? null;
+
+			if ( is_string( $file_type ) && '' !== $file_type ) {
+				$mapped_file_types[] = $file_type;
+			}
+		}
+
+		return $mapped_file_types;
 	}
 
 	/**

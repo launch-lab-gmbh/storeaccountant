@@ -64,17 +64,19 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 
 	public function test_supports_invoice_fields_for_order_exports_when_plugin_is_enabled(): void {
 		Functions\expect( 'get_option' )
-			->once()
+			->twice()
 			->with( 'storeaccountant_enabled_invoice_plugin', '' )
 			->andReturn( 'pdf' );
 		Functions\expect( 'apply_filters' )
-			->once()
+			->twice()
 			->with( 'storeaccountant_invoice_plugin', [] )
 			->andReturn( [ $this->plugin() ] );
 
 		$provider = $this->provider();
 
 		self::assertTrue( $provider->supports( new Field( 'invoice_number', 'invoice_number' ), new ExportContext( OrderExportAdapter::ADAPTER_ID ) ) );
+		self::assertTrue( $provider->supports( new Field( 'invoice_file_name_pdf', 'invoice_file_name_pdf' ), new ExportContext( OrderExportAdapter::ADAPTER_ID ) ) );
+		self::assertFalse( $provider->supports( new Field( 'invoice_file_name', 'invoice_file_name' ), new ExportContext( OrderExportAdapter::ADAPTER_ID ) ) );
 		self::assertFalse( $provider->supports( new Field( 'order_total', 'order_total' ), new ExportContext( OrderExportAdapter::ADAPTER_ID ) ) );
 		self::assertFalse( $provider->supports( new Field( 'invoice_number', 'invoice_number' ), new ExportContext( 'customers' ) ) );
 	}
@@ -98,7 +100,7 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 				json_encode(
 					[
 						InvoiceExportAttachmentSettings::PROVIDER_ID => [
-							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'pdf', 'ubl' ],
+							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'pdf', 'xml' ],
 						],
 					]
 				)
@@ -110,7 +112,8 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 				[
 					new Field( 'invoice_number', 'invoice_number' ),
 					new Field( 'invoice_date', 'invoice_date' ),
-					new Field( 'invoice_file_name', 'invoice_file_name' ),
+					new Field( 'invoice_file_name_pdf', 'invoice_file_name_pdf' ),
+					new Field( 'invoice_file_name_xml', 'invoice_file_name_xml' ),
 				]
 			),
 			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77 )
@@ -118,9 +121,10 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 
 		self::assertSame(
 			[
-				'invoice_number'    => 'INV-1001',
-				'invoice_date'      => '2026-05-04',
-				'invoice_file_name' => 'invoice-1001.pdf',
+				'invoice_number'        => 'INV-1001',
+				'invoice_date'          => '2026-05-04',
+				'invoice_file_name_pdf' => 'invoice-1001.pdf',
+				'invoice_file_name_xml' => 'invoice-1001.xml',
 			],
 			array_map( static fn ( $value ): mixed => $value->value, $values )
 		);
@@ -140,7 +144,7 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 		$plugin->method( 'get_invoice_file_types' )->willReturn(
 			[
 				new InvoiceFileType( 'pdf', 'PDF' ),
-				new InvoiceFileType( 'ubl', 'UBL' ),
+				new InvoiceFileType( 'xml', 'XML' ),
 			]
 		);
 		$plugin->method( 'get_invoice_file_name' )->willReturnCallback(
@@ -169,7 +173,7 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 				json_encode(
 					[
 						InvoiceExportAttachmentSettings::PROVIDER_ID => [
-							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'pdf', 'ubl' ],
+							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'pdf', 'xml' ],
 						],
 					]
 				)
@@ -186,7 +190,8 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 				[
 					new Field( 'invoice_number', 'invoice_number' ),
 					new Field( 'invoice_date', 'invoice_date' ),
-					new Field( 'invoice_file_name', 'invoice_file_name' ),
+					new Field( 'invoice_file_name_pdf', 'invoice_file_name_pdf' ),
+					new Field( 'invoice_file_name_xml', 'invoice_file_name_xml' ),
 				]
 			),
 			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77, [], [ 'export_id' => 123 ] )
@@ -194,9 +199,10 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 
 		self::assertSame(
 			[
-				'invoice_number'    => '',
-				'invoice_date'      => '2026-05-04',
-				'invoice_file_name' => 'invoice-1001.xml',
+				'invoice_number'        => '',
+				'invoice_date'          => '2026-05-04',
+				'invoice_file_name_pdf' => '',
+				'invoice_file_name_xml' => 'invoice-1001.xml',
 			],
 			array_map( static fn ( $value ): mixed => $value->value, $values )
 		);
@@ -209,13 +215,13 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 		self::assertSame( 'invoice_number', $events[0][4]['field_id'] );
 		self::assertSame( 'Invoice number failed', $events[0][4]['exception_message'] );
 		self::assertSame( $number_exception, $events[0][5] );
-		self::assertSame( 'invoice_file_name', $events[1][4]['field_id'] );
+		self::assertSame( 'invoice_file_name_pdf', $events[1][4]['field_id'] );
 		self::assertSame( 'pdf', $events[1][4]['invoice_file_type'] );
 		self::assertSame( 'Invoice PDF name failed', $events[1][4]['exception_message'] );
 		self::assertSame( $file_exception, $events[1][5] );
 	}
 
-	public function test_get_values_returns_empty_invoice_file_name_without_existing_invoice(): void {
+	public function test_get_values_returns_empty_invoice_file_names_without_existing_invoice(): void {
 		$plugin = $this->createMock( InvoicePluginInterface::class );
 		$order  = new WC_Order( [ 'id' => 1001 ] );
 
@@ -237,13 +243,15 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 			$order,
 			new FieldCollection(
 				[
-					new Field( 'invoice_file_name', 'invoice_file_name' ),
+					new Field( 'invoice_file_name_pdf', 'invoice_file_name_pdf' ),
+					new Field( 'invoice_file_name_xml', 'invoice_file_name_xml' ),
 				]
 			),
 			new ExportContext( OrderExportAdapter::ADAPTER_ID, 77, [], [ 'export_id' => 123 ] )
 		);
 
-		self::assertSame( '', $values['invoice_file_name']->value );
+		self::assertSame( '', $values['invoice_file_name_pdf']->value );
+		self::assertSame( '', $values['invoice_file_name_xml']->value );
 	}
 
 	public function test_get_values_returns_empty_array_without_order_context_or_enabled_plugin(): void {
@@ -275,11 +283,11 @@ final class InvoiceFieldValueProviderTest extends TestCase {
 		$plugin->method( 'get_invoice_file_types' )->willReturn(
 			[
 				new InvoiceFileType( 'pdf', 'PDF' ),
-				new InvoiceFileType( 'ubl', 'UBL' ),
+				new InvoiceFileType( 'xml', 'XML' ),
 			]
 		);
 		$plugin->method( 'get_invoice_file_name' )->willReturnCallback(
-			static fn ( WC_Order $order, string $type ): string => 'pdf' === $type ? 'invoice-1001.pdf' : ''
+			static fn ( WC_Order $order, string $type ): string => 'pdf' === $type ? 'invoice-1001.pdf' : 'invoice-1001.xml'
 		);
 
 		return $plugin;

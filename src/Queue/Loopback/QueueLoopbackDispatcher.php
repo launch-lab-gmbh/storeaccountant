@@ -17,6 +17,16 @@ use StoreAccountant\Export\Event\ExportEventDispatcher;
 use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Queue\QueueTransportRegistry;
+use function delete_transient;
+use function get_post_type;
+use function get_transient;
+use function hash_equals;
+use function home_url;
+use function is_string;
+use function is_wp_error;
+use function set_transient;
+use function wp_generate_password;
+use function wp_remote_post;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -72,12 +82,11 @@ final readonly class QueueLoopbackDispatcher {
 		}
 
 		$response = wp_remote_post(
-			admin_url( 'admin-post.php' ),
+			home_url( '/' . QueueLoopbackEndpoint::ROUTE_PATH . '/' ),
 			[
 				'blocking' => false,
 				'timeout'  => 1,
 				'body'     => [
-					'action'    => QueueLoopbackEndpoint::ACTION,
 					'export_id' => (string) $export_id,
 					'token'     => $token,
 				],

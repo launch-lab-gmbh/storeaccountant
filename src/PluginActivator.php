@@ -17,6 +17,7 @@ use StoreAccountant as StoreAccountantPlugin;
 use StoreAccountant\Storage\Admin\StorageActivationNotice;
 use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
+use StoreAccountant\Queue\Loopback\QueueLoopbackEndpoint;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Adapter\LocalStorageAdapter;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
@@ -86,6 +87,11 @@ final readonly class PluginActivator {
 		add_rewrite_rule(
 			'^storeaccountant/export-download/([^/]+)/?$',
 			'index.php?storeaccountant_export_download=$matches[1]',
+			'top'
+		);
+		add_rewrite_rule(
+			'^' . QueueLoopbackEndpoint::ROUTE_PATH . '/?$',
+			'index.php?storeaccountant_queue_loopback=1',
 			'top'
 		);
 		flush_rewrite_rules();
