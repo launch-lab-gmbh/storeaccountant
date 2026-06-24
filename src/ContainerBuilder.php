@@ -117,9 +117,11 @@ use StoreAccountant\Export\ExportRepository;
 use StoreAccountant\Export\ExportStoragePathGenerator;
 use StoreAccountant\Export\Queue\BatchExportStore;
 use StoreAccountant\Export\Queue\ExportQueueCleanup;
+use StoreAccountant\Export\Queue\Handler\FinalizeExportAttachmentsMessageHandler;
 use StoreAccountant\Export\Queue\Handler\FinalizeExportMessageHandler;
 use StoreAccountant\Export\Queue\Handler\ProcessExportBatchMessageHandler;
 use StoreAccountant\Export\Queue\Handler\StartExportMessageHandler;
+use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\Message\ProcessExportBatchMessage;
 use StoreAccountant\Export\Queue\Message\StartExportMessage;
@@ -348,6 +350,9 @@ final readonly class ContainerBuilder {
 						],
 						FinalizeExportMessage::class     => [
 							$container->get( FinalizeExportMessageHandler::class ),
+						],
+						FinalizeExportAttachmentsMessage::class => [
+							$container->get( FinalizeExportAttachmentsMessageHandler::class ),
 						],
 					]
 				);
@@ -661,8 +666,14 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportDatasetBuilder::class )
 			->addArgument( BatchExportStore::class );
 		$container->addShared( FinalizeExportMessageHandler::class )
+			->addArgument( MessageBusInterface::class )
 			->addArgument( QueuedExportFinalizer::class )
 			->addArgument( ExportRepository::class );
+		$container->addShared( FinalizeExportAttachmentsMessageHandler::class )
+			->addArgument( MessageBusInterface::class )
+			->addArgument( StorageAdapterRegistry::class )
+			->addArgument( ExportRepository::class )
+			->addArgument( BatchExportStore::class );
 		$container->addShared( ExportQueueCleanup::class )
 			->addArgument( ExportRepository::class )
 			->addArgument( BatchExportStore::class );

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace StoreAccountant\Export\Queue\Handler;
 
+use Symfony\Component\Messenger\MessageBusInterface;
 use Throwable;
 use WP_Error;
 use StoreAccountant\Export\Event\ExportEventDispatcher;
@@ -21,6 +22,7 @@ use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Export\ExportRepository;
 use StoreAccountant\Export\ExportStatus;
 use StoreAccountant\Export\Queue\QueuedExportFinalizer;
+use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use function __;
 use function absint;
@@ -38,6 +40,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final readonly class FinalizeExportMessageHandler {
 	public function __construct(
+		private MessageBusInterface $message_bus,
 		private QueuedExportFinalizer $finalizer,
 		private ExportRepository $repository
 	) {}
@@ -111,7 +114,47 @@ final readonly class FinalizeExportMessageHandler {
 			return $result;
 		}
 
-		$this->repository->mark_completed( $message->export_id );
+		if ( ! $result->complete ) {
+			$this->message_bus->dispatch(
+				new FinalizeExportAttachmentsMessage(
+					$message->export_id,
+					$message->renderer_id,
+					$result->storage_path,
+					0,
+					$result->attachment_batch_size,
+					$result->total_attachments
+				)
+			);
+
+			ExportEventDispatcher::dispatch(
+				ExportEvents::FINALIZATION_QUEUED,
+				$message->export_id,
+				[
+					'message'               => FinalizeExportAttachmentsMessage::class,
+					'export_id'             => $message->export_id,
+					'renderer_id'           => $message->renderer_id,
+					'total_attachments'     => $result->total_attachments,
+					'attachment_batch_size' => $result->attachment_batch_size,
+				]
+			);
+
+			return true;
+		}
+
+		$this->complete_export( $message->export_id, $message->renderer_id, FinalizeExportMessage::class );
+
+		return true;
+	}
+
+	/**
+	 * Marks an export completed and dispatches the completed event.
+	 *
+	 * @param int         $export_id     Export post ID.
+	 * @param string|null $renderer_id   Renderer ID.
+	 * @param string      $message_class Queue message class.
+	 */
+	private function complete_export( int $export_id, ?string $renderer_id, string $message_class ): void {
+		$this->repository->mark_completed( $export_id );
 
 		/**
 		 * Fires after an export has been successfully finalized and marked completed.
@@ -123,15 +166,13 @@ final readonly class FinalizeExportMessageHandler {
 		 */
 		ExportEventDispatcher::dispatch(
 			ExportEvents::COMPLETED,
-			$message->export_id,
+			$export_id,
 			[
-				'message'     => FinalizeExportMessage::class,
-				'export_id'   => $message->export_id,
-				'renderer_id' => $message->renderer_id,
+				'message'     => $message_class,
+				'export_id'   => $export_id,
+				'renderer_id' => $renderer_id,
 			]
 		);
-
-		return true;
 	}
 
 	private function maybe_apply_debug_delay(): void {

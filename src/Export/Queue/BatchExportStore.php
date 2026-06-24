@@ -169,6 +169,64 @@ final readonly class BatchExportStore {
 	}
 
 	/**
+	 * Counts saved attachments without hydrating export records.
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	public function count_attachments( int $export_id ): int {
+		$count = 0;
+
+		foreach ( $this->get_batches( $export_id ) as $batch_number => $path ) {
+			foreach ( $this->read_attachment_metadata( (int) $batch_number, $path ) as $attachment ) {
+				if ( is_array( $attachment ) && is_file( (string) ( $attachment['path'] ?? '' ) ) ) {
+					++$count;
+				}
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Streams one attachment slice from saved fragments.
+	 *
+	 * @param int $export_id Export post ID.
+	 * @param int $offset    Zero-based attachment offset.
+	 * @param int $limit     Maximum attachments to load.
+	 *
+	 * @return iterable<ExportAttachment>
+	 */
+	public function load_attachments( int $export_id, int $offset, int $limit ): iterable {
+		if ( $limit <= 0 ) {
+			return;
+		}
+
+		$seen    = 0;
+		$yielded = 0;
+
+		foreach ( $this->get_batches( $export_id ) as $batch_number => $path ) {
+			foreach ( $this->read_attachment_metadata( (int) $batch_number, $path ) as $attachment ) {
+				$export_attachment = $this->hydrate_attachment( $attachment );
+
+				if ( null === $export_attachment ) {
+					continue;
+				}
+
+				if ( $seen++ < $offset ) {
+					$this->close_stream( $export_attachment->stream );
+					continue;
+				}
+
+				yield $export_attachment;
+
+				if ( ++$yielded >= $limit ) {
+					return;
+				}
+			}
+		}
+	}
+
+	/**
 	 * Deletes all temporary files for one export.
 	 *
 	 * @param int $export_id Export post ID.
@@ -568,24 +626,39 @@ final readonly class BatchExportStore {
 	private function attachment_generator( array $batches ): iterable {
 		foreach ( $batches as $batch_number => $path ) {
 			foreach ( $this->read_attachment_metadata( (int) $batch_number, $path ) as $attachment ) {
-				if ( ! is_array( $attachment ) || ! is_file( (string) ( $attachment['path'] ?? '' ) ) ) {
+				$export_attachment = $this->hydrate_attachment( $attachment );
+
+				if ( null === $export_attachment ) {
 					continue;
 				}
 
-				$stream = $this->open_read_stream( (string) $attachment['path'] );
-
-				if ( false === $stream ) {
-					continue;
-				}
-
-				yield new ExportAttachment(
-					$stream,
-					(string) ( $attachment['file_name'] ?? '' ),
-					(string) ( $attachment['mime_type'] ?? 'application/octet-stream' ),
-					(string) ( $attachment['internal_path'] ?? '' )
-				);
+				yield $export_attachment;
 			}
 		}
+	}
+
+	/**
+	 * Rebuilds one temporary attachment from stored metadata.
+	 *
+	 * @param mixed $attachment Stored attachment metadata.
+	 */
+	private function hydrate_attachment( mixed $attachment ): ?ExportAttachment {
+		if ( ! is_array( $attachment ) || ! is_file( (string) ( $attachment['path'] ?? '' ) ) ) {
+			return null;
+		}
+
+		$stream = $this->open_read_stream( (string) $attachment['path'] );
+
+		if ( false === $stream ) {
+			return null;
+		}
+
+		return new ExportAttachment(
+			$stream,
+			(string) ( $attachment['file_name'] ?? '' ),
+			(string) ( $attachment['mime_type'] ?? 'application/octet-stream' ),
+			(string) ( $attachment['internal_path'] ?? '' )
+		);
 	}
 
 	/**

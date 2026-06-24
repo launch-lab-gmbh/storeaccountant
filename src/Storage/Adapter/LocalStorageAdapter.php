@@ -16,6 +16,7 @@ namespace StoreAccountant\Storage\Adapter;
 use RuntimeException;
 use Throwable;
 use WP_Error;
+use ZipArchive;
 use League\Flysystem\Config;
 use League\Flysystem\FileAttributes;
 use League\Flysystem\Filesystem;
@@ -24,7 +25,9 @@ use League\Flysystem\FilesystemOperator;
 use League\Flysystem\ZipArchive\FilesystemZipArchiveProvider;
 use League\Flysystem\ZipArchive\ZipArchiveAdapter;
 use StoreAccountant\Contract\HookRegistrarInterface;
+use StoreAccountant\Export\Attachment\ExportAttachment;
 use StoreAccountant\Storage\ProtectedUploadDirectory;
+use StoreAccountant\Storage\Contract\ChunkedStorageAdapterInterface;
 use StoreAccountant\Storage\Contract\StorageAdapterInterface;
 use StoreAccountant\Storage\StorageFile;
 use StoreAccountant\Storage\StorageFileConfiguration;
@@ -40,6 +43,8 @@ use function is_file;
 use function is_int;
 use function is_resource;
 use function is_string;
+use function stream_get_contents;
+use function stream_get_meta_data;
 use function strpos;
 use function substr;
 use function wp_delete_file;
@@ -51,7 +56,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Local storage adapter and Flysystem adapter for a protected zip archive.
  */
-final readonly class LocalStorageAdapter implements StorageAdapterInterface, FilesystemAdapter, HookRegistrarInterface {
+final readonly class LocalStorageAdapter implements StorageAdapterInterface, ChunkedStorageAdapterInterface, FilesystemAdapter, HookRegistrarInterface {
 	public const ENGINE_ID = 'local';
 
 	public function __construct(
@@ -92,9 +97,24 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 	 * {@inheritDoc}
 	 */
 	public function persist( StorageFileConfiguration $configuration ): string|WP_Error {
-		$stream = $this->open_read_stream( $configuration->source_path );
+		$storage_path = $this->start_persist( $configuration );
 
-		if ( false === $stream ) {
+		if ( is_wp_error( $storage_path ) ) {
+			return $storage_path;
+		}
+
+		$appended = $this->append_attachments( $storage_path, $configuration->attachments );
+
+		return is_wp_error( $appended ) ? $appended : $storage_path;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function start_persist( StorageFileConfiguration $configuration ): string|WP_Error {
+		$source_stream = $this->open_read_stream( $configuration->source_path );
+
+		if ( false === $source_stream ) {
 			return new WP_Error(
 				'storeaccountant_storage_source_file_not_readable',
 				__( 'StoreAccountant could not read the generated export file for storage.', 'storeaccountant' )
@@ -102,22 +122,10 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 		}
 
 		try {
-			$target_path = null !== $configuration->internal_path
-				? $configuration->storage_path . '#' . $configuration->internal_path
-				: $configuration->storage_path;
+			$this->close_stream( $source_stream );
+			$source_stream = false;
 
-			$this->get_filesystem()->writeStream( $target_path, $stream );
-
-			foreach ( $configuration->attachments as $attachment ) {
-				try {
-					$this->get_filesystem()->writeStream(
-						$configuration->storage_path . '#' . $attachment->internal_path,
-						$attachment->stream
-					);
-				} finally {
-					$this->close_stream( $attachment->stream );
-				}
-			}
+			$this->start_zip_archive( $configuration );
 		} catch ( Throwable $exception ) {
 			return new WP_Error(
 				'storeaccountant_storage_persist_failed',
@@ -133,10 +141,180 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 				]
 			);
 		} finally {
-			$this->close_stream( $stream );
+			$this->close_stream( $source_stream );
 		}
 
 		return $configuration->storage_path;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function append_attachments( string $storage_path, iterable $attachments ): true|WP_Error {
+		try {
+			$this->append_zip_attachments( $storage_path, $attachments );
+		} catch ( Throwable $exception ) {
+			return new WP_Error(
+				'storeaccountant_storage_persist_failed',
+				__( 'StoreAccountant could not persist the generated export file.', 'storeaccountant' ),
+				[
+					'exception' => [
+						'class'   => $exception::class,
+						'message' => $exception->getMessage(),
+						'file'    => $exception->getFile(),
+						'line'    => $exception->getLine(),
+						'trace'   => $exception->getTraceAsString(),
+					],
+				]
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Starts one local zip archive with the rendered export file.
+	 *
+	 * @param StorageFileConfiguration $configuration Storage file configuration.
+	 *
+	 * @throws RuntimeException When the archive cannot be written.
+	 */
+	private function start_zip_archive( StorageFileConfiguration $configuration ): void {
+		$archive_path = $this->configuration->get_archive_path( $configuration->storage_path );
+
+		if ( is_wp_error( $archive_path ) ) {
+			throw new RuntimeException( esc_html( $archive_path->get_error_message() ) );
+		}
+
+		$archive      = new ZipArchive();
+		$archive_open = false;
+		$opened       = $archive->open( $archive_path, ZipArchive::CREATE | ZipArchive::OVERWRITE );
+
+		try {
+			if ( true !== $opened ) {
+				throw new RuntimeException( 'StoreAccountant could not open the local export archive.' );
+			}
+
+			$archive_open  = true;
+			$internal_path = null !== $configuration->internal_path && '' !== $configuration->internal_path
+				? $configuration->internal_path
+				: $configuration->file_name;
+
+			if ( '' === $internal_path || ! $archive->addFile( $configuration->source_path, $internal_path ) ) {
+				throw new RuntimeException( 'StoreAccountant could not add the generated export file to the local archive.' );
+			}
+
+			if ( ! $archive->close() ) {
+				$archive_open = false;
+				throw new RuntimeException( 'StoreAccountant could not close the local export archive.' );
+			}
+
+			$archive_open = false;
+		} finally {
+			if ( $archive_open ) {
+				$archive->close();
+			}
+		}
+	}
+
+	/**
+	 * Appends attachments to an existing local zip archive.
+	 *
+	 * @param string          $storage_path Storage path.
+	 * @param iterable<mixed> $attachments  Export attachments.
+	 *
+	 * @throws RuntimeException When the archive cannot be written.
+	 */
+	private function append_zip_attachments( string $storage_path, iterable $attachments ): void {
+		$archive_path = $this->configuration->get_archive_path( $storage_path );
+
+		if ( is_wp_error( $archive_path ) ) {
+			throw new RuntimeException( esc_html( $archive_path->get_error_message() ) );
+		}
+
+		$archive      = new ZipArchive();
+		$archive_open = false;
+		$opened       = $archive->open( $archive_path, ZipArchive::CREATE );
+
+		try {
+			if ( true !== $opened ) {
+				throw new RuntimeException( 'StoreAccountant could not open the local export archive.' );
+			}
+
+			$archive_open = true;
+
+			foreach ( $attachments as $attachment ) {
+				$attachment_stream = $attachment instanceof ExportAttachment ? $attachment->stream : null;
+
+				try {
+					if ( ! $attachment instanceof ExportAttachment ) {
+						continue;
+					}
+
+					$this->add_attachment_to_archive( $archive, $attachment );
+				} finally {
+					$this->close_stream( $attachment_stream );
+				}
+			}
+
+			if ( ! $archive->close() ) {
+				$archive_open = false;
+				throw new RuntimeException( 'StoreAccountant could not close the local export archive.' );
+			}
+
+			$archive_open = false;
+		} finally {
+			if ( $archive_open ) {
+				$archive->close();
+			}
+		}
+	}
+
+	/**
+	 * Adds one attachment to an open zip archive.
+	 *
+	 * @param ZipArchive       $archive    Open zip archive.
+	 * @param ExportAttachment $attachment Export attachment.
+	 *
+	 * @throws RuntimeException When the attachment cannot be added.
+	 */
+	private function add_attachment_to_archive( ZipArchive $archive, ExportAttachment $attachment ): void {
+		$source_path = $this->get_stream_path( $attachment->stream );
+
+		if ( '' === $attachment->internal_path ) {
+			throw new RuntimeException( 'StoreAccountant could not add an export attachment without an archive path.' );
+		}
+
+		if ( false !== $archive->locateName( $attachment->internal_path ) ) {
+			$archive->deleteName( $attachment->internal_path );
+		}
+
+		if ( null !== $source_path && $archive->addFile( $source_path, $attachment->internal_path ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_stream_get_contents -- In-memory attachment streams have no local file path.
+		$contents = stream_get_contents( $attachment->stream );
+
+		if ( false === $contents || ! $archive->addFromString( $attachment->internal_path, $contents ) ) {
+			throw new RuntimeException( 'StoreAccountant could not add an export attachment to the local archive.' );
+		}
+	}
+
+	/**
+	 * Gets a local path for a stream-backed file when available.
+	 *
+	 * @param mixed $stream Potential stream resource.
+	 */
+	private function get_stream_path( mixed $stream ): ?string {
+		if ( ! is_resource( $stream ) ) {
+			return null;
+		}
+
+		$metadata = stream_get_meta_data( $stream );
+		$uri      = is_string( $metadata['uri'] ?? null ) ? $metadata['uri'] : '';
+
+		return '' !== $uri && is_file( $uri ) ? $uri : null;
 	}
 
 	/**

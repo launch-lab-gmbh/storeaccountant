@@ -121,6 +121,23 @@ final class BatchExportStoreTest extends TestCase {
 		);
 	}
 
+	public function test_count_and_load_attachments_reads_slices_without_records(): void {
+		$store = new BatchExportStore();
+
+		self::assertTrue( $store->save_batch( 123, 1, $this->dataset( 'first', 'A' ) ) );
+		self::assertTrue( $store->save_batch( 123, 2, $this->dataset( 'second', 'B' ) ) );
+
+		self::assertSame( 2, $store->count_attachments( 123 ) );
+
+		$attachments = iterator_to_array( $store->load_attachments( 123, 1, 1 ) );
+
+		self::assertCount( 1, $attachments );
+		self::assertInstanceOf( ExportAttachment::class, $attachments[0] );
+		self::assertSame( 'attachments/empty.txt', $attachments[0]->internal_path );
+		self::assertIsResource( $attachments[0]->stream );
+		fclose( $attachments[0]->stream );
+	}
+
 	public function test_load_dataset_returns_error_for_missing_or_invalid_fragments(): void {
 		$store = new BatchExportStore();
 

@@ -16,6 +16,7 @@ namespace StoreAccountant\Tests\Unit\Storage\Adapter;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use ZipArchive;
 use StoreAccountant\Export\Attachment\ExportAttachment;
 use StoreAccountant\Storage\Adapter\LocalStorageAdapter;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
@@ -164,6 +165,48 @@ final class LocalStorageAdapterTest extends TestCase {
 		self::assertNotNull( $attachment_stream );
 		self::assertFalse( is_resource( $attachment_stream ) );
 
+		$archive = new ZipArchive();
+		self::assertTrue( $archive->open( $this->root . '/exports/token.zip' ) );
+		self::assertSame( 'order_id,total', $archive->getFromName( 'token.csv' ) );
+		self::assertSame( 'invoice', $archive->getFromName( 'Invoices/pdf/invoice.pdf' ) );
+		$archive->close();
+
+		unlink( $source );
+	}
+
+	public function test_chunked_persist_replaces_retried_attachment_paths(): void {
+		$source = $this->root . '-source.csv';
+		file_put_contents( $source, 'order_id,total' );
+
+		$configuration = new StorageFileConfiguration(
+			'exports/token.zip',
+			$source,
+			'token.csv',
+			'token.csv',
+			[],
+			'text/csv'
+		);
+
+		self::assertSame( 'exports/token.zip', $this->adapter()->start_persist( $configuration ) );
+		self::assertTrue(
+			$this->adapter()->append_attachments(
+				'exports/token.zip',
+				[ $this->attachment( 'old invoice' ) ]
+			)
+		);
+		self::assertTrue(
+			$this->adapter()->append_attachments(
+				'exports/token.zip',
+				[ $this->attachment( 'new invoice' ) ]
+			)
+		);
+
+		$archive = new ZipArchive();
+		self::assertTrue( $archive->open( $this->root . '/exports/token.zip' ) );
+		self::assertSame( 2, $archive->numFiles );
+		self::assertSame( 'new invoice', $archive->getFromName( 'Invoices/pdf/invoice.pdf' ) );
+		$archive->close();
+
 		unlink( $source );
 	}
 
@@ -195,6 +238,15 @@ final class LocalStorageAdapterTest extends TestCase {
 		return new LocalStorageAdapter(
 			new LocalStorageConfiguration( $this->root, 'wp-content/uploads/storeaccountant' )
 		);
+	}
+
+	private function attachment( string $contents ): ExportAttachment {
+		$stream = fopen( 'php://temp', 'rb+' );
+		self::assertIsResource( $stream );
+		fwrite( $stream, $contents );
+		rewind( $stream );
+
+		return new ExportAttachment( $stream, 'invoice.pdf', 'application/pdf', 'Invoices/pdf/invoice.pdf' );
 	}
 
 	private function delete_directory( string $directory ): void {

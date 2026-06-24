@@ -31,6 +31,8 @@ use StoreAccountant\Export\Queue\QueuedExportFinalizer;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
 use StoreAccountant\Storage\StorageAdapterRegistry;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
 use WP_Error;
 
 /**
@@ -106,6 +108,7 @@ final class FinalizeExportMessageHandlerTest extends TestCase {
 		);
 
 		return new FinalizeExportMessageHandler(
+			$this->message_bus(),
 			new QueuedExportFinalizer(
 				new BatchExportStore(),
 				new StorageAdapterRegistry(),
@@ -117,5 +120,13 @@ final class FinalizeExportMessageHandlerTest extends TestCase {
 			),
 			$repository
 		);
+	}
+
+	private function message_bus(): MessageBusInterface {
+		return new class() implements MessageBusInterface {
+			public function dispatch( object $message, array $stamps = [] ): Envelope {
+				return new Envelope( $message, $stamps );
+			}
+		};
 	}
 }
