@@ -35,7 +35,7 @@ These fields are available depending on the export type:
 - `Export Format`: output format, for example CSV or JSON.
 - `Storage Location`: target where StoreAccountant stores the export file.
 - `Download Password`: password for later downloads from exports started with this configuration.
-- `Batch Size`: number of records per processing step. The default value is `100`, the minimum value is `10`.
+- `Batch Size`: number of records per processing step. The default value is `50`, the minimum value is `10`.
 
 If no storage location is available, open `Plugins > Installed Plugins > StoreAccountant > Settings >
 Storage Locations` and enable at least one storage location.

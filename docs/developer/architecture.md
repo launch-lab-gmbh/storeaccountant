@@ -446,7 +446,7 @@ Each export stores its own `_storeaccountant_batch_size`; saved export
 configurations store `_storeaccountant_config_batch_size` and copy that value to
 new exports created from the configuration. Quick
 exports store the submitted batch size directly on the export record. The
-minimum batch size is `10`; the default batch size is `100`.
+minimum batch size is `10`; the default batch size is `50`.
 
 Scheduled exports are not configured on export configuration records. Future
 scheduled export workflows should use a focused scheduling model instead of

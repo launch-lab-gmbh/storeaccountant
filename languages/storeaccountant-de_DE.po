@@ -1729,8 +1729,8 @@ msgstr "Gib eine numerische Batch-Größe von mindestens 10 ein."
 
 #: src/Export/Admin/AccountingExportPageForm.php:189
 #: src/Export/Configuration/Admin/ExportConfigurationPageForm.php:222
-msgid "StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 100."
-msgstr "StoreAccountant teilt den Export automatisch in Batches auf. Dieser Wert legt fest, wie viele Einträge pro Batch exportiert werden; er begrenzt nicht die Gesamtzahl der exportierten Einträge. Das Minimum ist 10. Wenn du unsicher bist, lasse den Wert bei 100."
+msgid "StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 50."
+msgstr "StoreAccountant teilt den Export automatisch in Batches auf. Dieser Wert legt fest, wie viele Einträge pro Batch exportiert werden; er begrenzt nicht die Gesamtzahl der exportierten Einträge. Das Minimum ist 10. Wenn du unsicher bist, lasse den Wert bei 50."
 
 #: src/Export/Admin/ExportDetailsReadTabProvider.php:207
 #: src/Export/Download/ExportDownloadController.php:245

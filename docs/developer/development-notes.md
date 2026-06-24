@@ -217,7 +217,7 @@ record when the export is created. Quick exports store their submitted batch
 size directly on the export record. The queue start handler must use the saved
 export batch size rather than a global setting so retries remain stable.
 User-submitted batch sizes must be numeric and at least `10`; the default is
-`100`.
+`50`.
 
 Scheduled exports are not currently offered in the admin UI and are not
 configured on export configuration records. When scheduled export workflows

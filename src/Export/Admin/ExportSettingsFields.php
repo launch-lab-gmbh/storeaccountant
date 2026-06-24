@@ -272,7 +272,7 @@ final readonly class ExportSettingsFields {
 					required="required"
 					<?php disabled( $read_only ); ?>
 				/>
-				<p class="description"><?php esc_html_e( 'StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 100.', 'storeaccountant' ); ?></p>
+				<p class="description"><?php esc_html_e( 'StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 50.', 'storeaccountant' ); ?></p>
 			</td>
 		</tr>
 		<?php

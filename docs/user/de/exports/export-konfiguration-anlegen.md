@@ -36,7 +36,7 @@ Diese Felder sind je nach Exporttyp verfügbar:
 - `Exportformat`: Ausgabeformat, zum Beispiel CSV oder JSON.
 - `Speicherort`: Ziel, an dem StoreAccountant die Exportdatei ablegt.
 - `Download-Passwort`: Passwort für spätere Downloads aus Exporten, die mit dieser Konfiguration gestartet werden.
-- `Batch-Größe`: Anzahl der Datensätze pro Verarbeitungsschritt. Der Standardwert ist `100`, der Mindestwert `10`.
+- `Batch-Größe`: Anzahl der Datensätze pro Verarbeitungsschritt. Der Standardwert ist `50`, der Mindestwert `10`.
 
 Wenn kein Speicherort verfügbar ist, öffnen Sie `Plugins > Installierte Plugins > StoreAccountant > Einstellungen >
 Speicherorte` und aktivieren Sie mindestens einen Speicherort.

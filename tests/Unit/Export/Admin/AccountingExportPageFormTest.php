@@ -101,7 +101,7 @@ final class AccountingExportPageFormTest extends TestCase {
 		self::assertStringContainsString( 'value="local"', $output );
 		self::assertStringContainsString( 'storage_adapter_local', $output );
 		self::assertStringContainsString( 'name="storeaccountant_export_batch_size"', $output );
-		self::assertStringContainsString( 'value="100"', $output );
+		self::assertStringContainsString( 'value="50"', $output );
 			self::assertStringContainsString( 'data-storeaccountant-export-filter-group="1"', $output );
 			self::assertStringContainsString( 'data-storeaccountant-export-type="orders"', $output );
 			self::assertStringContainsString( 'Rendered order date filter', $output );
