@@ -109,10 +109,14 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 			$this->get_filesystem()->writeStream( $target_path, $stream );
 
 			foreach ( $configuration->attachments as $attachment ) {
-				$this->get_filesystem()->writeStream(
-					$configuration->storage_path . '#' . $attachment->internal_path,
-					$attachment->stream
-				);
+				try {
+					$this->get_filesystem()->writeStream(
+						$configuration->storage_path . '#' . $attachment->internal_path,
+						$attachment->stream
+					);
+				} finally {
+					$this->close_stream( $attachment->stream );
+				}
 			}
 		} catch ( Throwable $exception ) {
 			return new WP_Error(
@@ -130,10 +134,6 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 			);
 		} finally {
 			$this->close_stream( $stream );
-
-			foreach ( $configuration->attachments as $attachment ) {
-				$this->close_stream( $attachment->stream );
-			}
 		}
 
 		return $configuration->storage_path;

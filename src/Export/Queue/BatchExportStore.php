@@ -25,6 +25,7 @@ use StoreAccountant\Export\Field\Type\NumberFieldType;
 use StoreAccountant\Contract\WordPress\WordPressFilesystem;
 use function array_key_exists;
 use function closedir;
+use function dirname;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Temporary attachment streams require PHP resources.
 use function fclose;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Temporary attachment streams require PHP resources.
@@ -62,6 +63,8 @@ final readonly class BatchExportStore {
 	private const HTACCESS_FILE = '.htaccess';
 
 	private const HTACCESS_CONTENT = 'deny from all';
+
+	private const ATTACHMENT_METADATA_FILE_FORMAT = 'batch-%05d-attachments.dat';
 
 	/**
 	 * Saves one normalized export batch fragment.
@@ -129,6 +132,8 @@ final readonly class BatchExportStore {
 			);
 		}
 
+		$this->save_attachment_metadata( $export_id, $batch_number, $attachments );
+
 		return true;
 	}
 
@@ -149,7 +154,7 @@ final readonly class BatchExportStore {
 			);
 		}
 
-		$first = $this->read_batch( (string) reset( $batches ) );
+		$first = $this->read_batch( (string) reset( $batches ), true, false, false );
 
 		if ( is_wp_error( $first ) ) {
 			return $first;
@@ -184,6 +189,17 @@ final readonly class BatchExportStore {
 	 */
 	private function get_batch_path( int $export_id, int $batch_number ): string {
 		return trailingslashit( $this->get_export_directory_path( $export_id ) ) . sprintf( 'batch-%05d.dat', $batch_number );
+	}
+
+	/**
+	 * Gets a saved attachment metadata fragment path.
+	 *
+	 * @param int $export_id    Export post ID.
+	 * @param int $batch_number One-based batch number.
+	 */
+	private function get_attachment_metadata_path( int $export_id, int $batch_number ): string {
+		return trailingslashit( $this->get_export_directory_path( $export_id ) )
+			. sprintf( self::ATTACHMENT_METADATA_FILE_FORMAT, $batch_number );
 	}
 
 	/**
@@ -265,6 +281,23 @@ final readonly class BatchExportStore {
 				'options'     => $dataset->options,
 			]
 		);
+	}
+
+	/**
+	 * Saves attachment metadata separately so finalization can avoid decoding records.
+	 *
+	 * @param int                 $export_id    Export post ID.
+	 * @param int                 $batch_number One-based batch number.
+	 * @param array<int, mixed[]> $attachments  Stored attachment metadata.
+	 */
+	private function save_attachment_metadata( int $export_id, int $batch_number, array $attachments ): void {
+		$contents = wp_json_encode( $attachments );
+
+		if ( false === $contents ) {
+			return;
+		}
+
+		WordPressFilesystem::put_contents( $this->get_attachment_metadata_path( $export_id, $batch_number ), $contents );
 	}
 
 	/**
@@ -380,7 +413,12 @@ final readonly class BatchExportStore {
 	 *
 	 * @return array<string, mixed>|WP_Error
 	 */
-	private function read_batch( string $path ): array|WP_Error {
+	private function read_batch(
+		string $path,
+		bool $hydrate_fields = true,
+		bool $hydrate_records = true,
+		bool $include_attachments = true
+	): array|WP_Error {
 		$contents = is_file( $path ) ? WordPressFilesystem::get_contents( $path ) : false;
 
 		if ( ! is_string( $contents ) ) {
@@ -407,9 +445,9 @@ final readonly class BatchExportStore {
 		}
 
 		return [
-			'fields'      => $this->hydrate_fields( $batch['fields'] ),
-			'records'     => $this->hydrate_records( $batch['records'] ),
-			'attachments' => is_array( $batch['attachments'] ?? null ) ? $batch['attachments'] : [],
+			'fields'      => $hydrate_fields ? $this->hydrate_fields( $batch['fields'] ) : new FieldCollection(),
+			'records'     => $hydrate_records ? $this->hydrate_records( $batch['records'] ) : [],
+			'attachments' => $include_attachments && is_array( $batch['attachments'] ?? null ) ? $batch['attachments'] : [],
 			'options'     => is_array( $batch['options'] ?? null ) ? $batch['options'] : [],
 		];
 	}
@@ -508,7 +546,7 @@ final readonly class BatchExportStore {
 	 */
 	private function record_generator( array $batches ): iterable {
 		foreach ( $batches as $path ) {
-			$batch = $this->read_batch( $path );
+			$batch = $this->read_batch( $path, false, true, false );
 
 			if ( is_wp_error( $batch ) || ! is_iterable( $batch['records'] ) ) {
 				continue;
@@ -528,14 +566,8 @@ final readonly class BatchExportStore {
 	 * @return iterable<ExportAttachment>
 	 */
 	private function attachment_generator( array $batches ): iterable {
-		foreach ( $batches as $path ) {
-			$batch = $this->read_batch( $path );
-
-			if ( is_wp_error( $batch ) || ! is_array( $batch['attachments'] ?? null ) ) {
-				continue;
-			}
-
-			foreach ( $batch['attachments'] as $attachment ) {
+		foreach ( $batches as $batch_number => $path ) {
+			foreach ( $this->read_attachment_metadata( (int) $batch_number, $path ) as $attachment ) {
 				if ( ! is_array( $attachment ) || ! is_file( (string) ( $attachment['path'] ?? '' ) ) ) {
 					continue;
 				}
@@ -554,6 +586,39 @@ final readonly class BatchExportStore {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Reads one attachment metadata fragment.
+	 *
+	 * @param int    $batch_number One-based batch number.
+	 * @param string $batch_path   Main batch fragment path.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function read_attachment_metadata( int $batch_number, string $batch_path ): array {
+		$metadata_path = trailingslashit( dirname( $batch_path ) )
+			. sprintf( self::ATTACHMENT_METADATA_FILE_FORMAT, $batch_number );
+		$contents      = is_file( $metadata_path ) ? WordPressFilesystem::get_contents( $metadata_path ) : false;
+
+		if ( is_string( $contents ) ) {
+			try {
+				$attachments = json_decode( $contents, true, 512, JSON_THROW_ON_ERROR );
+
+				if ( is_array( $attachments ) ) {
+					return $attachments;
+				}
+			} catch ( JsonException $exception ) {
+				unset( $exception );
+				// Fall through to the main batch fragment for older or invalid metadata files.
+			}
+		}
+
+		$batch = $this->read_batch( $batch_path, false, false, true );
+
+		return is_wp_error( $batch ) || ! is_array( $batch['attachments'] ?? null )
+			? []
+			: $batch['attachments'];
 	}
 
 	/**

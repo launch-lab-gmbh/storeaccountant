@@ -16,7 +16,9 @@ namespace StoreAccountant\Tests\Unit\Export\Renderer;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use StoreAccountant\Export\Contract\ExportTemplateNormalizerInterface;
+use StoreAccountant\Export\Contract\StreamingExportTemplateNormalizerInterface;
 use StoreAccountant\Export\Dataset\ExportDataset;
 use StoreAccountant\Export\ExportPayload;
 use StoreAccountant\Export\Field\FieldCollection;
@@ -90,6 +92,53 @@ final class SerializerExportRendererTest extends TestCase {
 
 		unlink( $file_path );
 		$wp_filesystem = null;
+	}
+
+	public function test_render_streams_json_when_normalizer_supports_iterable_rows(): void {
+		$file_path = tempnam( sys_get_temp_dir(), 'storeaccountant-json-' );
+
+		self::assertIsString( $file_path );
+
+		$dataset = new ExportDataset( new FieldCollection(), [] );
+		$payload = new ExportPayload( 42, 'orders' );
+		$counter = (object) [ 'opened' => 0 ];
+
+		$normalizer = new class( $counter ) implements ExportTemplateNormalizerInterface, StreamingExportTemplateNormalizerInterface {
+			public function __construct(
+				private object $counter
+			) {}
+
+			public function normalize( ExportDataset $dataset, ExportPayload $payload ): array {
+				throw new RuntimeException( 'Streaming JSON rendering should not materialize the normalized dataset.' );
+			}
+
+			public function normalize_iterable( ExportDataset $dataset, ExportPayload $payload ): iterable {
+				++$this->counter->opened;
+
+				yield [ 'Order Number' => '1001' ];
+				yield [ 'Order Number' => '1002' ];
+			}
+		};
+
+		$serializer = $this->createMock( SerializerInterface::class );
+		$serializer->expects( self::never() )->method( 'serialize' );
+
+		Functions\expect( 'wp_tempnam' )
+			->once()
+			->with( 'storeaccountant-export-42.json' )
+			->andReturn( $file_path );
+		Functions\when( 'wp_json_encode' )->alias( static fn ( mixed $value ): string|false => json_encode( $value ) );
+
+		$renderer = new SerializerExportRenderer( $normalizer, $serializer, 'json', 'json', 'json', 'application/json' );
+
+		self::assertSame( 0, $counter->opened );
+		$artifact = $renderer->render( $dataset, $payload );
+
+		self::assertSame( $file_path, $artifact->source_path );
+		self::assertSame( '[{"Order Number":"1001"},{"Order Number":"1002"}]', file_get_contents( $file_path ) );
+		self::assertSame( 1, $counter->opened );
+
+		unlink( $file_path );
 	}
 
 	private function create_renderer(): SerializerExportRenderer {

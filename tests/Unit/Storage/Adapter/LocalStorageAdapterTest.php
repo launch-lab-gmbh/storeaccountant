@@ -16,6 +16,7 @@ namespace StoreAccountant\Tests\Unit\Storage\Adapter;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Export\Attachment\ExportAttachment;
 use StoreAccountant\Storage\Adapter\LocalStorageAdapter;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
 use StoreAccountant\Storage\StorageFileConfiguration;
@@ -125,6 +126,44 @@ final class LocalStorageAdapterTest extends TestCase {
 		$this->adapter()->delete_file( 'exports/token.zip' );
 
 		self::assertFalse( $this->adapter()->file_exists( 'exports/token.zip' ) );
+		unlink( $source );
+	}
+
+	public function test_persist_consumes_attachment_iterable_lazily_and_closes_streams(): void {
+		$source = $this->root . '-source.csv';
+		file_put_contents( $source, 'order_id,total' );
+
+		$opened            = 0;
+		$attachment_stream = null;
+		$attachments       = static function () use ( &$opened, &$attachment_stream ): iterable {
+			++$opened;
+			$attachment_stream = fopen( 'php://temp', 'rb+' );
+
+			self::assertIsResource( $attachment_stream );
+			fwrite( $attachment_stream, 'invoice' );
+			rewind( $attachment_stream );
+
+			yield new ExportAttachment( $attachment_stream, 'invoice.pdf', 'application/pdf', 'Invoices/pdf/invoice.pdf' );
+		};
+
+		$configuration = new StorageFileConfiguration(
+			'exports/token.zip',
+			$source,
+			'token.csv',
+			'token.csv',
+			$attachments(),
+			'text/csv'
+		);
+
+		self::assertSame( 0, $opened );
+
+		$result = $this->adapter()->persist( $configuration );
+
+		self::assertSame( 'exports/token.zip', $result );
+		self::assertSame( 1, $opened );
+		self::assertNotNull( $attachment_stream );
+		self::assertFalse( is_resource( $attachment_stream ) );
+
 		unlink( $source );
 	}
 

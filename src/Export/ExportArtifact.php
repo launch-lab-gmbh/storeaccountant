@@ -14,8 +14,6 @@ declare(strict_types=1);
 namespace StoreAccountant\Export;
 
 use StoreAccountant\Export\Attachment\ExportAttachment;
-use function array_values;
-use function iterator_to_array;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -28,9 +26,9 @@ final readonly class ExportArtifact {
 	/**
 	 * Additional files to store alongside the rendered artifact.
 	 *
-	 * @var array<int, ExportAttachment>
+	 * @var iterable<ExportAttachment>
 	 */
-	public array $attachments;
+	public iterable $attachments;
 
 	/**
 	 * Initializes the export artifact.
@@ -46,8 +44,6 @@ final readonly class ExportArtifact {
 		public string $mime_type,
 		iterable $attachments = []
 	) {
-		$this->attachments = array_values(
-			is_array( $attachments ) ? $attachments : iterator_to_array( $attachments, false )
-		);
+		$this->attachments = $attachments;
 	}
 }

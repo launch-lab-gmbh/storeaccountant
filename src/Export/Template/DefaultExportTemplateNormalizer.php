@@ -14,8 +14,10 @@ declare(strict_types=1);
 namespace StoreAccountant\Export\Template;
 
 use StoreAccountant\Export\Contract\ExportTemplateNormalizerInterface;
+use StoreAccountant\Export\Contract\StreamingExportTemplateNormalizerInterface;
 use StoreAccountant\Export\Dataset\ExportDataset;
 use StoreAccountant\Export\ExportPayload;
+use function iterator_to_array;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -24,13 +26,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Provides the default flat template structure for export datasets.
  */
-final readonly class DefaultExportTemplateNormalizer implements ExportTemplateNormalizerInterface {
+final readonly class DefaultExportTemplateNormalizer implements
+	ExportTemplateNormalizerInterface,
+	StreamingExportTemplateNormalizerInterface {
 	/**
 	 * {@inheritDoc}
 	 */
 	public function normalize( ExportDataset $dataset, ExportPayload $payload ): array {
-		$records = [];
+		return iterator_to_array( $this->normalize_iterable( $dataset, $payload ), false );
+	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	public function normalize_iterable( ExportDataset $dataset, ExportPayload $payload ): iterable {
 		$field_definitions = $dataset->fields->all();
 
 		foreach ( $dataset->records as $record ) {
@@ -46,9 +55,7 @@ final readonly class DefaultExportTemplateNormalizer implements ExportTemplateNo
 				$values[ $field->label ] = $record->get_value( $field_id ) ?? '';
 			}
 
-			$records[] = $values;
+			yield $values;
 		}
-
-		return $records;
 	}
 }

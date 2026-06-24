@@ -85,15 +85,21 @@ final class BatchExportStoreTest extends TestCase {
 
 		self::assertTrue( $result );
 		$path = $this->tmp_dir . '/storeaccountant/tmp/exports/123/batch-00002.dat';
+		$attachments_path = $this->tmp_dir . '/storeaccountant/tmp/exports/123/batch-00002-attachments.dat';
+
 		self::assertFileExists( $path );
+		self::assertFileExists( $attachments_path );
 		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/exports/index.html' );
 		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/exports/.htaccess' );
 
 		$stored = json_decode( (string) file_get_contents( $path ), true );
+		$stored_attachments = json_decode( (string) file_get_contents( $attachments_path ), true );
+
 		self::assertSame( 'total', $stored['fields'][0]['id'] );
 		self::assertSame( NumberFieldType::FORMAT_DECIMAL, $stored['fields'][0]['type'] );
 		self::assertSame( 'second', $stored['records'][0]['id'] );
 		self::assertSame( 'B', $stored['records'][0]['values'][0]['value'] );
+		self::assertSame( 'attachments/empty.txt', $stored_attachments[0]['internal_path'] );
 	}
 
 	public function test_load_dataset_reads_fragments_in_order_and_reconstructs_dataset(): void {
@@ -106,7 +112,13 @@ final class BatchExportStoreTest extends TestCase {
 
 		self::assertInstanceOf( ExportDataset::class, $dataset );
 		self::assertSame( [ 'total' ], $dataset->fields->ids() );
-		self::assertSame( [ 'first', 'second' ], array_map( static fn ( ExportRecord $record ): string => (string) $record->id, iterator_to_array( $dataset->records ) ) );
+		self::assertSame(
+			[ 'first', 'second' ],
+			array_map(
+				static fn ( ExportRecord $record ): string => (string) $record->id,
+				iterator_to_array( $dataset->records )
+			)
+		);
 	}
 
 	public function test_load_dataset_returns_error_for_missing_or_invalid_fragments(): void {

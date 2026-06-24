@@ -30,7 +30,7 @@ final class ExportArtifactTest extends TestCase {
 		self::assertSame( [], $artifact->attachments );
 	}
 
-	public function test_constructor_normalizes_iterable_attachments_to_list(): void {
+	public function test_constructor_stores_array_attachments_without_reindexing(): void {
 		$first  = new ExportAttachment( 'stream-a', 'invoice-a.pdf', 'application/pdf', 'invoices/invoice-a.pdf' );
 		$second = new ExportAttachment( 'stream-b', 'invoice-b.pdf', 'application/pdf', 'invoices/invoice-b.pdf' );
 
@@ -44,19 +44,27 @@ final class ExportArtifactTest extends TestCase {
 			]
 		);
 
-		self::assertSame( [ $first, $second ], $artifact->attachments );
+		self::assertSame( [ 'custom-key' => $first, 7 => $second ], $artifact->attachments );
 	}
 
-	public function test_constructor_accepts_traversable_attachments(): void {
+	public function test_constructor_keeps_traversable_attachments_lazy(): void {
 		$attachment = new ExportAttachment( 'stream', 'invoice.pdf', 'application/pdf', 'invoices/invoice.pdf' );
+		$opened     = 0;
+		$generator  = static function () use ( $attachment, &$opened ): iterable {
+			++$opened;
+
+			yield $attachment;
+		};
 
 		$artifact = new ExportArtifact(
 			'/tmp/orders.csv',
 			'csv',
 			'text/csv',
-			new \ArrayIterator( [ $attachment ] )
+			$generator()
 		);
 
-		self::assertSame( [ $attachment ], $artifact->attachments );
+		self::assertSame( 0, $opened );
+		self::assertSame( [ $attachment ], iterator_to_array( $artifact->attachments, false ) );
+		self::assertSame( 1, $opened );
 	}
 }

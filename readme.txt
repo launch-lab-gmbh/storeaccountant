@@ -8,7 +8,7 @@ Stable tag: 0.4.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-WooCommerce accounting workflow exports with persisted records and background processing.
+[StoreAccountant](https://storeaccountant.launch-lab.de) - WooCommerce accounting workflow exports with persisted records and background processing.
 
 == Description ==
 
