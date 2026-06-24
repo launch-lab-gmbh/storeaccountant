@@ -16,6 +16,9 @@ namespace StoreAccountant\Tests\Unit\Export\Queue\Handler;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Attachment\ExportAttachment;
 use StoreAccountant\Export\Dataset\ExportDataset;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
@@ -26,11 +29,13 @@ use StoreAccountant\Export\Field\Field;
 use StoreAccountant\Export\Field\FieldCollection;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\Handler\FinalizeExportAttachmentsMessageHandler;
 use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Contract\ChunkedStorageAdapterInterface;
 use StoreAccountant\Storage\Contract\StorageAdapterInterface;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -113,6 +118,7 @@ final class FinalizeExportAttachmentsMessageHandlerTest extends TestCase {
 				return $value;
 			}
 		);
+		Functions\when( 'get_option' )->justReturn( '0' );
 		Functions\when( 'get_post_meta' )->alias( fn ( int $post_id, string $key ): mixed => $this->meta[ $key ] ?? '' );
 		Functions\when( 'update_post_meta' )->alias(
 			function ( int $post_id, string $key, mixed $value ): void {
@@ -209,7 +215,18 @@ final class FinalizeExportAttachmentsMessageHandlerTest extends TestCase {
 			$this->message_bus(),
 			new StorageAdapterRegistry(),
 			$this->repository(),
-			new BatchExportStore()
+			new BatchExportStore(),
+			$this->detail_logger()
+		);
+	}
+
+	private function detail_logger(): ExportDetailLogger {
+		$configuration = new DiagnosticLogConfiguration( '/tmp/storeaccountant-export-detail-test', 'wp-content/uploads/storeaccountant/logging' );
+
+		return new ExportDetailLogger(
+			new DiagnosticSettings(),
+			new DiagnosticIncidentRepository( $configuration, new ProtectedUploadDirectory() ),
+			$configuration
 		);
 	}
 

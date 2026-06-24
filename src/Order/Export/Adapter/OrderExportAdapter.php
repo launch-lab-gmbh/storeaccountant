@@ -16,6 +16,7 @@ namespace StoreAccountant\Order\Export\Adapter;
 use WC_Order;
 use WP_Error;
 use StoreAccountant\Export\Contract\BatchExportAdapterInterface;
+use StoreAccountant\Export\Contract\SnapshotExportAdapterInterface;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\ExportPayload;
@@ -26,9 +27,11 @@ use StoreAccountant\Order\Tax\OrderTaxRateResolver;
 use StoreAccountant\Order\Export\Query\OrderQuery;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use function add_filter;
+use function array_map;
 use function get_post_meta;
 use function is_array;
 use function is_int;
+use function is_wp_error;
 use function sanitize_key;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -38,7 +41,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Exports normalized WooCommerce order data.
  */
-final readonly class OrderExportAdapter implements BatchExportAdapterInterface, HookRegistrarInterface {
+final readonly class OrderExportAdapter implements BatchExportAdapterInterface, SnapshotExportAdapterInterface, HookRegistrarInterface {
 	public const ADAPTER_ID = 'orders';
 
 	/**
@@ -93,6 +96,22 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 	 */
 	public function get_batch_items( ExportPayload $payload, int $offset, int $limit ): iterable|WP_Error {
 		return $this->order_query->get_order_batch( $payload, $offset, $limit );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function get_item_ids( ExportPayload $payload ): array|WP_Error {
+		$ids = $this->order_query->get_order_ids( $payload );
+
+		return is_wp_error( $ids ) ? $ids : array_map( 'strval', $ids );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function get_items_by_ids( ExportPayload $payload, array $item_ids ): iterable|WP_Error {
+		return $this->order_query->get_orders_by_ids( $item_ids );
 	}
 
 	/**

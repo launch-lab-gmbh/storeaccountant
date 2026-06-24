@@ -138,6 +138,15 @@ final class BatchExportStoreTest extends TestCase {
 		fclose( $attachments[0]->stream );
 	}
 
+	public function test_item_id_snapshot_persists_deduplicates_and_reads_slices(): void {
+		$store = new BatchExportStore();
+
+		self::assertTrue( $store->save_item_ids( 123, [ '7', 8, '7', '', '9' ] ) );
+		self::assertTrue( $store->has_item_id_snapshot( 123 ) );
+		self::assertSame( 3, $store->count_item_ids( 123 ) );
+		self::assertSame( [ '8', '9' ], $store->load_item_ids( 123, 1, 2 ) );
+	}
+
 	public function test_load_dataset_returns_error_for_missing_or_invalid_fragments(): void {
 		$store = new BatchExportStore();
 

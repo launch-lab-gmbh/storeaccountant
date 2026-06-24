@@ -16,6 +16,9 @@ namespace StoreAccountant\Tests\Unit\Export\Queue;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Contract\ExportAdapterInterface;
 use StoreAccountant\Export\Contract\ExportRendererInterface;
 use StoreAccountant\Export\Contract\ExportRendererSupportsAttachmentsInterface;
@@ -34,12 +37,14 @@ use StoreAccountant\Export\Field\FieldCollection;
 use StoreAccountant\Export\Field\FieldValue;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\QueuedExportFinalizationResult;
 use StoreAccountant\Export\Queue\QueuedExportFinalizer;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
 use StoreAccountant\Storage\Contract\ChunkedStorageAdapterInterface;
 use StoreAccountant\Storage\Contract\StorageAdapterInterface;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use StoreAccountant\Storage\StorageFileConfiguration;
 use WP_Error;
@@ -107,6 +112,7 @@ final class QueuedExportFinalizerTest extends TestCase {
 			}
 		);
 		Functions\when( 'do_action' )->justReturn();
+		Functions\when( 'get_option' )->justReturn( '0' );
 	}
 
 	protected function tearDown(): void {
@@ -373,7 +379,18 @@ final class QueuedExportFinalizerTest extends TestCase {
 			new ExportRendererRegistry(),
 			new ExportRepository( new ExportFilterSelectionSerializer(), new DownloadPasswordManager( new ReversibleCrypto() ) ),
 			new ExportStoragePathGenerator( new LocalStorageConfiguration( '/tmp/storeaccountant', 'wp-content/uploads/storeaccountant' ) ),
-			new ExportFilterSelectionSerializer()
+			new ExportFilterSelectionSerializer(),
+			$this->detail_logger()
+		);
+	}
+
+	private function detail_logger(): ExportDetailLogger {
+		$configuration = new DiagnosticLogConfiguration( '/tmp/storeaccountant-export-detail-test', 'wp-content/uploads/storeaccountant/logging' );
+
+		return new ExportDetailLogger(
+			new DiagnosticSettings(),
+			new DiagnosticIncidentRepository( $configuration, new ProtectedUploadDirectory() ),
+			$configuration
 		);
 	}
 

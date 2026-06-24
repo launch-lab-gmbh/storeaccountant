@@ -106,7 +106,7 @@ final readonly class OrderQuery {
 	 *
 	 * @return array<int, int>|WP_Error
 	 */
-	private function get_order_ids( ExportPayload $payload, int $limit = -1, int $offset = 0 ): array|WP_Error {
+	public function get_order_ids( ExportPayload $payload, int $limit = -1, int $offset = 0 ): array|WP_Error {
 		$query = $this->get_order_query( $payload, $limit, $offset, false );
 
 		if ( is_wp_error( $query ) ) {
@@ -178,7 +178,7 @@ final readonly class OrderQuery {
 	 *
 	 * @return array<int, WC_Order>
 	 */
-	private function get_orders_by_ids( array $ids ): array {
+	public function get_orders_by_ids( array $ids ): array {
 		return array_values(
 			array_filter(
 				array_map(

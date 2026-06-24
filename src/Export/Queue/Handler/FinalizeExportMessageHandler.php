@@ -21,6 +21,7 @@ use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Export\ExportRepository;
 use StoreAccountant\Export\ExportStatus;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\QueuedExportFinalizer;
 use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
@@ -42,7 +43,8 @@ final readonly class FinalizeExportMessageHandler {
 	public function __construct(
 		private MessageBusInterface $message_bus,
 		private QueuedExportFinalizer $finalizer,
-		private ExportRepository $repository
+		private ExportRepository $repository,
+		private ExportDetailLogger $detail_logger
 	) {}
 
 	/**
@@ -62,7 +64,28 @@ final readonly class FinalizeExportMessageHandler {
 			return true;
 		}
 
+		$this->detail_logger->log(
+			$message->export_id,
+			'info',
+			'export_finalization_message_received',
+			[
+				'message'     => FinalizeExportMessage::class,
+				'export_id'   => $message->export_id,
+				'renderer_id' => $message->renderer_id,
+			]
+		);
+
 		if ( ! $this->repository->all_batches_processed( $message->export_id ) ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_finalization_waiting_for_batches',
+				[
+					'message'     => FinalizeExportMessage::class,
+					'export_id'   => $message->export_id,
+					'renderer_id' => $message->renderer_id,
+				]
+			);
 			return true;
 		}
 
@@ -82,6 +105,17 @@ final readonly class FinalizeExportMessageHandler {
 		try {
 			$result = $this->finalizer->finalize( $message->export_id, $message->renderer_id );
 		} catch ( Throwable $exception ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'error',
+				'export_finalization_failed',
+				[
+					'message'     => FinalizeExportMessage::class,
+					'export_id'   => $message->export_id,
+					'renderer_id' => $message->renderer_id,
+				],
+				$exception
+			);
 			$this->repository->mark_failed(
 				$message->export_id,
 				__( 'Unexpected export finalization error.', 'storeaccountant' ),
@@ -101,6 +135,17 @@ final readonly class FinalizeExportMessageHandler {
 		}
 
 		if ( is_wp_error( $result ) ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'error',
+				'export_finalization_failed',
+				[
+					'message'       => FinalizeExportMessage::class,
+					'export_id'     => $message->export_id,
+					'renderer_id'   => $message->renderer_id,
+					'wp_error_code' => $result->get_error_code(),
+				]
+			);
 			$this->repository->mark_failed_from_error(
 				$message->export_id,
 				$result,
@@ -125,6 +170,19 @@ final readonly class FinalizeExportMessageHandler {
 					$result->total_attachments
 				)
 			);
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_attachment_finalization_queued',
+				[
+					'message'               => FinalizeExportAttachmentsMessage::class,
+					'export_id'             => $message->export_id,
+					'renderer_id'           => $message->renderer_id,
+					'storage_path'          => $result->storage_path,
+					'total_attachments'     => $result->total_attachments,
+					'attachment_batch_size' => $result->attachment_batch_size,
+				]
+			);
 
 			ExportEventDispatcher::dispatch(
 				ExportEvents::FINALIZATION_QUEUED,
@@ -142,6 +200,17 @@ final readonly class FinalizeExportMessageHandler {
 		}
 
 		$this->complete_export( $message->export_id, $message->renderer_id, FinalizeExportMessage::class );
+		$this->detail_logger->log(
+			$message->export_id,
+			'info',
+			'export_completed',
+			[
+				'message'      => FinalizeExportMessage::class,
+				'export_id'    => $message->export_id,
+				'renderer_id'  => $message->renderer_id,
+				'storage_path' => $result->storage_path,
+			]
+		);
 
 		return true;
 	}

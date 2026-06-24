@@ -106,7 +106,7 @@ final readonly class ProductQuery {
 	 *
 	 * @return array<int, int>|WP_Error
 	 */
-	private function get_product_ids( ExportPayload $payload, int $limit = -1, int $offset = 0 ): array|WP_Error {
+	public function get_product_ids( ExportPayload $payload, int $limit = -1, int $offset = 0 ): array|WP_Error {
 		$criteria = $this->get_criteria( $payload );
 
 		if ( is_wp_error( $criteria ) ) {
@@ -229,7 +229,7 @@ final readonly class ProductQuery {
 	 *
 	 * @return array<int, WC_Product>
 	 */
-	private function get_products_by_ids( array $ids ): array {
+	public function get_products_by_ids( array $ids ): array {
 		return array_values(
 			array_filter(
 				array_map(

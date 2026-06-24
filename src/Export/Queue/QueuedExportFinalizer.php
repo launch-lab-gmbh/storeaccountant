@@ -61,7 +61,8 @@ final readonly class QueuedExportFinalizer {
 		private ExportRendererRegistry $renderer_registry,
 		private ExportRepository $repository,
 		private ExportStoragePathGenerator $storage_path_generator,
-		private ExportFilterSelectionSerializer $filter_serializer
+		private ExportFilterSelectionSerializer $filter_serializer,
+		private ExportDetailLogger $detail_logger
 	) {}
 
 	/**
@@ -107,6 +108,17 @@ final readonly class QueuedExportFinalizer {
 			return $dataset;
 		}
 
+		$this->detail_logger->log(
+			$post_id,
+			'info',
+			'export_dataset_loaded',
+			[
+				'export_id'   => $post_id,
+				'adapter_id'  => $export_adapter->get_id(),
+				'renderer_id' => $renderer->get_id(),
+			]
+		);
+
 		ExportEventDispatcher::dispatch(
 			ExportEvents::DATASET_LOADED,
 			$post_id,
@@ -133,6 +145,19 @@ final readonly class QueuedExportFinalizer {
 			return $artifact;
 		}
 
+		$this->detail_logger->log(
+			$post_id,
+			'info',
+			'export_artifact_rendered',
+			[
+				'export_id'   => $post_id,
+				'renderer_id' => $renderer->get_id(),
+				'format'      => $artifact->file_extension,
+				'mime_type'   => $artifact->mime_type,
+				'source_path' => $artifact->source_path,
+			]
+		);
+
 		ExportEventDispatcher::dispatch(
 			ExportEvents::ARTIFACT_RENDERED,
 			$post_id,
@@ -146,7 +171,20 @@ final readonly class QueuedExportFinalizer {
 
 		try {
 			$storage_file_configuration = $this->storage_path_generator->generate( $post_id, $storage_adapter->get_id(), $artifact );
-			$result                     = $storage_adapter instanceof ChunkedStorageAdapterInterface
+			$this->detail_logger->log(
+				$post_id,
+				'info',
+				'export_storage_persist_started',
+				[
+					'export_id'       => $post_id,
+					'storage_engine'  => $storage_adapter->get_id(),
+					'storage_path'    => $storage_file_configuration->storage_path,
+					'source_path'     => $storage_file_configuration->source_path,
+					'file_name'       => $storage_file_configuration->file_name,
+					'chunk_supported' => $storage_adapter instanceof ChunkedStorageAdapterInterface,
+				]
+			);
+			$result = $storage_adapter instanceof ChunkedStorageAdapterInterface
 				? $this->start_chunked_persist( $post_id, $storage_adapter, $storage_file_configuration )
 				: $this->persist_complete_export( $post_id, $storage_adapter->persist( $storage_file_configuration ), $storage_adapter->get_id() );
 		} finally {
@@ -181,10 +219,23 @@ final readonly class QueuedExportFinalizer {
 		$total_attachments = $this->batch_store->count_attachments( $post_id );
 
 		if ( $total_attachments > 0 ) {
+			$attachment_batch_size = $this->get_attachment_batch_size( $post_id );
+
+			$this->detail_logger->log(
+				$post_id,
+				'info',
+				'export_attachment_finalization_pending',
+				[
+					'export_id'             => $post_id,
+					'storage_path'          => $storage_path,
+					'total_attachments'     => $total_attachments,
+					'attachment_batch_size' => $attachment_batch_size,
+				]
+			);
 			return QueuedExportFinalizationResult::pending(
 				$storage_path,
 				$total_attachments,
-				$this->get_attachment_batch_size( $post_id )
+				$attachment_batch_size
 			);
 		}
 
@@ -216,6 +267,16 @@ final readonly class QueuedExportFinalizer {
 			]
 		);
 		$this->batch_store->delete_export( $post_id );
+		$this->detail_logger->log(
+			$post_id,
+			'info',
+			'export_artifact_persisted',
+			[
+				'export_id'      => $post_id,
+				'storage_engine' => $storage_engine,
+				'storage_path'   => $storage_path,
+			]
+		);
 
 		return QueuedExportFinalizationResult::complete( $storage_path );
 	}

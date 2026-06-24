@@ -148,7 +148,7 @@ final readonly class CustomerQuery {
 	 *
 	 * @return array<int, int>|WP_Error
 	 */
-	private function get_customer_ids( ExportPayload $payload ): array|WP_Error {
+	public function get_customer_ids( ExportPayload $payload ): array|WP_Error {
 		if ( ! class_exists( WC_Customer::class ) || ! class_exists( WP_User_Query::class ) ) {
 			return [];
 		}
@@ -180,7 +180,7 @@ final readonly class CustomerQuery {
 	 *
 	 * @return array<int, WC_Customer>
 	 */
-	private function get_customers_by_ids( array $ids ): array {
+	public function get_customers_by_ids( array $ids ): array {
 		return array_values(
 			array_filter(
 				array_map(

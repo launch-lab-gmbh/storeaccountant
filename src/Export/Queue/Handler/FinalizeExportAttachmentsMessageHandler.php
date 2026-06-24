@@ -21,6 +21,7 @@ use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Export\ExportRepository;
 use StoreAccountant\Export\ExportStatus;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Storage\Contract\ChunkedStorageAdapterInterface;
 use StoreAccountant\Storage\StorageAdapterRegistry;
@@ -44,7 +45,8 @@ final readonly class FinalizeExportAttachmentsMessageHandler {
 		private MessageBusInterface $message_bus,
 		private StorageAdapterRegistry $storage_adapters,
 		private ExportRepository $repository,
-		private BatchExportStore $batch_store
+		private BatchExportStore $batch_store,
+		private ExportDetailLogger $detail_logger
 	) {}
 
 	/**
@@ -65,6 +67,20 @@ final readonly class FinalizeExportAttachmentsMessageHandler {
 		}
 
 		$this->repository->mark_processing( $message->export_id, __( 'Finalizing export file.', 'storeaccountant' ) );
+		$this->detail_logger->log(
+			$message->export_id,
+			'info',
+			'export_attachment_chunk_started',
+			[
+				'message'           => FinalizeExportAttachmentsMessage::class,
+				'export_id'         => $message->export_id,
+				'renderer_id'       => $message->renderer_id,
+				'storage_path'      => $message->storage_path,
+				'offset'            => $message->offset,
+				'limit'             => $message->limit,
+				'total_attachments' => $message->total_attachments,
+			]
+		);
 
 		try {
 			$storage_adapter = $this->get_storage_adapter( $message->export_id );
@@ -88,6 +104,19 @@ final readonly class FinalizeExportAttachmentsMessageHandler {
 				$this->batch_store->load_attachments( $message->export_id, $message->offset, $message->limit )
 			);
 		} catch ( Throwable $exception ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'error',
+				'export_attachment_chunk_failed',
+				[
+					'message'     => FinalizeExportAttachmentsMessage::class,
+					'export_id'   => $message->export_id,
+					'renderer_id' => $message->renderer_id,
+					'offset'      => $message->offset,
+					'limit'       => $message->limit,
+				],
+				$exception
+			);
 			$this->repository->mark_failed(
 				$message->export_id,
 				__( 'Unexpected export finalization error.', 'storeaccountant' ),
@@ -109,6 +138,19 @@ final readonly class FinalizeExportAttachmentsMessageHandler {
 		}
 
 		if ( is_wp_error( $result ) ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'error',
+				'export_attachment_chunk_failed',
+				[
+					'message'       => FinalizeExportAttachmentsMessage::class,
+					'export_id'     => $message->export_id,
+					'renderer_id'   => $message->renderer_id,
+					'offset'        => $message->offset,
+					'limit'         => $message->limit,
+					'wp_error_code' => $result->get_error_code(),
+				]
+			);
 			$this->repository->mark_failed_from_error(
 				$message->export_id,
 				$result,
@@ -125,6 +167,20 @@ final readonly class FinalizeExportAttachmentsMessageHandler {
 		}
 
 		$next_offset = min( $message->total_attachments, $message->offset + max( 1, $message->limit ) );
+		$this->detail_logger->log(
+			$message->export_id,
+			'info',
+			'export_attachment_chunk_processed',
+			[
+				'message'           => FinalizeExportAttachmentsMessage::class,
+				'export_id'         => $message->export_id,
+				'renderer_id'       => $message->renderer_id,
+				'offset'            => $message->offset,
+				'limit'             => $message->limit,
+				'next_offset'       => $next_offset,
+				'total_attachments' => $message->total_attachments,
+			]
+		);
 
 		$this->repository->add_log_entry(
 			$message->export_id,
@@ -152,11 +208,35 @@ final readonly class FinalizeExportAttachmentsMessageHandler {
 					$message->total_attachments
 				)
 			);
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_attachment_chunk_queued',
+				[
+					'message'           => FinalizeExportAttachmentsMessage::class,
+					'export_id'         => $message->export_id,
+					'renderer_id'       => $message->renderer_id,
+					'next_offset'       => $next_offset,
+					'limit'             => $message->limit,
+					'total_attachments' => $message->total_attachments,
+				]
+			);
 
 			return true;
 		}
 
 		$this->complete_export( $message );
+		$this->detail_logger->log(
+			$message->export_id,
+			'info',
+			'export_completed',
+			[
+				'message'      => FinalizeExportAttachmentsMessage::class,
+				'export_id'    => $message->export_id,
+				'renderer_id'  => $message->renderer_id,
+				'storage_path' => $message->storage_path,
+			]
+		);
 
 		return true;
 	}

@@ -17,13 +17,16 @@ use WC_Product;
 use WP_Error;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Export\Contract\BatchExportAdapterInterface;
+use StoreAccountant\Export\Contract\SnapshotExportAdapterInterface;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\ExportPayload;
 use StoreAccountant\Export\Field\FieldCollection;
 use StoreAccountant\Product\Export\Query\ProductQuery;
 use function add_filter;
+use function array_map;
 use function is_array;
 use function is_int;
+use function is_wp_error;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -32,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Exports normalized WooCommerce product data.
  */
-final readonly class ProductExportAdapter implements BatchExportAdapterInterface, HookRegistrarInterface {
+final readonly class ProductExportAdapter implements BatchExportAdapterInterface, SnapshotExportAdapterInterface, HookRegistrarInterface {
 	public const ADAPTER_ID = 'products';
 
 	/**
@@ -85,6 +88,22 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 	 */
 	public function get_batch_items( ExportPayload $payload, int $offset, int $limit ): iterable|WP_Error {
 		return $this->product_query->get_product_batch( $payload, $offset, $limit );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function get_item_ids( ExportPayload $payload ): array|WP_Error {
+		$ids = $this->product_query->get_product_ids( $payload );
+
+		return is_wp_error( $ids ) ? $ids : array_map( 'strval', $ids );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function get_items_by_ids( ExportPayload $payload, array $item_ids ): iterable|WP_Error {
+		return $this->product_query->get_products_by_ids( $item_ids );
 	}
 
 	/**

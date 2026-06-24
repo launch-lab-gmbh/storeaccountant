@@ -24,6 +24,8 @@ use StoreAccountant\Export\Field\FieldValue;
 use StoreAccountant\Export\Field\Type\NumberFieldType;
 use StoreAccountant\Contract\WordPress\WordPressFilesystem;
 use function array_key_exists;
+use function array_slice;
+use function count;
 use function closedir;
 use function dirname;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Temporary attachment streams require PHP resources.
@@ -36,6 +38,7 @@ use function is_dir;
 use function is_file;
 use function is_iterable;
 use function is_resource;
+use function is_scalar;
 use function is_string;
 use function json_decode;
 use function ksort;
@@ -45,6 +48,7 @@ use function readdir;
 use function sprintf;
 use function stream_copy_to_stream;
 use function trailingslashit;
+use function trim;
 use function wp_json_encode;
 use function wp_delete_file;
 
@@ -65,6 +69,8 @@ final readonly class BatchExportStore {
 	private const HTACCESS_CONTENT = 'deny from all';
 
 	private const ATTACHMENT_METADATA_FILE_FORMAT = 'batch-%05d-attachments.dat';
+
+	private const ITEM_ID_SNAPSHOT_FILE = 'item-ids.dat';
 
 	/**
 	 * Saves one normalized export batch fragment.
@@ -135,6 +141,79 @@ final readonly class BatchExportStore {
 		$this->save_attachment_metadata( $export_id, $batch_number, $attachments );
 
 		return true;
+	}
+
+	/**
+	 * Saves the stable source item ID snapshot for a queued export.
+	 *
+	 * @param int                    $export_id Export post ID.
+	 * @param array<int, int|string> $item_ids  Snapshot source item IDs.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function save_item_ids( int $export_id, array $item_ids ): true|WP_Error {
+		$directory = $this->get_export_directory( $export_id );
+
+		if ( is_wp_error( $directory ) ) {
+			return $directory;
+		}
+
+		$contents = wp_json_encode( $this->normalize_item_ids( $item_ids ) );
+
+		if ( false === $contents ) {
+			return new WP_Error(
+				'storeaccountant_export_item_snapshot_encode_failed',
+				__( 'StoreAccountant could not encode the export item snapshot.', 'storeaccountant' )
+			);
+		}
+
+		if ( ! WordPressFilesystem::put_contents( $this->get_item_id_snapshot_path( $export_id ), $contents ) ) {
+			return new WP_Error(
+				'storeaccountant_export_item_snapshot_write_failed',
+				__( 'StoreAccountant could not write the export item snapshot.', 'storeaccountant' )
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Checks whether a stable source item ID snapshot exists for an export.
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	public function has_item_id_snapshot( int $export_id ): bool {
+		return is_file( $this->get_item_id_snapshot_path( $export_id ) );
+	}
+
+	/**
+	 * Counts saved source item IDs.
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	public function count_item_ids( int $export_id ): int {
+		$item_ids = $this->read_item_ids( $export_id );
+
+		return is_wp_error( $item_ids ) ? 0 : count( $item_ids );
+	}
+
+	/**
+	 * Loads one source item ID slice from the export snapshot.
+	 *
+	 * @param int $export_id Export post ID.
+	 * @param int $offset    Zero-based item offset.
+	 * @param int $limit     Maximum IDs to load.
+	 *
+	 * @return array<int, string>|WP_Error
+	 */
+	public function load_item_ids( int $export_id, int $offset, int $limit ): array|WP_Error {
+		$item_ids = $this->read_item_ids( $export_id );
+
+		if ( is_wp_error( $item_ids ) ) {
+			return $item_ids;
+		}
+
+		return array_slice( $item_ids, max( 0, $offset ), max( 0, $limit ) );
 	}
 
 	/**
@@ -261,6 +340,15 @@ final readonly class BatchExportStore {
 	}
 
 	/**
+	 * Gets the saved item ID snapshot path.
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	private function get_item_id_snapshot_path( int $export_id ): string {
+		return trailingslashit( $this->get_export_directory_path( $export_id ) ) . self::ITEM_ID_SNAPSHOT_FILE;
+	}
+
+	/**
 	 * Gets and creates the export temp directory.
 	 *
 	 * @param int $export_id Export post ID.
@@ -356,6 +444,65 @@ final readonly class BatchExportStore {
 		}
 
 		WordPressFilesystem::put_contents( $this->get_attachment_metadata_path( $export_id, $batch_number ), $contents );
+	}
+
+	/**
+	 * Reads the stable source item ID snapshot.
+	 *
+	 * @param int $export_id Export post ID.
+	 *
+	 * @return array<int, string>|WP_Error
+	 */
+	private function read_item_ids( int $export_id ): array|WP_Error {
+		$path     = $this->get_item_id_snapshot_path( $export_id );
+		$contents = is_file( $path ) ? WordPressFilesystem::get_contents( $path ) : false;
+
+		if ( ! is_string( $contents ) ) {
+			return new WP_Error(
+				'storeaccountant_export_item_snapshot_read_failed',
+				__( 'StoreAccountant could not read the export item snapshot.', 'storeaccountant' )
+			);
+		}
+
+		try {
+			$item_ids = json_decode( $contents, true, 512, JSON_THROW_ON_ERROR );
+		} catch ( JsonException ) {
+			return new WP_Error(
+				'storeaccountant_export_item_snapshot_invalid',
+				__( 'StoreAccountant found an invalid export item snapshot.', 'storeaccountant' )
+			);
+		}
+
+		return is_array( $item_ids ) ? $this->normalize_item_ids( $item_ids ) : [];
+	}
+
+	/**
+	 * Normalizes source item IDs for temporary storage.
+	 *
+	 * @param array<int, mixed> $item_ids Source item IDs.
+	 *
+	 * @return array<int, string>
+	 */
+	private function normalize_item_ids( array $item_ids ): array {
+		$normalized = [];
+		$seen       = [];
+
+		foreach ( $item_ids as $item_id ) {
+			if ( ! is_scalar( $item_id ) ) {
+				continue;
+			}
+
+			$item_id = trim( (string) $item_id );
+
+			if ( '' === $item_id || isset( $seen[ $item_id ] ) ) {
+				continue;
+			}
+
+			$seen[ $item_id ] = true;
+			$normalized[]     = $item_id;
+		}
+
+		return $normalized;
 	}
 
 	/**
