@@ -27,6 +27,9 @@ final readonly class MetaFieldValueFormatter {
 	/**
 	 * Formats a metadata value for export output.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param mixed $value Metadata value.
 	 */
 	public function format( mixed $value ): string {

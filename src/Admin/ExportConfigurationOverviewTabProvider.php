@@ -34,12 +34,21 @@ final readonly class ExportConfigurationOverviewTabProvider implements Accountin
 	public const TAB_ID   = ExportConfigurationPostType::POST_TYPE;
 	public const PRIORITY = 20;
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private PermissionChecker $permissions
 	) {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -55,6 +64,9 @@ final readonly class ExportConfigurationOverviewTabProvider implements Accountin
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::TAB_ID;
@@ -62,6 +74,9 @@ final readonly class ExportConfigurationOverviewTabProvider implements Accountin
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_label(): string {
 		return __( 'Export Configurations', 'storeaccountant' );
@@ -69,6 +84,9 @@ final readonly class ExportConfigurationOverviewTabProvider implements Accountin
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_url(): string {
 		return add_query_arg(
@@ -80,6 +98,9 @@ final readonly class ExportConfigurationOverviewTabProvider implements Accountin
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function is_visible(): bool {
 		return $this->permissions->can( PermissionActionIds::CONFIGURATION_LIST );
@@ -87,6 +108,9 @@ final readonly class ExportConfigurationOverviewTabProvider implements Accountin
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_priority(): int {
 		return self::PRIORITY;

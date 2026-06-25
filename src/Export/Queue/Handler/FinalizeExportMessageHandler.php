@@ -40,6 +40,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Finalizes an export after all batches have finished.
  */
 final readonly class FinalizeExportMessageHandler {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private MessageBusInterface $message_bus,
 		private QueuedExportFinalizer $finalizer,
@@ -49,6 +55,9 @@ final readonly class FinalizeExportMessageHandler {
 
 	/**
 	 * Handles the finalize export message.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param FinalizeExportMessage $message Finalize export message.
 	 */
@@ -245,6 +254,13 @@ final readonly class FinalizeExportMessageHandler {
 	}
 
 	private function maybe_apply_debug_delay(): void {
+		/**
+		 * Filters the artificial queue debug delay in seconds.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $delay_seconds Debug delay in seconds.
+		 */
 		$delay_seconds = absint( apply_filters( 'storeaccountant_export_queue_debug_delay_seconds', 0 ) );
 
 		if ( $delay_seconds > 0 ) {

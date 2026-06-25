@@ -36,6 +36,12 @@ final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
 	public const ROUTE_PATH = 'storeaccountant/queue-loopback';
 	private const QUERY_VAR = 'storeaccountant_queue_loopback';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private QueueLoopbackDispatcher $dispatcher,
 		private ActionSchedulerLoopbackRunner $runner
@@ -43,6 +49,9 @@ final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_rewrite_rule' ] );
@@ -52,6 +61,9 @@ final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
 
 	/**
 	 * Registers the pretty queue loopback route.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register_rewrite_rule(): void {
 		add_rewrite_rule(
@@ -63,6 +75,9 @@ final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
 
 	/**
 	 * Adds the queue loopback query var.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, string> $query_vars Public query vars.
 	 *
@@ -76,6 +91,9 @@ final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
 
 	/**
 	 * Handles a frontend queue loopback request.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_request(): void {
 		if ( '1' !== (string) get_query_var( self::QUERY_VAR ) ) {
@@ -87,6 +105,9 @@ final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
 
 	/**
 	 * Handles the loopback request.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle(): void {
 		$export_id = Request::post_int( 'export_id' );

@@ -39,6 +39,9 @@ final readonly class StorageAdapterRegistry extends Registry {
 	/**
 	 * Gets enabled storage adapters.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<string, StorageAdapterInterface>
 	 */
 	public function get_enabled(): array {
@@ -60,6 +63,9 @@ final readonly class StorageAdapterRegistry extends Registry {
 	/**
 	 * Checks whether a storage adapter is enabled.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $id storage adapter identifier.
 	 */
 	public function is_enabled( string $id ): bool {
@@ -68,6 +74,9 @@ final readonly class StorageAdapterRegistry extends Registry {
 
 	/**
 	 * Saves enabled storage adapters.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, string> $enabled Enabled storage adapter identifiers.
 	 */

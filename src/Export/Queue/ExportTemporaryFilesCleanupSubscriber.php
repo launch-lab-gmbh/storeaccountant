@@ -23,12 +23,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Removes temporary export batch files after terminal export outcomes.
  */
 final readonly class ExportTemporaryFilesCleanupSubscriber implements EventSubscriberInterface {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private BatchExportStore $batch_store
 	) {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public static function get_subscribed_events(): array {
 		return [
@@ -40,6 +49,9 @@ final readonly class ExportTemporaryFilesCleanupSubscriber implements EventSubsc
 
 	/**
 	 * Removes temporary batch fragments for a failed export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */

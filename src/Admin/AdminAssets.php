@@ -46,6 +46,9 @@ final readonly class AdminAssets implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
@@ -53,6 +56,9 @@ final readonly class AdminAssets implements HookRegistrarInterface {
 
 	/**
 	 * Enqueues assets for StoreAccountant admin screens.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $hook_suffix Current admin page hook suffix.
 	 */

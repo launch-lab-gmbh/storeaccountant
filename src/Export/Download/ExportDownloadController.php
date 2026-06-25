@@ -64,6 +64,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class ExportDownloadController implements HookRegistrarInterface {
 	private const QUERY_VAR = 'storeaccountant_export_download';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private StorageAdapterRegistry $storage_adapters,
 		private DownloadPasswordManager $passwords,
@@ -72,6 +78,9 @@ final readonly class ExportDownloadController implements HookRegistrarInterface 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_rewrite_rule' ] );
@@ -81,6 +90,9 @@ final readonly class ExportDownloadController implements HookRegistrarInterface 
 
 	/**
 	 * Registers the pretty frontend download route.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register_rewrite_rule(): void {
 		add_rewrite_rule(
@@ -92,6 +104,9 @@ final readonly class ExportDownloadController implements HookRegistrarInterface 
 
 	/**
 	 * Adds the token query var.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, string> $query_vars Public query vars.
 	 *
@@ -105,6 +120,9 @@ final readonly class ExportDownloadController implements HookRegistrarInterface 
 
 	/**
 	 * Handles a frontend download request.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_request(): void {
 		$token = sanitize_key( (string) get_query_var( self::QUERY_VAR ) );

@@ -45,6 +45,9 @@ final readonly class DiagnosticIncidentDownloadController implements HookRegistr
 	/**
 	 * Initializes the controller.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param DiagnosticIncidentRepository $repository  Incident repository.
 	 * @param PermissionChecker            $permissions Permission checker.
 	 */
@@ -55,6 +58,9 @@ final readonly class DiagnosticIncidentDownloadController implements HookRegistr
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_post_' . self::ACTION, [ $this, 'handle' ] );
@@ -62,6 +68,9 @@ final readonly class DiagnosticIncidentDownloadController implements HookRegistr
 
 	/**
 	 * Handles the diagnostic incident download.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_PACKAGE_DOWNLOAD ) ) {

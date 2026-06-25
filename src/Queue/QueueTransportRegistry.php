@@ -29,6 +29,9 @@ final readonly class QueueTransportRegistry extends Registry {
 
 	/**
 	 * Gets the active queue transport provider.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_active(): ?QueueTransportProviderInterface {
 		$providers = $this->get_all();
@@ -49,6 +52,9 @@ final readonly class QueueTransportRegistry extends Registry {
 
 	/**
 	 * Saves the active queue transport provider.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $id Queue transport provider ID.
 	 */

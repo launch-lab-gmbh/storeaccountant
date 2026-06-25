@@ -44,6 +44,9 @@ final readonly class Field {
 	/**
 	 * Initializes the export field.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string                    $id      Stable field identifier.
 	 * @param string                    $label   User-facing or file-facing field label.
 	 * @param FieldTypeInterface|string $type    Field value type.

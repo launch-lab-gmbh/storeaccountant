@@ -41,6 +41,9 @@ final readonly class MonthYearExportPeriodFieldProvider {
 	/**
 	 * Renders period fields.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportPeriod|null    $period                Current period.
 	 * @param array<string, mixed> $selection             Current stored selection.
 	 * @param bool                 $read_only             Whether fields should be rendered read-only.
@@ -133,6 +136,9 @@ final readonly class MonthYearExportPeriodFieldProvider {
 	/**
 	 * Gets a storable period selection from submitted request data.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $request Request data.
 	 *
 	 * @return array<string, mixed>
@@ -153,6 +159,9 @@ final readonly class MonthYearExportPeriodFieldProvider {
 
 	/**
 	 * Resolves a stored period selection to concrete UTC bounds.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $selection Stored period selection.
 	 *

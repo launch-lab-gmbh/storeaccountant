@@ -49,6 +49,9 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 	/**
 	 * Initializes the provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param InvoicePluginDetector           $detector Invoice plugin detector.
 	 * @param InvoiceExportAttachmentSettings $settings Invoice attachment settings.
 	 */
@@ -59,6 +62,9 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -74,6 +80,9 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -81,6 +90,9 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( Field $field, ExportContext $context ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $context->export_type
@@ -90,6 +102,9 @@ final readonly class InvoiceFieldValueProvider implements FieldValueProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_values( mixed $item, FieldCollection $fields, ExportContext $context ): array {
 		$plugin = $this->detector->get_enabled();

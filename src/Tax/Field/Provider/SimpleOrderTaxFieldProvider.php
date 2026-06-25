@@ -38,6 +38,9 @@ final readonly class SimpleOrderTaxFieldProvider implements OrderTaxFieldProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -63,6 +66,9 @@ final readonly class SimpleOrderTaxFieldProvider implements OrderTaxFieldProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -70,6 +76,9 @@ final readonly class SimpleOrderTaxFieldProvider implements OrderTaxFieldProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( ExportContext $context ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $context->export_type
@@ -78,6 +87,9 @@ final readonly class SimpleOrderTaxFieldProvider implements OrderTaxFieldProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_label(): string {
 		return __( 'Simple tax fields', 'storeaccountant' );
@@ -85,6 +97,9 @@ final readonly class SimpleOrderTaxFieldProvider implements OrderTaxFieldProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_fields( ExportContext $context ): array {
 		return [
@@ -95,6 +110,9 @@ final readonly class SimpleOrderTaxFieldProvider implements OrderTaxFieldProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_values( WC_Order $order, ExportContext $context ): array {
 		$item_tax     = 0.0;

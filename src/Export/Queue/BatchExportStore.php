@@ -66,12 +66,21 @@ final readonly class BatchExportStore {
 
 	private const ITEM_ID_SNAPSHOT_FILE = 'item-ids.dat';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private ProtectedUploadDirectory $directory = new ProtectedUploadDirectory()
 	) {}
 
 	/**
 	 * Saves one normalized export batch fragment.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int           $export_id    Export post ID.
 	 * @param int           $batch_number One-based batch number.
@@ -144,6 +153,9 @@ final readonly class BatchExportStore {
 	/**
 	 * Saves the stable source item ID snapshot for a queued export.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int                    $export_id Export post ID.
 	 * @param array<int, int|string> $item_ids  Snapshot source item IDs.
 	 *
@@ -178,6 +190,9 @@ final readonly class BatchExportStore {
 	/**
 	 * Checks whether a stable source item ID snapshot exists for an export.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $export_id Export post ID.
 	 */
 	public function has_item_id_snapshot( int $export_id ): bool {
@@ -186,6 +201,9 @@ final readonly class BatchExportStore {
 
 	/**
 	 * Counts saved source item IDs.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */
@@ -197,6 +215,9 @@ final readonly class BatchExportStore {
 
 	/**
 	 * Loads one source item ID slice from the export snapshot.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 * @param int $offset    Zero-based item offset.
@@ -216,6 +237,9 @@ final readonly class BatchExportStore {
 
 	/**
 	 * Loads all saved batch fragments as one iterable dataset.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 *
@@ -248,6 +272,9 @@ final readonly class BatchExportStore {
 	/**
 	 * Counts saved attachments without hydrating export records.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $export_id Export post ID.
 	 */
 	public function count_attachments( int $export_id ): int {
@@ -266,6 +293,9 @@ final readonly class BatchExportStore {
 
 	/**
 	 * Streams one attachment slice from saved fragments.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 * @param int $offset    Zero-based attachment offset.
@@ -305,6 +335,9 @@ final readonly class BatchExportStore {
 
 	/**
 	 * Deletes all temporary files for one export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */

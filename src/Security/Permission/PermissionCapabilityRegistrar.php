@@ -25,12 +25,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class PermissionCapabilityRegistrar implements HookRegistrarInterface {
 	private const DEFAULTS_INSTALLED_OPTION = 'storeaccountant_permission_defaults_installed';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private RolePermissionRepository $roles
 	) {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'ensure_defaults' ], 20 );
@@ -38,6 +47,9 @@ final readonly class PermissionCapabilityRegistrar implements HookRegistrarInter
 
 	/**
 	 * Ensures administrator caps and first-run defaults for shop managers.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ensure_defaults(): void {
 		$this->roles->ensure_administrator_capabilities();

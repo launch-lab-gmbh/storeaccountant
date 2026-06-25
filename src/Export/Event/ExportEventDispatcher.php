@@ -26,10 +26,20 @@ final class ExportEventDispatcher {
 	/**
 	 * Fires an export lifecycle event.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportEvents $event Export event hook.
 	 * @param mixed        ...$args Event arguments.
 	 */
 	public static function dispatch( ExportEvents $event, mixed ...$args ): void {
+		/**
+		 * Fires one StoreAccountant export lifecycle event.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param mixed ...$args Event-specific arguments.
+		 */
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- ExportEvents enum values define the prefixed public hook names.
 		do_action( $event->value, ...$args );
 	}

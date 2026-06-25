@@ -44,6 +44,9 @@ final readonly class CustomerCountryFilter implements ExportFilterInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -59,6 +62,9 @@ final readonly class CustomerCountryFilter implements ExportFilterInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::FILTER_ID;
@@ -66,6 +72,9 @@ final readonly class CustomerCountryFilter implements ExportFilterInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $export_type ): bool {
 		return CustomerExportAdapter::ADAPTER_ID === $export_type;
@@ -73,6 +82,9 @@ final readonly class CustomerCountryFilter implements ExportFilterInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function apply( mixed $query, ExportFilterSelection $selection, ExportPayload $payload ): true|WP_Error {
 		if ( ! $query instanceof CustomerQueryCriteria ) {
@@ -100,6 +112,9 @@ final readonly class CustomerCountryFilter implements ExportFilterInterface, Hoo
 	/**
 	 * Gets supported country field labels.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<string, string>
 	 */
 	public static function get_country_fields(): array {
@@ -112,6 +127,9 @@ final readonly class CustomerCountryFilter implements ExportFilterInterface, Hoo
 	/**
 	 * Sanitizes a requested country field.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param mixed $country_field Requested country field.
 	 */
 	public static function get_country_field( mixed $country_field ): string {
@@ -122,6 +140,9 @@ final readonly class CustomerCountryFilter implements ExportFilterInterface, Hoo
 
 	/**
 	 * Sanitizes country codes.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, mixed> $countries Raw country codes.
 	 *

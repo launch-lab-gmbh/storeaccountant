@@ -32,6 +32,9 @@ final class MetaField {
 	/**
 	 * Gets a stable export field ID for a metadata key.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $prefix   Field ID prefix.
 	 * @param string $meta_key Metadata key.
 	 */
@@ -41,6 +44,9 @@ final class MetaField {
 
 	/**
 	 * Checks whether a field represents metadata.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param Field       $field  Export field.
 	 * @param string|null $prefix Optional required field ID prefix.

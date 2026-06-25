@@ -35,6 +35,9 @@ final readonly class AccountingExportPageForm {
 	/**
 	 * Initializes the form.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportAdapterRegistry             $export_adapters         Export adapter registry.
 	 * @param ExportFilterFieldProviderRegistry $filter_field_providers Export filter field providers.
 	 * @param ExportSettingsFields              $settings_fields        Shared export settings fields.
@@ -51,6 +54,9 @@ final readonly class AccountingExportPageForm {
 
 	/**
 	 * Renders the quick export form.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array{title: string, export_adapter: string}|null $draft Current quick export draft.
 	 */

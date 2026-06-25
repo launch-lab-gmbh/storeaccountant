@@ -41,6 +41,9 @@ final readonly class MonthYearPeriodProvider implements PeriodProviderInterface,
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -56,6 +59,9 @@ final readonly class MonthYearPeriodProvider implements PeriodProviderInterface,
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -63,6 +69,9 @@ final readonly class MonthYearPeriodProvider implements PeriodProviderInterface,
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function resolve( array $selection ): ExportPeriod|WP_Error {
 		$month_value = isset( $selection['month'] ) && is_scalar( $selection['month'] ) ? sanitize_key( (string) $selection['month'] ) : '';
@@ -105,6 +114,9 @@ final readonly class MonthYearPeriodProvider implements PeriodProviderInterface,
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function format_label( ExportPeriod $period ): string {
 		$start = DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $period->start_at, new DateTimeZone( 'UTC' ) );

@@ -32,6 +32,9 @@ final readonly class OrderStatusFilterFieldProvider implements ExportFilterField
 	/**
 	 * Initializes the field provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param OrderStatusField $order_status_field Order status field.
 	 */
 	public function __construct(
@@ -40,6 +43,9 @@ final readonly class OrderStatusFilterFieldProvider implements ExportFilterField
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -55,6 +61,9 @@ final readonly class OrderStatusFilterFieldProvider implements ExportFilterField
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return OrderStatusFilter::FILTER_ID;
@@ -62,6 +71,9 @@ final readonly class OrderStatusFilterFieldProvider implements ExportFilterField
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $export_type ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $export_type;
@@ -69,6 +81,9 @@ final readonly class OrderStatusFilterFieldProvider implements ExportFilterField
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( ?ExportFilterSelection $selection = null, bool $read_only = false ): void {
 		$statuses = null !== $selection && is_array( $selection->settings['statuses'] ?? null ) ? $selection->settings['statuses'] : [];
@@ -78,6 +93,9 @@ final readonly class OrderStatusFilterFieldProvider implements ExportFilterField
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_selection_from_request( array $request ): ExportFilterSelection|WP_Error {
 		$statuses = $this->order_status_field->get_statuses_from_request( $request );
@@ -96,6 +114,9 @@ final readonly class OrderStatusFilterFieldProvider implements ExportFilterField
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_default_selection(): ExportFilterSelection {
 		return new ExportFilterSelection(

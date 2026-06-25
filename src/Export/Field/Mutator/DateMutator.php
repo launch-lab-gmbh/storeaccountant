@@ -90,6 +90,9 @@ final readonly class DateMutator implements FieldValueMutatorInterface, HookRegi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -105,6 +108,9 @@ final readonly class DateMutator implements FieldValueMutatorInterface, HookRegi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::MUTATOR_ID;
@@ -112,6 +118,9 @@ final readonly class DateMutator implements FieldValueMutatorInterface, HookRegi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( Field $field, ExportContext $context ): bool {
 		return $field->type instanceof DateTimeFieldType;
@@ -119,6 +128,9 @@ final readonly class DateMutator implements FieldValueMutatorInterface, HookRegi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function mutate( FieldValue $value, Field $field, array $settings, ExportContext $context ): FieldValue {
 		$format = $this->get_format( $settings );
@@ -143,6 +155,9 @@ final readonly class DateMutator implements FieldValueMutatorInterface, HookRegi
 	/**
 	 * Gets selectable output formats for admin UIs.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<string, string>
 	 */
 	public static function get_format_labels(): array {
@@ -163,6 +178,9 @@ final readonly class DateMutator implements FieldValueMutatorInterface, HookRegi
 
 	/**
 	 * Gets a sanitized date format option.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param mixed $format Format option.
 	 */

@@ -46,6 +46,9 @@ final readonly class ProductQuery {
 	/**
 	 * Initializes the product query service.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFilterRegistry $filters Export filter registry.
 	 */
 	public function __construct(
@@ -54,6 +57,9 @@ final readonly class ProductQuery {
 
 	/**
 	 * Gets WooCommerce products for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -67,6 +73,9 @@ final readonly class ProductQuery {
 
 	/**
 	 * Counts WooCommerce products for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -87,6 +96,9 @@ final readonly class ProductQuery {
 	/**
 	 * Gets one deterministic WooCommerce product batch.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportPayload $payload Export payload.
 	 * @param int           $offset  Zero-based item offset.
 	 * @param int           $limit   Batch size.
@@ -101,6 +113,9 @@ final readonly class ProductQuery {
 
 	/**
 	 * Gets matching WooCommerce product IDs.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -224,6 +239,9 @@ final readonly class ProductQuery {
 
 	/**
 	 * Gets WooCommerce products by IDs.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, int|string> $ids Product IDs.
 	 *

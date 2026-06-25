@@ -44,6 +44,9 @@ final readonly class AmountMutator implements FieldValueMutatorInterface, HookRe
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -59,6 +62,9 @@ final readonly class AmountMutator implements FieldValueMutatorInterface, HookRe
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::MUTATOR_ID;
@@ -66,6 +72,9 @@ final readonly class AmountMutator implements FieldValueMutatorInterface, HookRe
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( Field $field, ExportContext $context ): bool {
 		return $field->type instanceof NumberFieldType && $field->type->is_decimal();
@@ -73,6 +82,9 @@ final readonly class AmountMutator implements FieldValueMutatorInterface, HookRe
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function mutate( FieldValue $value, Field $field, array $settings, ExportContext $context ): FieldValue {
 		if ( self::FORMAT_CENTS !== ( $settings[ self::OPTION_AMOUNT_FORMAT ] ?? self::FORMAT_AMOUNT ) ) {

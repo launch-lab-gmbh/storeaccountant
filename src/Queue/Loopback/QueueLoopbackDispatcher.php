@@ -38,12 +38,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class QueueLoopbackDispatcher {
 	private const TOKEN_TTL = 15 * MINUTE_IN_SECONDS;
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private QueueTransportRegistry $queue_transports
 	) {}
 
 	/**
 	 * Starts the loopback runner if the active transport supports it.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */
@@ -72,6 +81,9 @@ final readonly class QueueLoopbackDispatcher {
 
 	/**
 	 * Dispatches a loopback continuation request.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int    $export_id Export post ID.
 	 * @param string $token     Loopback token.
@@ -111,6 +123,9 @@ final readonly class QueueLoopbackDispatcher {
 	/**
 	 * Checks whether the provided token is valid for the export.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int    $export_id Export post ID.
 	 * @param string $token     Token from the loopback request.
 	 */
@@ -123,6 +138,9 @@ final readonly class QueueLoopbackDispatcher {
 	/**
 	 * Refreshes an existing token for another chained loopback request.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int    $export_id Export post ID.
 	 * @param string $token     Existing token.
 	 */
@@ -132,6 +150,9 @@ final readonly class QueueLoopbackDispatcher {
 
 	/**
 	 * Deletes the token for a finished export loopback.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */

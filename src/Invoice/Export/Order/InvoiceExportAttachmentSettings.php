@@ -38,6 +38,9 @@ final readonly class InvoiceExportAttachmentSettings {
 	/**
 	 * Checks whether invoice files should be exported.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int                    $configuration_id Export configuration post ID.
 	 * @param InvoicePluginInterface $plugin           Invoice plugin integration.
 	 * @param int                    $export_id        Export post ID.
@@ -48,6 +51,9 @@ final readonly class InvoiceExportAttachmentSettings {
 
 	/**
 	 * Gets selected invoice file types.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int                    $configuration_id Export configuration post ID.
 	 * @param InvoicePluginInterface $plugin           Invoice plugin integration.

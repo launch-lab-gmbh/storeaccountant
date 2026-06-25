@@ -50,6 +50,9 @@ final readonly class PluginSettingsCleanupTask implements UninstallCleanupTaskIn
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return 'plugin_settings';
@@ -57,6 +60,9 @@ final readonly class PluginSettingsCleanupTask implements UninstallCleanupTaskIn
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function cleanup(): void {
 		$this->delete_options();

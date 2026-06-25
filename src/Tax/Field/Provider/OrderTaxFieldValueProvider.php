@@ -36,6 +36,9 @@ final readonly class OrderTaxFieldValueProvider implements FieldValueProviderInt
 	/**
 	 * Initializes the tax field value provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param OrderTaxFieldProviderRegistry $tax_field_providers Tax field provider registry.
 	 */
 	public function __construct(
@@ -44,6 +47,9 @@ final readonly class OrderTaxFieldValueProvider implements FieldValueProviderInt
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -59,6 +65,9 @@ final readonly class OrderTaxFieldValueProvider implements FieldValueProviderInt
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -66,6 +75,9 @@ final readonly class OrderTaxFieldValueProvider implements FieldValueProviderInt
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( Field $field, ExportContext $context ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $context->export_type
@@ -74,6 +86,9 @@ final readonly class OrderTaxFieldValueProvider implements FieldValueProviderInt
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_values( mixed $item, FieldCollection $fields, ExportContext $context ): array {
 		if ( OrderExportAdapter::ADAPTER_ID !== $context->export_type || ! $item instanceof WC_Order ) {

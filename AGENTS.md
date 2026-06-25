@@ -127,6 +127,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @license     GPL-3.0-or-later
  */
 ```
+- Document public extension hooks, including `do_action()` and
+  `apply_filters()` calls, with a PHPDoc hook block and `@since 1.0.0` until the
+  plugin versioning policy changes.
+- StoreAccountant only guarantees backward compatibility for documented hooks
+  and actions. Public methods on classes are internal implementation details;
+  mark every public class method PHPDoc with `@since 1.0.0` and `@internal`
+  unless it is intentionally promoted to a documented hook-based extension
+  surface.
 
 ## Internationalization
 

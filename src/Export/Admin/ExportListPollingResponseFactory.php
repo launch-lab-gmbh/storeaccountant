@@ -59,6 +59,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class ExportListPollingResponseFactory {
 	private const DEFAULT_SCHEDULED_WINDOW = 5 * MINUTE_IN_SECONDS;
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private StorageAdapterRegistry $storage_adapters,
 		private ExportDownloadUrlFactory $download_urls,
@@ -67,6 +73,9 @@ final readonly class ExportListPollingResponseFactory {
 
 	/**
 	 * Builds polling response data for one export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 *
@@ -100,6 +109,9 @@ final readonly class ExportListPollingResponseFactory {
 
 	/**
 	 * Checks whether an export should be polled by the admin list.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */
@@ -194,6 +206,14 @@ final readonly class ExportListPollingResponseFactory {
 			return false;
 		}
 
+		/**
+		 * Filters the scheduled export polling window in seconds.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $window    Polling window in seconds.
+		 * @param int $export_id Export post ID.
+		 */
 		$window = absint(
 			apply_filters(
 				'storeaccountant_export_polling_scheduled_window_seconds',

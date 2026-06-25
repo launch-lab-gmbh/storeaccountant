@@ -33,6 +33,9 @@ final readonly class MetaFieldCollector {
 	/**
 	 * Gets export fields for scalar metadata keys found in context items.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportContext     $context            Runtime export context.
 	 * @param string            $field_id_prefix    Field ID prefix.
 	 * @param array<int,string> $reserved_meta_keys Metadata keys already represented by dedicated fields.

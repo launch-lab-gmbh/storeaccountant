@@ -54,6 +54,9 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 	/**
 	 * Initializes the provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param InvoicePluginDetector           $detector Invoice plugin detector.
 	 * @param InvoiceExportAttachmentSettings $settings Invoice attachment settings.
 	 * @param FieldMappingRepository          $field_mapping Field mapping repository.
@@ -66,6 +69,9 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -81,6 +87,9 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -88,6 +97,9 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( ExportContext $context ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $context->export_type && $this->detector->is_enabled();
@@ -95,6 +107,9 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_directory( ExportContext $context ): string {
 		return sanitize_file_name( __( 'Invoices', 'storeaccountant' ) );
@@ -102,6 +117,9 @@ final readonly class InvoiceAttachmentProvider implements ExportAttachmentProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_attachments( mixed $item, ExportPayload $payload, ExportContext $context ): iterable {
 		$plugin = $this->detector->get_enabled();

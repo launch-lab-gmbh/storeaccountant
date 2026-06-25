@@ -52,6 +52,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 	/**
 	 * Initializes the serializer export renderer.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportTemplateNormalizerInterface $template_normalizer Template normalizer.
 	 * @param SerializerInterface               $serializer          Serializer.
 	 * @param string                            $renderer_id         Export renderer identifier.
@@ -70,6 +73,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return $this->renderer_id;
@@ -77,6 +83,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_file_extension(): string {
 		return $this->file_extension;
@@ -84,6 +93,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_mime_type(): string {
 		return $this->mime_type;
@@ -91,6 +103,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( ExportDataset $dataset, ExportPayload $payload ): ExportArtifact|WP_Error {
 		$this->load_file_helpers();

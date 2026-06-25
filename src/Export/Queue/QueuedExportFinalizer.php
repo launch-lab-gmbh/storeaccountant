@@ -46,6 +46,9 @@ final readonly class QueuedExportFinalizer {
 	/**
 	 * Initializes the finalizer.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param BatchExportStore                $batch_store            Temporary batch store.
 	 * @param StorageAdapterRegistry          $storage_adapters       Storage adapter registry.
 	 * @param ExportAdapterRegistry           $export_adapters        Export adapter registry.
@@ -67,6 +70,9 @@ final readonly class QueuedExportFinalizer {
 
 	/**
 	 * Finalizes a queued export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int         $post_id     Export post ID.
 	 * @param string|null $renderer_id Renderer ID.

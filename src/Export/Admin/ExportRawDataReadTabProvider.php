@@ -32,12 +32,21 @@ final readonly class ExportRawDataReadTabProvider implements ExportReadTabProvid
 	public const PROVIDER_ID = 'export_raw_data';
 	public const TAB_ID      = 'raw-data';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private ExportFilterSelectionSerializer $filter_serializer
 	) {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -53,6 +62,9 @@ final readonly class ExportRawDataReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -60,6 +72,9 @@ final readonly class ExportRawDataReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( WP_Post $export ): bool {
 		return ExportPostType::POST_TYPE === $export->post_type;
@@ -67,6 +82,9 @@ final readonly class ExportRawDataReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_tabs( WP_Post $export ): array {
 		return [
@@ -76,6 +94,9 @@ final readonly class ExportRawDataReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( string $tab, WP_Post $export ): void {
 		if ( self::TAB_ID !== $tab ) {

@@ -41,6 +41,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Appends export attachments to a storage artifact in queue-safe chunks.
  */
 final readonly class FinalizeExportAttachmentsMessageHandler {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private MessageBusInterface $message_bus,
 		private StorageAdapterRegistry $storage_adapters,
@@ -51,6 +57,9 @@ final readonly class FinalizeExportAttachmentsMessageHandler {
 
 	/**
 	 * Handles one export attachment finalization chunk.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param FinalizeExportAttachmentsMessage $message Attachment finalization message.
 	 */

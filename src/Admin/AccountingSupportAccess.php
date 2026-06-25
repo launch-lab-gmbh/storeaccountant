@@ -26,6 +26,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class AccountingSupportAccess {
 	/**
 	 * Checks whether the current user has any StoreAccountant backend access.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function can_access(): bool {
 		return current_user_can( 'manage_options' )

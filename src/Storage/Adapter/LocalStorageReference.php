@@ -30,6 +30,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Describes a local zip archive storage reference.
  */
 final readonly class LocalStorageReference {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public string $archive_file,
 		public string $path
@@ -37,6 +43,9 @@ final readonly class LocalStorageReference {
 
 	/**
 	 * Builds a local storage reference from a persisted storage path.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $storage_path Persisted storage path.
 	 */
@@ -53,6 +62,9 @@ final readonly class LocalStorageReference {
 
 	/**
 	 * Builds a local storage reference for a file inside an archive.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $archive_file Relative archive file path.
 	 * @param string $path         Relative path inside the archive.

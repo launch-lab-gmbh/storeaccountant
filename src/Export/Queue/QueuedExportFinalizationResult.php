@@ -20,6 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Describes whether export finalization completed immediately or continues in attachment chunks.
  */
 final readonly class QueuedExportFinalizationResult {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public bool $complete,
 		public string $storage_path,
@@ -30,6 +36,9 @@ final readonly class QueuedExportFinalizationResult {
 	/**
 	 * Creates a completed finalization result.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $storage_path Final storage path.
 	 */
 	public static function complete( string $storage_path ): self {
@@ -38,6 +47,9 @@ final readonly class QueuedExportFinalizationResult {
 
 	/**
 	 * Creates a pending attachment finalization result.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $storage_path           Final storage path.
 	 * @param int    $total_attachments     Total attachment count.

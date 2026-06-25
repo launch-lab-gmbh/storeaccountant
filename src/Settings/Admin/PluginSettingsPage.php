@@ -54,6 +54,9 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 	/**
 	 * Initializes the settings page.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param StorageAdapterRegistry      $storage_adapters      Storage adapter registry.
 	 * @param StorageLocationsForm        $storage_locations_form Storage locations form.
 	 * @param InvoicePluginRegistry       $invoice_plugins        Invoice plugin registry.
@@ -82,6 +85,9 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'register_page' ] );
@@ -92,6 +98,9 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 
 	/**
 	 * Registers the hidden settings page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register_page(): void {
 		add_submenu_page(
@@ -106,6 +115,9 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 
 	/**
 	 * Adds a settings link to the plugin row.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int|string, string> $links Plugin action links.
 	 *
@@ -125,6 +137,9 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 
 	/**
 	 * Adds documentation links to the plugin row metadata.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int|string, string> $links Plugin row metadata links.
 	 * @param string                    $file  Plugin file path.
@@ -179,6 +194,9 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 
 	/**
 	 * Renders the settings page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::MANAGE_SETTINGS ) && ! $this->permissions->can( PermissionActionIds::MANAGE_PERMISSIONS ) && ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE ) ) {
@@ -295,6 +313,9 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 
 	/**
 	 * Handles plugin settings submission.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_save(): void {
 		check_admin_referer( 'storeaccountant_save_plugin_settings', 'storeaccountant_plugin_settings_nonce' );

@@ -34,12 +34,21 @@ final readonly class ExportLogReadTabProvider implements ExportReadTabProviderIn
 	public const PROVIDER_ID = 'export_log';
 	public const TAB_ID      = 'log';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private PermissionChecker $permissions
 	) {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -55,6 +64,9 @@ final readonly class ExportLogReadTabProvider implements ExportReadTabProviderIn
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -62,6 +74,9 @@ final readonly class ExportLogReadTabProvider implements ExportReadTabProviderIn
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( WP_Post $export ): bool {
 		return ExportPostType::POST_TYPE === $export->post_type
@@ -70,6 +85,9 @@ final readonly class ExportLogReadTabProvider implements ExportReadTabProviderIn
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_tabs( WP_Post $export ): array {
 		return [
@@ -79,6 +97,9 @@ final readonly class ExportLogReadTabProvider implements ExportReadTabProviderIn
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( string $tab, WP_Post $export ): void {
 		if ( self::TAB_ID !== $tab ) {

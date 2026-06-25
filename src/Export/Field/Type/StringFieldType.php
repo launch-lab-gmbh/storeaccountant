@@ -27,6 +27,9 @@ final readonly class StringFieldType implements FieldTypeInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::ID;

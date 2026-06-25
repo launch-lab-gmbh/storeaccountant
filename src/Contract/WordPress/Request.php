@@ -33,6 +33,9 @@ final readonly class Request {
 	/**
 	 * Gets a sanitized key value from the query string.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $name    Request field name.
 	 * @param string $fallback Fallback value.
 	 */
@@ -45,6 +48,9 @@ final readonly class Request {
 	/**
 	 * Gets a positive integer value from the query string.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $name Request field name.
 	 */
 	public static function get_int( string $name ): int {
@@ -56,6 +62,9 @@ final readonly class Request {
 	/**
 	 * Checks whether a query string flag exists.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $name Request field name.
 	 */
 	public static function has_get( string $name ): bool {
@@ -64,6 +73,9 @@ final readonly class Request {
 
 	/**
 	 * Gets a sanitized text value from POST data.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $name    Request field name.
 	 * @param string $fallback Fallback value.
@@ -77,6 +89,9 @@ final readonly class Request {
 	/**
 	 * Gets a sanitized key value from POST data.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $name     Request field name.
 	 * @param string $fallback Fallback value.
 	 */
@@ -89,6 +104,9 @@ final readonly class Request {
 	/**
 	 * Gets a positive integer value from POST data.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $name Request field name.
 	 */
 	public static function post_int( string $name ): int {
@@ -100,6 +118,9 @@ final readonly class Request {
 	/**
 	 * Gets sanitized POST data for request-specific validators.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<string, mixed>
 	 */
 	public static function post_data(): array {
@@ -110,6 +131,9 @@ final readonly class Request {
 
 	/**
 	 * Gets a sanitized POST array value for request-specific validators.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $name Request field name.
 	 *
@@ -132,6 +156,9 @@ final readonly class Request {
 	/**
 	 * Gets a sanitized key value from server request metadata.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $name     Server field name.
 	 * @param string $fallback Fallback value.
 	 */
@@ -144,6 +171,9 @@ final readonly class Request {
 	/**
 	 * Gets a sanitized text value from server request metadata.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $name     Server field name.
 	 * @param string $fallback Fallback value.
 	 */
@@ -155,6 +185,9 @@ final readonly class Request {
 
 	/**
 	 * Sanitizes a scalar value as text for filter callbacks.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public static function sanitize_text_value( mixed $value ): string {
 		return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
@@ -176,6 +209,9 @@ final readonly class Request {
 
 	/**
 	 * Sanitizes a scalar value as a key for filter callbacks.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public static function sanitize_key_value( mixed $value ): string {
 		return is_scalar( $value ) ? sanitize_key( (string) $value ) : '';

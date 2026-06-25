@@ -31,12 +31,21 @@ final readonly class SupportOverviewTabProvider implements AccountingOverviewTab
 	public const TAB_ID   = 'support';
 	public const PRIORITY = 900;
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private AccountingSupportAccess $access
 	) {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -52,6 +61,9 @@ final readonly class SupportOverviewTabProvider implements AccountingOverviewTab
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::TAB_ID;
@@ -59,6 +71,9 @@ final readonly class SupportOverviewTabProvider implements AccountingOverviewTab
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_label(): string {
 		return __( 'Support', 'storeaccountant' );
@@ -66,6 +81,9 @@ final readonly class SupportOverviewTabProvider implements AccountingOverviewTab
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_url(): string {
 		return add_query_arg(
@@ -77,6 +95,9 @@ final readonly class SupportOverviewTabProvider implements AccountingOverviewTab
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function is_visible(): bool {
 		return $this->access->can_access();
@@ -84,6 +105,9 @@ final readonly class SupportOverviewTabProvider implements AccountingOverviewTab
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_priority(): int {
 		return self::PRIORITY;

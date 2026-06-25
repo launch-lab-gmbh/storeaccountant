@@ -34,6 +34,9 @@ final readonly class CustomerDateFilterFieldProvider implements ExportFilterFiel
 	/**
 	 * Initializes the field provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param MonthYearExportPeriodFieldProvider $period_field_provider Period field provider.
 	 */
 	public function __construct(
@@ -42,6 +45,9 @@ final readonly class CustomerDateFilterFieldProvider implements ExportFilterFiel
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -57,6 +63,9 @@ final readonly class CustomerDateFilterFieldProvider implements ExportFilterFiel
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return CustomerDateFilter::FILTER_ID;
@@ -64,6 +73,9 @@ final readonly class CustomerDateFilterFieldProvider implements ExportFilterFiel
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $export_type ): bool {
 		return CustomerExportAdapter::ADAPTER_ID === $export_type;
@@ -71,6 +83,9 @@ final readonly class CustomerDateFilterFieldProvider implements ExportFilterFiel
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( ?ExportFilterSelection $selection = null, bool $read_only = false, bool $allow_concrete_months = true ): void {
 		$period_selection = [];
@@ -84,6 +99,9 @@ final readonly class CustomerDateFilterFieldProvider implements ExportFilterFiel
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_selection_from_request( array $request ): ExportFilterSelection|WP_Error {
 		$period_selection = $this->period_field_provider->get_period_selection_from_request( $request );
@@ -105,6 +123,9 @@ final readonly class CustomerDateFilterFieldProvider implements ExportFilterFiel
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_default_selection(): ExportFilterSelection {
 		return new ExportFilterSelection(

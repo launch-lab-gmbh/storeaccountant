@@ -41,6 +41,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Writes per-export diagnostic detail logs without touching the WordPress debug log.
  */
 final readonly class ExportDetailLogger {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private DiagnosticSettings $settings,
 		private DiagnosticIncidentRepository $repository,
@@ -49,6 +55,9 @@ final readonly class ExportDetailLogger {
 
 	/**
 	 * Writes one per-export diagnostic event when diagnostic logging is enabled.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int                  $export_id Export post ID.
 	 * @param string               $level     Log level.

@@ -53,6 +53,9 @@ final readonly class ExportRepository {
 	/**
 	 * Initializes the repository.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFilterSelectionSerializer $filter_serializer Filter selection serializer.
 	 */
 	public function __construct(
@@ -63,6 +66,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Creates a saved export record.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string                            $title            Export title.
 	 * @param array<int, ExportFilterSelection> $filters          Configured export filters.
@@ -186,6 +192,9 @@ final readonly class ExportRepository {
 	/**
 	 * Checks whether a saved export already uses the given title.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $title Export title.
 	 */
 	public function exists_with_title( string $title ): bool {
@@ -212,6 +221,9 @@ final readonly class ExportRepository {
 	/**
 	 * Updates the generated export path.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int    $post_id Export post ID.
 	 * @param string $path    Generated export path.
 	 */
@@ -221,6 +233,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Gets the lifecycle status for an export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $post_id Export post ID.
 	 */
@@ -239,6 +254,9 @@ final readonly class ExportRepository {
 	/**
 	 * Marks an export as queued for background processing.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $post_id Export post ID.
 	 */
 	public function mark_queued( int $post_id ): void {
@@ -249,6 +267,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Marks an export as processing.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int    $post_id      Export post ID.
 	 * @param string $current_step Current processing step.
@@ -265,6 +286,9 @@ final readonly class ExportRepository {
 	/**
 	 * Initializes export progress counters.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $post_id       Export post ID.
 	 * @param int $total_items   Total item count.
 	 * @param int $total_batches Total batch count.
@@ -279,6 +303,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Resets an export for retry.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $post_id Export post ID.
 	 */
@@ -298,6 +325,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Marks one batch as processed.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $post_id Export post ID.
 	 * @param int $items   Processed item count in the batch.
@@ -366,6 +396,9 @@ final readonly class ExportRepository {
 	/**
 	 * Checks whether all batches were processed.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $post_id Export post ID.
 	 */
 	public function all_batches_processed( int $post_id ): bool {
@@ -380,6 +413,9 @@ final readonly class ExportRepository {
 	/**
 	 * Marks an export as completed.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $post_id Export post ID.
 	 */
 	public function mark_completed( int $post_id ): void {
@@ -390,6 +426,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Marks an export as failed.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int    $post_id       Export post ID.
 	 * @param string $error_message Error message.
@@ -410,6 +449,9 @@ final readonly class ExportRepository {
 	/**
 	 * Marks an export as failed from a WordPress error and logs its technical data.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int                  $post_id Export post ID.
 	 * @param WP_Error             $error   WordPress error.
 	 * @param array<string, mixed> $context Additional context.
@@ -428,6 +470,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Adds a technical export log entry.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int                  $post_id   Export post ID.
 	 * @param string               $level     Log level.
@@ -457,8 +502,17 @@ final readonly class ExportRepository {
 		}
 
 		$entries[] = $entry;
-		$limit     = (int) apply_filters( 'storeaccountant_export_log_entry_limit', self::DEFAULT_LOG_ENTRY_LIMIT, $post_id );
-		$entries   = array_slice( $entries, -max( 1, $limit ) );
+
+		/**
+		 * Filters the maximum number of log entries stored on an export.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $limit   Maximum number of log entries.
+		 * @param int $post_id Export post ID.
+		 */
+		$limit   = (int) apply_filters( 'storeaccountant_export_log_entry_limit', self::DEFAULT_LOG_ENTRY_LIMIT, $post_id );
+		$entries = array_slice( $entries, -max( 1, $limit ) );
 
 		update_post_meta( $post_id, ExportPostType::META_LOG_ENTRIES, $entries );
 	}

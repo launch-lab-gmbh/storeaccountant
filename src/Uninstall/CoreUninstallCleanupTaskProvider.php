@@ -27,6 +27,9 @@ final readonly class CoreUninstallCleanupTaskProvider implements HookRegistrarIn
 	/**
 	 * Initializes the provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<int, UninstallCleanupTaskInterface> $tasks Built-in cleanup tasks.
 	 */
 	public function __construct(
@@ -35,6 +38,9 @@ final readonly class CoreUninstallCleanupTaskProvider implements HookRegistrarIn
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter( 'storeaccountant_uninstall_cleanup_task', [ $this, 'register_tasks' ], HookRegistrarInterface::DEFAULT_PRIORITY );
@@ -42,6 +48,9 @@ final readonly class CoreUninstallCleanupTaskProvider implements HookRegistrarIn
 
 	/**
 	 * Registers core uninstall cleanup tasks.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, UninstallCleanupTaskInterface> $tasks Registered tasks.
 	 *

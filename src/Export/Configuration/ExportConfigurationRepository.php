@@ -29,6 +29,9 @@ final readonly class ExportConfigurationRepository {
 	/**
 	 * Initializes the repository.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFilterSelectionSerializer $filter_serializer Filter selection serializer.
 	 */
 	public function __construct(
@@ -37,6 +40,9 @@ final readonly class ExportConfigurationRepository {
 
 	/**
 	 * Creates a saved export configuration.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string                            $title               Configuration title.
 	 * @param array<int, ExportFilterSelection> $filters Configured export filters.
@@ -79,6 +85,9 @@ final readonly class ExportConfigurationRepository {
 
 	/**
 	 * Updates a saved export configuration.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int                               $post_id             Configuration post ID.
 	 * @param string                            $title               Configuration title.

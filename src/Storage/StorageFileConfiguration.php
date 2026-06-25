@@ -26,6 +26,9 @@ final readonly class StorageFileConfiguration {
 	/**
 	 * Initializes the storage file configuration.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string                       $storage_path Relative storage reference or object key.
 	 * @param string                       $source_path   Absolute local source path to read from.
 	 * @param string                       $file_name     File name to expose at the storage destination.

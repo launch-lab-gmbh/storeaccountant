@@ -57,6 +57,9 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 	/**
 	 * Initializes the tab provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFieldResolver             $field_resolver     Field resolver.
 	 * @param FieldMappingRepository          $mapping            Field mapping repository.
 	 * @param CustomerQuery                   $customer_query     Customer query service.
@@ -77,6 +80,9 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -94,6 +100,9 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -101,6 +110,9 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( WP_Post $configuration ): bool {
 		$export_adapter = (string) get_post_meta( $configuration->ID, ExportConfigurationPostType::META_EXPORT_ADAPTER, true );
@@ -110,6 +122,9 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_tabs( WP_Post $configuration ): array {
 		return [
@@ -119,6 +134,9 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( string $tab, WP_Post $configuration, bool $read_only = false ): void {
 		if ( self::TAB_ID !== $tab ) {
@@ -213,6 +231,9 @@ final readonly class CustomerFieldMappingTabProvider implements ExportConfigurat
 
 	/**
 	 * Handles field mapping submissions.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_save(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::CONFIGURATION_EDIT_FIELD_MAPPING ) ) {

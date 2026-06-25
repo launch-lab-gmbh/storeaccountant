@@ -30,6 +30,9 @@ final readonly class NumberFieldType implements FieldTypeInterface {
 	/**
 	 * Initializes the number field type.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $format Numeric format.
 	 */
 	public function __construct(
@@ -38,6 +41,9 @@ final readonly class NumberFieldType implements FieldTypeInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::ID;
@@ -45,6 +51,9 @@ final readonly class NumberFieldType implements FieldTypeInterface {
 
 	/**
 	 * Checks whether this number field contains decimal values.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function is_decimal(): bool {
 		return self::FORMAT_DECIMAL === $this->format;

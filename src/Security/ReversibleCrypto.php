@@ -46,6 +46,9 @@ final readonly class ReversibleCrypto {
 
 	/**
 	 * Checks whether reversible encrypted storage is available.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function is_available(): bool {
 		return null !== $this->get_active_provider();
@@ -53,6 +56,9 @@ final readonly class ReversibleCrypto {
 
 	/**
 	 * Gets the selected provider ID.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_active_provider(): ?string {
 		if ( function_exists( 'sodium_crypto_secretbox' ) && function_exists( 'sodium_crypto_secretbox_open' ) ) {
@@ -68,6 +74,9 @@ final readonly class ReversibleCrypto {
 
 	/**
 	 * Encrypts a secret.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function encrypt( string $plain_text ): string|WP_Error {
 		$provider = $this->get_active_provider();
@@ -86,6 +95,9 @@ final readonly class ReversibleCrypto {
 
 	/**
 	 * Decrypts a previously encrypted secret.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function decrypt( string $encrypted_value ): string|WP_Error {
 		$payload = json_decode( $encrypted_value, true );

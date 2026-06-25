@@ -28,6 +28,9 @@ final readonly class FieldValueProviderRegistry extends Registry {
 	/**
 	 * Gets all value providers that support at least one selected field.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param FieldCollection $fields  Selected fields.
 	 * @param ExportContext   $context Export context.
 	 *

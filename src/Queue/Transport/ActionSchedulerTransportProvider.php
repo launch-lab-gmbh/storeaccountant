@@ -32,6 +32,9 @@ final readonly class ActionSchedulerTransportProvider implements QueueTransportP
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -47,6 +50,9 @@ final readonly class ActionSchedulerTransportProvider implements QueueTransportP
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -54,6 +60,9 @@ final readonly class ActionSchedulerTransportProvider implements QueueTransportP
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_label(): string {
 		return __( 'Action Scheduler', 'storeaccountant' );
@@ -61,6 +70,9 @@ final readonly class ActionSchedulerTransportProvider implements QueueTransportP
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_description(): string {
 		return __( 'Uses WooCommerce Action Scheduler to process StoreAccountant queue jobs in the background. This is recommended for larger exports.', 'storeaccountant' );
@@ -68,6 +80,9 @@ final readonly class ActionSchedulerTransportProvider implements QueueTransportP
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_dsn(): string {
 		return 'action_scheduler://' . self::QUEUE_NAME;
@@ -75,6 +90,9 @@ final readonly class ActionSchedulerTransportProvider implements QueueTransportP
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports_manual_loopback(): bool {
 		return true;
@@ -82,6 +100,9 @@ final readonly class ActionSchedulerTransportProvider implements QueueTransportP
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function create_transport( SerializerInterface $serializer ): TransportInterface {
 		return new ActionSchedulerTransport( self::QUEUE_NAME, $serializer );

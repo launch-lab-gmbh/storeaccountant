@@ -60,6 +60,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	/**
 	 * Initializes the page.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportConfigurationPageForm                  $form            Configuration form.
 	 * @param ExportConfigurationRepository                $repository      Configuration repository.
 	 * @param StorageAdapterRegistry                       $storage_adapters storage adapter registry.
@@ -90,6 +93,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'add_submenu_page' ] );
@@ -102,6 +108,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Adds hidden plugin pages used by the configuration list action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function add_submenu_page(): void {
 		add_submenu_page(
@@ -116,6 +125,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Removes hidden plugin pages from the visible accounting submenu after access checks.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function remove_hidden_submenu_page(): void {
 		remove_submenu_page( AccountingMenu::MENU_SLUG, 'storeaccountant-export-configuration' );
@@ -123,6 +135,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Renders the configuration form page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		$configuration = $this->get_edit_configuration();
@@ -162,6 +177,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	/**
 	 * Uses the current configuration mode for the browser title.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $admin_title Complete admin title.
 	 * @param string $title       Static page title.
 	 */
@@ -177,6 +195,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Handles configuration form submission.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_save(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::CONFIGURATION_CREATE ) && ! $this->permissions->can( PermissionActionIds::CONFIGURATION_EDIT ) ) {
@@ -337,6 +358,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	/**
 	 * Highlights StoreAccountant while rendering hidden StoreAccountant pages.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $parent_file Parent file.
 	 */
 	public function filter_parent_file( ?string $parent_file ): string {
@@ -349,6 +373,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Highlights the exports submenu while rendering hidden pages.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $submenu_file Submenu file.
 	 */

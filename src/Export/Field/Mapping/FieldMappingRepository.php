@@ -38,6 +38,9 @@ final readonly class FieldMappingRepository {
 	/**
 	 * Gets mapped fields for an export configuration.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int             $configuration_id Export configuration post ID.
 	 * @param FieldCollection $available_fields Available field definitions.
 	 */
@@ -80,6 +83,9 @@ final readonly class FieldMappingRepository {
 
 	/**
 	 * Gets mapping items ready for form rendering.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int             $configuration_id Export configuration post ID.
 	 * @param FieldCollection $available_fields Available field definitions.
@@ -127,6 +133,9 @@ final readonly class FieldMappingRepository {
 
 	/**
 	 * Sanitizes submitted mapping rows.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $request          Request data.
 	 * @param FieldCollection      $available_fields Available field definitions.
@@ -194,6 +203,9 @@ final readonly class FieldMappingRepository {
 	/**
 	 * Saves field mapping items.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int               $configuration_id Export configuration post ID.
 	 * @param array<int, mixed> $mapping          Mapping items.
 	 */
@@ -203,6 +215,9 @@ final readonly class FieldMappingRepository {
 
 	/**
 	 * Replaces only matching mapping items with matching available fields.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int             $configuration_id Export configuration post ID.
 	 * @param FieldCollection $available_fields Available field definitions.

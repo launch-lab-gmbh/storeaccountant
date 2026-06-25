@@ -26,6 +26,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final readonly class ExportEventLogSubscriber implements EventSubscriberInterface {
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private ExportRepository $repository
 	) {
@@ -33,6 +39,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public static function get_subscribed_events(): array {
 		return [
@@ -81,6 +90,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 	/**
 	 * Logs a generic export log entry event.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
 	public function log_entry( int $export_id, string $level, string $message, array $context = [], ?Throwable $exception = null ): void {
@@ -89,6 +101,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 
 	/**
 	 * Logs an export queued event.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
@@ -103,6 +118,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 	/**
 	 * Logs an export worker start event.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
 	public function log_started( int $export_id, array $context = [] ): void {
@@ -112,6 +130,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 	/**
 	 * Logs calculated export batches.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
 	public function log_batches_calculated( int $export_id, array $context = [] ): void {
@@ -120,6 +141,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 
 	/**
 	 * Logs a processed export batch.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
@@ -134,6 +158,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 	/**
 	 * Logs queued export batch jobs.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
 	public function log_batch_jobs_queued( int $export_id, array $context = [] ): void {
@@ -142,6 +169,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 
 	/**
 	 * Logs queued export finalization.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
@@ -156,6 +186,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 	/**
 	 * Logs export finalization start.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
 	public function log_finalization_started( int $export_id, array $context = [] ): void {
@@ -164,6 +197,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 
 	/**
 	 * Logs loaded export dataset.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
@@ -174,6 +210,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 	/**
 	 * Logs rendered export artifact.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
 	public function log_artifact_rendered( int $export_id, array $context = [] ): void {
@@ -182,6 +221,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 
 	/**
 	 * Logs persisted export artifact.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
@@ -192,6 +234,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 	/**
 	 * Logs completed export.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */
 	public function log_completed( int $export_id, array $context = [] ): void {
@@ -200,6 +245,9 @@ final readonly class ExportEventLogSubscriber implements EventSubscriberInterfac
 
 	/**
 	 * Logs failed export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $context Additional context.
 	 */

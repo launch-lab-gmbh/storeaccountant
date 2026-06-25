@@ -25,6 +25,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class LocalStorageConfiguration {
 	public const RELATIVE_PATH = 'storeaccountant';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public string $root_path,
 		public string $display_root_path
@@ -32,6 +38,9 @@ final readonly class LocalStorageConfiguration {
 
 	/**
 	 * Builds the default local storage configuration from WordPress uploads.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return self|WP_Error
 	 */
@@ -54,6 +63,9 @@ final readonly class LocalStorageConfiguration {
 	/**
 	 * Gets the configured local storage root path.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return string|WP_Error
 	 */
 	public function get_root_path(): string|WP_Error {
@@ -69,6 +81,9 @@ final readonly class LocalStorageConfiguration {
 
 	/**
 	 * Gets the absolute zip archive path.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $archive_file Relative archive file path.
 	 *

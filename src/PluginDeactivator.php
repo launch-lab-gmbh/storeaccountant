@@ -26,6 +26,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class PluginDeactivator {
 	/**
 	 * Runs deactivation cleanup.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public static function deactivate(): void {
 		$configuration = LocalStorageConfiguration::from_wordpress_uploads();

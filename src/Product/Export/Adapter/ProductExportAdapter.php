@@ -41,6 +41,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 	/**
 	 * Initializes the product adapter.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ProductQuery $product_query Product query service.
 	 */
 	public function __construct(
@@ -49,6 +52,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -64,6 +70,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::ADAPTER_ID;
@@ -71,6 +80,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_items( ExportPayload $payload ): iterable|WP_Error {
 		return $this->product_query->get_products( $payload );
@@ -78,6 +90,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function count_items( ExportPayload $payload ): int|WP_Error {
 		return $this->product_query->count_products( $payload );
@@ -85,6 +100,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_batch_items( ExportPayload $payload, int $offset, int $limit ): iterable|WP_Error {
 		return $this->product_query->get_product_batch( $payload, $offset, $limit );
@@ -92,6 +110,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_item_ids( ExportPayload $payload ): array|WP_Error {
 		$ids = $this->product_query->get_product_ids( $payload );
@@ -101,6 +122,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_items_by_ids( ExportPayload $payload, array $item_ids ): iterable|WP_Error {
 		return $this->product_query->get_products_by_ids( $item_ids );
@@ -108,6 +132,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_context( ExportPayload $payload, iterable $items ): ExportContext {
 		return new ExportContext(
@@ -119,6 +146,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_additional_fields( ExportPayload $payload, ExportContext $context ): FieldCollection {
 		return new FieldCollection();
@@ -126,6 +156,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_additional_values( mixed $item, ExportPayload $payload, ExportContext $context ): array {
 		return [];
@@ -133,6 +166,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_record_id( mixed $item ): string {
 		return $item instanceof WC_Product ? (string) $item->get_id() : '';

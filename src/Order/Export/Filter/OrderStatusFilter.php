@@ -35,6 +35,9 @@ final readonly class OrderStatusFilter implements ExportFilterInterface, HookReg
 	/**
 	 * Initializes the order status filter.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param OrderStatusProvider $order_statuses Order status provider.
 	 */
 	public function __construct(
@@ -43,6 +46,9 @@ final readonly class OrderStatusFilter implements ExportFilterInterface, HookReg
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -58,6 +64,9 @@ final readonly class OrderStatusFilter implements ExportFilterInterface, HookReg
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::FILTER_ID;
@@ -65,6 +74,9 @@ final readonly class OrderStatusFilter implements ExportFilterInterface, HookReg
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $export_type ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $export_type;
@@ -72,6 +84,9 @@ final readonly class OrderStatusFilter implements ExportFilterInterface, HookReg
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function apply( mixed $query, ExportFilterSelection $selection, ExportPayload $payload ): true|WP_Error {
 		if ( ! $query instanceof WC_Order_Query ) {

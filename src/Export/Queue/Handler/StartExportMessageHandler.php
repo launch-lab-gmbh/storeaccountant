@@ -51,6 +51,9 @@ final readonly class StartExportMessageHandler {
 	/**
 	 * Initializes the handler.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param MessageBusInterface             $message_bus       Message bus.
 	 * @param ExportAdapterRegistry           $export_adapters   Export adapter registry.
 	 * @param ExportRepository                $repository        Export repository.
@@ -72,6 +75,9 @@ final readonly class StartExportMessageHandler {
 
 	/**
 	 * Handles the start export message.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param StartExportMessage $message Start export message.
 	 */
@@ -417,6 +423,15 @@ final readonly class StartExportMessageHandler {
 	private function get_batch_size( int $export_id ): int {
 		$batch_size = (int) get_post_meta( $export_id, ExportPostType::META_BATCH_SIZE, true );
 		$batch_size = $batch_size > 0 ? $batch_size : ExportPostType::DEFAULT_BATCH_SIZE;
+
+		/**
+		 * Filters the export batch size before queue jobs are created.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $batch_size Batch size.
+		 * @param int $export_id  Export post ID.
+		 */
 		$batch_size = (int) apply_filters( 'storeaccountant_export_batch_size', $batch_size, $export_id );
 
 		return max( ExportPostType::MIN_BATCH_SIZE, $batch_size );

@@ -44,6 +44,9 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 	/**
 	 * Initializes the transport.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string              $queue_name Queue name.
 	 * @param SerializerInterface $serializer Messenger transport serializer.
 	 */
@@ -54,6 +57,9 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @throws TransportException When Action Scheduler or WordPress cron cannot queue the message.
 	 */
@@ -92,6 +98,9 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get(): iterable {
 		return [];
@@ -99,16 +108,25 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ack( Envelope $envelope ): void {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function reject( Envelope $envelope ): void {}
 
 	/**
 	 * Gets all Action Scheduler hooks handled by this transport.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array<int, string>
 	 */

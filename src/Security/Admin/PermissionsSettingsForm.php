@@ -29,6 +29,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class PermissionsSettingsForm {
 	public const FIELD_NAME = 'storeaccountant_permission_roles';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private PermissionActionRegistry $actions,
 		private RolePermissionRepository $roles
@@ -36,6 +42,9 @@ final readonly class PermissionsSettingsForm {
 
 	/**
 	 * Renders the permission assignment table.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_fields(): void {
 		$role_options = $this->roles->get_role_options();
@@ -89,6 +98,9 @@ final readonly class PermissionsSettingsForm {
 
 	/**
 	 * Gets submitted roles grouped by action ID.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $request Request data.
 	 *

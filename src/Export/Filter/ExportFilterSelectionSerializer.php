@@ -29,6 +29,9 @@ final readonly class ExportFilterSelectionSerializer {
 	/**
 	 * Encodes filter selections as JSON.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<int, ExportFilterSelection> $selections Filter selections.
 	 */
 	public function encode( array $selections ): string {
@@ -48,6 +51,9 @@ final readonly class ExportFilterSelectionSerializer {
 
 	/**
 	 * Decodes filter selections from JSON.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array<int, ExportFilterSelection>
 	 */

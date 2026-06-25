@@ -40,6 +40,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Renders the accounting admin action header.
  */
 final readonly class AccountingHeaderBar {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private PermissionChecker $permissions,
 		private AccountingOverviewTabProviderRegistry $tab_providers
@@ -47,6 +53,9 @@ final readonly class AccountingHeaderBar {
 
 	/**
 	 * Renders overview action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_overview_actions(): void {
 		?>
@@ -89,6 +98,9 @@ final readonly class AccountingHeaderBar {
 
 	/**
 	 * Renders export configuration overview action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_configuration_actions(): void {
 		?>
@@ -107,6 +119,9 @@ final readonly class AccountingHeaderBar {
 
 	/**
 	 * Renders support page action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_support_actions(): void {
 		?>
@@ -132,6 +147,9 @@ final readonly class AccountingHeaderBar {
 
 	/**
 	 * Renders hidden page action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_detail_actions(): void {
 		?>
@@ -146,6 +164,9 @@ final readonly class AccountingHeaderBar {
 
 	/**
 	 * Renders export configuration detail action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_configuration_detail_actions( ?string $return_url = null, ?string $edit_url = null, ?int $configuration_id = null ): void {
 		$return_url = $return_url ?? $this->get_configuration_overview_url();

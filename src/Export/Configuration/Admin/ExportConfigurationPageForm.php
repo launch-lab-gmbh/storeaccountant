@@ -41,6 +41,9 @@ final readonly class ExportConfigurationPageForm {
 	/**
 	 * Initializes the form.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportAdapterRegistry                        $export_adapters         Export adapter registry.
 	 * @param ExportFilterFieldProviderRegistry            $filter_field_providers Export filter field providers.
 	 * @param ExportFilterSelectionSerializer              $filter_serializer      Filter selection serializer.
@@ -59,6 +62,9 @@ final readonly class ExportConfigurationPageForm {
 
 	/**
 	 * Renders the export configuration form.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param WP_Post|null $configuration Current configuration.
 	 */

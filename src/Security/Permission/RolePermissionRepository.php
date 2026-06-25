@@ -45,12 +45,21 @@ final readonly class RolePermissionRepository {
 		StoreAccountantCapabilities::ACCESS_ADMIN,
 	];
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private PermissionActionRegistry $actions
 	) {}
 
 	/**
 	 * Gets roles that can be assigned StoreAccountant permissions.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array<string, array{label: string, locked: bool}>
 	 */
@@ -74,6 +83,8 @@ final readonly class RolePermissionRepository {
 		 *
 		 * Roles should only be added when they are intended to access wp-admin.
 		 *
+		 * @since 1.0.0
+		 *
 		 * @param array<string, array{label: string, locked: bool}> $roles Assignable roles keyed by role ID.
 		 */
 		$roles = apply_filters( 'storeaccountant_assignable_permission_roles', $roles );
@@ -93,6 +104,9 @@ final readonly class RolePermissionRepository {
 
 	/**
 	 * Gets assignable role options for token fields, excluding locked roles.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array<int, array{value: string, label: string}>
 	 */
@@ -115,6 +129,9 @@ final readonly class RolePermissionRepository {
 
 	/**
 	 * Gets role IDs that have a permission action.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array<int, string>
 	 */
@@ -143,6 +160,9 @@ final readonly class RolePermissionRepository {
 	/**
 	 * Saves selected roles for each action.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, array<int, string>> $role_ids_by_action Role IDs keyed by action ID.
 	 */
 	public function save( array $role_ids_by_action ): void {
@@ -164,6 +184,9 @@ final readonly class RolePermissionRepository {
 
 	/**
 	 * Ensures administrator has all registered StoreAccountant capabilities.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ensure_administrator_capabilities(): void {
 		$administrator = get_role( self::ADMINISTRATOR_ROLE );

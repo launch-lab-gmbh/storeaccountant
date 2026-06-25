@@ -28,6 +28,9 @@ final readonly class DiagnosticSettings {
 
 	/**
 	 * Checks whether diagnostic incident logging is enabled.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function is_enabled(): bool {
 		return '1' === (string) get_option( self::OPTION_ENABLED, '0' );
@@ -35,6 +38,9 @@ final readonly class DiagnosticSettings {
 
 	/**
 	 * Saves whether diagnostic incident logging is enabled.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function save_enabled( bool $enabled ): void {
 		update_option( self::OPTION_ENABLED, $enabled ? '1' : '0', false );

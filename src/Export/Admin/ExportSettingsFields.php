@@ -46,6 +46,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Renders and sanitizes shared export settings fields.
  */
 final readonly class ExportSettingsFields {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private StorageAdapterRegistry $storage_adapters,
 		private ExportRendererRegistry $export_writers,
@@ -55,6 +61,9 @@ final readonly class ExportSettingsFields {
 
 	/**
 	 * Checks whether the settings field choices required to submit are available.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function has_required_choices(): bool {
 		return [] !== $this->storage_adapters->get_enabled() && [] !== $this->export_writers->get_all();
@@ -62,6 +71,9 @@ final readonly class ExportSettingsFields {
 
 	/**
 	 * Renders shared export settings rows.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string               $export_type         Export adapter identifier.
 	 * @param string               $export_writer       Selected export renderer.
@@ -104,6 +116,9 @@ final readonly class ExportSettingsFields {
 	/**
 	 * Gets a valid order tax field provider ID from request data.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string               $export_type Export adapter identifier.
 	 * @param array<string, mixed> $request     Request data.
 	 */
@@ -118,6 +133,9 @@ final readonly class ExportSettingsFields {
 	/**
 	 * Gets a valid order tax field provider ID from stored configuration metadata.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $configuration_id Configuration post ID.
 	 */
 	public function get_tax_provider_id_from_configuration( int $configuration_id ): string {
@@ -126,6 +144,9 @@ final readonly class ExportSettingsFields {
 
 	/**
 	 * Gets and validates additional provider settings.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string               $export_type Export adapter identifier.
 	 * @param array<string, mixed> $request     Request data.
@@ -155,6 +176,9 @@ final readonly class ExportSettingsFields {
 
 	/**
 	 * Gets the batch size from request data.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $request Request data.
 	 */
@@ -253,6 +277,9 @@ final readonly class ExportSettingsFields {
 
 	/**
 	 * Renders the batch size field.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_batch_size_row( int $batch_size, bool $read_only = false ): void {
 		?>

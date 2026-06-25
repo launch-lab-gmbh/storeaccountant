@@ -29,6 +29,9 @@ final readonly class OrderTaxFieldProviderField {
 	/**
 	 * Initializes the order tax field provider field.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param OrderTaxFieldProviderRegistry $tax_field_providers Tax field provider registry.
 	 */
 	public function __construct(
@@ -37,6 +40,9 @@ final readonly class OrderTaxFieldProviderField {
 
 	/**
 	 * Renders the tax provider select field.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $selected_provider_id Selected provider ID.
 	 */
@@ -62,6 +68,9 @@ final readonly class OrderTaxFieldProviderField {
 	/**
 	 * Gets a valid provider ID from request data.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $request Request data.
 	 */
 	public function get_provider_id_from_request( array $request ): string {
@@ -74,6 +83,9 @@ final readonly class OrderTaxFieldProviderField {
 
 	/**
 	 * Gets a valid provider ID from stored configuration metadata.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $configuration_id Configuration post ID.
 	 */

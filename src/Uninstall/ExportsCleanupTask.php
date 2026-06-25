@@ -24,6 +24,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class ExportsCleanupTask extends AbstractPostTypeDatabaseCleanupTask {
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return 'exports';

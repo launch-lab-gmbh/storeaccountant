@@ -40,6 +40,9 @@ final readonly class ProductVariantExportFieldProvider implements ExportFilterFi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -55,6 +58,9 @@ final readonly class ProductVariantExportFieldProvider implements ExportFilterFi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return ProductVariantExportFilter::FILTER_ID;
@@ -62,6 +68,9 @@ final readonly class ProductVariantExportFieldProvider implements ExportFilterFi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $export_type ): bool {
 		return ProductExportAdapter::ADAPTER_ID === $export_type;
@@ -69,6 +78,9 @@ final readonly class ProductVariantExportFieldProvider implements ExportFilterFi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( ?ExportFilterSelection $selection = null, bool $read_only = false ): void {
 		$mode = ProductVariantExportFilter::MODE_PARENT_PRODUCTS;
@@ -97,6 +109,9 @@ final readonly class ProductVariantExportFieldProvider implements ExportFilterFi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_selection_from_request( array $request ): ExportFilterSelection|WP_Error {
 		$mode = isset( $request[ self::FIELD_VARIANT_MODE ] ) && is_scalar( $request[ self::FIELD_VARIANT_MODE ] )
@@ -113,6 +128,9 @@ final readonly class ProductVariantExportFieldProvider implements ExportFilterFi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_default_selection(): ExportFilterSelection {
 		return new ExportFilterSelection(

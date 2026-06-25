@@ -20,6 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Message that appends one attachment chunk to a finalized export archive.
  */
 final readonly class FinalizeExportAttachmentsMessage {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public int $export_id,
 		public ?string $renderer_id,

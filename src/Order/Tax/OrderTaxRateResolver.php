@@ -44,6 +44,9 @@ final readonly class OrderTaxRateResolver {
 	/**
 	 * Gets all configured WooCommerce tax rates plus tax rates discovered from orders.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<int, WC_Order> $orders WooCommerce orders.
 	 *
 	 * @return array<string, int>
@@ -74,6 +77,9 @@ final readonly class OrderTaxRateResolver {
 
 	/**
 	 * Gets a stable tax rate key.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param object             $tax                  Tax total or order tax item.
 	 * @param array<string, int> $configured_tax_rates Tax rate IDs keyed by tax rate key.

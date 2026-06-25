@@ -74,6 +74,9 @@ final readonly class CustomerMetaFieldProvider implements FieldProviderInterface
 	/**
 	 * Initializes the customer meta field provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param MetaFieldCollector $collector Metadata field collector.
 	 */
 	public function __construct(
@@ -82,6 +85,9 @@ final readonly class CustomerMetaFieldProvider implements FieldProviderInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -97,6 +103,9 @@ final readonly class CustomerMetaFieldProvider implements FieldProviderInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -104,6 +113,9 @@ final readonly class CustomerMetaFieldProvider implements FieldProviderInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( ExportContext $context ): bool {
 		return CustomerExportAdapter::ADAPTER_ID === $context->export_type;
@@ -111,6 +123,9 @@ final readonly class CustomerMetaFieldProvider implements FieldProviderInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_fields( ExportContext $context ): array {
 		return $this->collector->get_fields( $context, self::FIELD_ID_PREFIX, self::RESERVED_META_KEYS );
@@ -118,6 +133,9 @@ final readonly class CustomerMetaFieldProvider implements FieldProviderInterface
 
 	/**
 	 * Gets the stable export field ID for a customer meta key.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $meta_key WooCommerce customer meta key.
 	 */

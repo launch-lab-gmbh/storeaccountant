@@ -29,6 +29,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class DiagnosticLogConfiguration {
 	public const RELATIVE_PATH = LocalStorageConfiguration::RELATIVE_PATH . '/logging';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public string $root_path,
 		public string $display_root_path
@@ -36,6 +42,9 @@ final readonly class DiagnosticLogConfiguration {
 
 	/**
 	 * Builds the default diagnostic log configuration from WordPress uploads.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return self|WP_Error
 	 */
@@ -57,6 +66,9 @@ final readonly class DiagnosticLogConfiguration {
 
 	/**
 	 * Gets the configured diagnostic log root path.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return string|WP_Error
 	 */

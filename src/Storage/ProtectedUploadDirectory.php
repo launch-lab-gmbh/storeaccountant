@@ -49,6 +49,9 @@ final readonly class ProtectedUploadDirectory {
 	/**
 	 * Ensures a protected writable directory exists.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $path         Absolute directory path.
 	 * @param string $display_path Human-readable directory path.
 	 *
@@ -92,6 +95,9 @@ final readonly class ProtectedUploadDirectory {
 
 	/**
 	 * Deletes a directory when it contains only files managed by this service.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $path Directory path.
 	 */

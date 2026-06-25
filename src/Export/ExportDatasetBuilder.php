@@ -37,6 +37,9 @@ final readonly class ExportDatasetBuilder {
 	/**
 	 * Initializes the export dataset builder.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param FieldValueProviderRegistry       $field_value_providers Field value provider registry.
 	 * @param FieldValueMutatorRegistry        $field_value_mutators  Field value mutator registry.
 	 * @param ExportFieldResolver              $field_resolver        Export field resolver.
@@ -51,6 +54,9 @@ final readonly class ExportDatasetBuilder {
 
 	/**
 	 * Builds an export dataset for an adapter payload.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportAdapterInterface $adapter Export adapter.
 	 * @param ExportPayload          $payload Export payload.
@@ -69,6 +75,9 @@ final readonly class ExportDatasetBuilder {
 
 	/**
 	 * Builds an export dataset for an already loaded source item batch.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportAdapterInterface $adapter Export adapter.
 	 * @param ExportPayload          $payload Export payload.

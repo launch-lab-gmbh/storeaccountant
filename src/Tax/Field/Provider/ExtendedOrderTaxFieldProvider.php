@@ -44,6 +44,9 @@ final readonly class ExtendedOrderTaxFieldProvider implements OrderTaxFieldProvi
 	/**
 	 * Initializes the tax field provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param OrderTaxRateResolver $tax_rates Tax rate resolver.
 	 */
 	public function __construct(
@@ -52,6 +55,9 @@ final readonly class ExtendedOrderTaxFieldProvider implements OrderTaxFieldProvi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -77,6 +83,9 @@ final readonly class ExtendedOrderTaxFieldProvider implements OrderTaxFieldProvi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -84,6 +93,9 @@ final readonly class ExtendedOrderTaxFieldProvider implements OrderTaxFieldProvi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( ExportContext $context ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $context->export_type
@@ -92,6 +104,9 @@ final readonly class ExtendedOrderTaxFieldProvider implements OrderTaxFieldProvi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_label(): string {
 		return __( 'Extended tax fields', 'storeaccountant' );
@@ -99,6 +114,9 @@ final readonly class ExtendedOrderTaxFieldProvider implements OrderTaxFieldProvi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_fields( ExportContext $context ): array {
 		$fields = [];
@@ -115,6 +133,9 @@ final readonly class ExtendedOrderTaxFieldProvider implements OrderTaxFieldProvi
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_values( WC_Order $order, ExportContext $context ): array {
 		$tax_rates  = $this->get_tax_rates_from_context( $context );

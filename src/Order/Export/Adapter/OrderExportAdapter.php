@@ -47,6 +47,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 	/**
 	 * Initializes the order adapter.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param OrderTaxRateResolver $tax_rates   Tax rate resolver.
 	 * @param OrderQuery           $order_query Order query service.
 	 */
@@ -57,6 +60,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -72,6 +78,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::ADAPTER_ID;
@@ -79,6 +88,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_items( ExportPayload $payload ): iterable|WP_Error {
 		return $this->order_query->get_orders( $payload );
@@ -86,6 +98,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function count_items( ExportPayload $payload ): int|WP_Error {
 		return $this->order_query->count_orders( $payload );
@@ -93,6 +108,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_batch_items( ExportPayload $payload, int $offset, int $limit ): iterable|WP_Error {
 		return $this->order_query->get_order_batch( $payload, $offset, $limit );
@@ -100,6 +118,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_item_ids( ExportPayload $payload ): array|WP_Error {
 		$ids = $this->order_query->get_order_ids( $payload );
@@ -109,6 +130,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_items_by_ids( ExportPayload $payload, array $item_ids ): iterable|WP_Error {
 		return $this->order_query->get_orders_by_ids( $item_ids );
@@ -116,6 +140,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_context( ExportPayload $payload, iterable $items ): ExportContext {
 		$orders = is_array( $items ) ? $items : [];
@@ -134,6 +161,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_additional_fields( ExportPayload $payload, ExportContext $context ): FieldCollection {
 		return new FieldCollection();
@@ -141,6 +171,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_additional_values( mixed $item, ExportPayload $payload, ExportContext $context ): array {
 		return [];
@@ -148,6 +181,9 @@ final readonly class OrderExportAdapter implements BatchExportAdapterInterface, 
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_record_id( mixed $item ): string {
 		return $item instanceof WC_Order ? (string) $item->get_id() : '';

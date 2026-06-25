@@ -25,6 +25,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class CorePermissionActionProvider implements HookRegistrarInterface {
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter( 'storeaccountant_permission_action', [ $this, 'register_actions' ], HookRegistrarInterface::DEFAULT_PRIORITY );
@@ -32,6 +35,9 @@ final readonly class CorePermissionActionProvider implements HookRegistrarInterf
 
 	/**
 	 * Registers core actions.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, PermissionAction> $actions Registered actions.
 	 *

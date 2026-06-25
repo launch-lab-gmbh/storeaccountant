@@ -42,6 +42,9 @@ final readonly class CustomerQuery {
 	/**
 	 * Initializes the customer query service.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFilterRegistry $filters Export filter registry.
 	 */
 	public function __construct(
@@ -50,6 +53,9 @@ final readonly class CustomerQuery {
 
 	/**
 	 * Gets WooCommerce customers for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -63,6 +69,9 @@ final readonly class CustomerQuery {
 
 	/**
 	 * Counts WooCommerce customers for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -96,6 +105,9 @@ final readonly class CustomerQuery {
 
 	/**
 	 * Gets one deterministic WooCommerce customer batch.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 * @param int           $offset  Zero-based item offset.
@@ -144,6 +156,9 @@ final readonly class CustomerQuery {
 	/**
 	 * Gets matching WooCommerce customer IDs.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
 	 * @return array<int, int>|WP_Error
@@ -175,6 +190,9 @@ final readonly class CustomerQuery {
 
 	/**
 	 * Gets WooCommerce customers by IDs.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, int|string> $ids Customer IDs.
 	 *

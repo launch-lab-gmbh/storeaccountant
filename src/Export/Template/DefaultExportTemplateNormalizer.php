@@ -31,6 +31,9 @@ final readonly class DefaultExportTemplateNormalizer implements
 	StreamingExportTemplateNormalizerInterface {
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function normalize( ExportDataset $dataset, ExportPayload $payload ): array {
 		return iterator_to_array( $this->normalize_iterable( $dataset, $payload ), false );
@@ -38,6 +41,9 @@ final readonly class DefaultExportTemplateNormalizer implements
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function normalize_iterable( ExportDataset $dataset, ExportPayload $payload ): iterable {
 		$field_definitions = $dataset->fields->all();

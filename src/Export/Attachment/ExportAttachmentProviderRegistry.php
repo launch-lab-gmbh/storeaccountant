@@ -28,6 +28,9 @@ final readonly class ExportAttachmentProviderRegistry extends Registry {
 	/**
 	 * Gets providers that support the export type.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportContext $context Runtime export context.
 	 *
 	 * @return array<string, ExportAttachmentProviderInterface>

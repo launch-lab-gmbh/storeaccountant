@@ -38,6 +38,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class PluginActivator {
 	/**
 	 * Runs activation checks.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public static function activate(): void {
 		if ( version_compare( PHP_VERSION, StoreAccountantPlugin::PHP_VERSION, '<' ) ) {

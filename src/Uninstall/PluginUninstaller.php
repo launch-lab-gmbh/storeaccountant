@@ -24,6 +24,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class PluginUninstaller {
 	/**
 	 * Removes StoreAccountant database artifacts.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function uninstall(): void {
 		( new CoreUninstallCleanupTaskProvider(

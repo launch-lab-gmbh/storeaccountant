@@ -67,6 +67,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	/**
 	 * Initializes the page.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param AccountingExportPageForm          $form                   Export form renderer.
 	 * @param ExportRepository                  $repository             Export repository.
 	 * @param MessageBusInterface               $message_bus            Message bus.
@@ -103,6 +106,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'add_submenu_page' ] );
@@ -115,6 +121,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Adds hidden plugin pages used by the export list action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function add_submenu_page(): void {
 		add_submenu_page(
@@ -129,6 +138,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Removes hidden plugin pages from the visible accounting submenu after access checks.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function remove_hidden_submenu_page(): void {
 		remove_submenu_page( AccountingMenu::MENU_SLUG, self::PAGE_SLUG );
@@ -136,6 +148,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Renders the initial accounting export admin page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
@@ -155,6 +170,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Handles the export form submission.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_start_export(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
@@ -200,6 +218,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Handles export creation requests from the export overview selector.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_start_export_from_overview(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
@@ -845,6 +866,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	/**
 	 * Highlights StoreAccountant while rendering hidden StoreAccountant pages.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $parent_file Parent file.
 	 */
 	public function filter_parent_file( ?string $parent_file ): string {
@@ -857,6 +881,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Highlights the accounting exports submenu while rendering hidden StoreAccountant pages.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $submenu_file Submenu file.
 	 */

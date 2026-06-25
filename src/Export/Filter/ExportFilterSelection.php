@@ -24,6 +24,9 @@ final readonly class ExportFilterSelection {
 	/**
 	 * Initializes the filter selection.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string               $filter_id Filter identifier.
 	 * @param array<string, mixed> $settings  Filter settings.
 	 */

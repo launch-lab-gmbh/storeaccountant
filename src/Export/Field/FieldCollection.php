@@ -41,6 +41,9 @@ final readonly class FieldCollection implements IteratorAggregate, Countable {
 	/**
 	 * Initializes the field collection.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, Field> $fields Fields keyed by identifier.
 	 */
 	public function __construct( array $fields = [] ) {
@@ -60,6 +63,9 @@ final readonly class FieldCollection implements IteratorAggregate, Countable {
 	/**
 	 * Gets all fields keyed by identifier.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<string, Field>
 	 */
 	public function all(): array {
@@ -68,6 +74,9 @@ final readonly class FieldCollection implements IteratorAggregate, Countable {
 
 	/**
 	 * Gets all field identifiers in collection order.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array<int, string>
 	 */
@@ -78,6 +87,9 @@ final readonly class FieldCollection implements IteratorAggregate, Countable {
 	/**
 	 * Checks whether the field exists.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $id Field identifier.
 	 */
 	public function has( string $id ): bool {
@@ -86,6 +98,9 @@ final readonly class FieldCollection implements IteratorAggregate, Countable {
 
 	/**
 	 * Keeps only values for fields contained in the collection.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, FieldValue> $values Values keyed by field identifier.
 	 *
@@ -97,6 +112,9 @@ final readonly class FieldCollection implements IteratorAggregate, Countable {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function getIterator(): Traversable {
 		return new ArrayIterator( $this->fields );
@@ -104,6 +122,9 @@ final readonly class FieldCollection implements IteratorAggregate, Countable {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function count(): int {
 		return count( $this->fields );

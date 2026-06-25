@@ -86,6 +86,9 @@ final readonly class OrderFieldValueProvider implements FieldValueProviderInterf
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -101,6 +104,9 @@ final readonly class OrderFieldValueProvider implements FieldValueProviderInterf
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -108,6 +114,9 @@ final readonly class OrderFieldValueProvider implements FieldValueProviderInterf
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( Field $field, ExportContext $context ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $context->export_type && $this->is_supported_order_field( $field );
@@ -115,6 +124,9 @@ final readonly class OrderFieldValueProvider implements FieldValueProviderInterf
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_values( mixed $item, FieldCollection $fields, ExportContext $context ): array {
 		if ( OrderExportAdapter::ADAPTER_ID !== $context->export_type || ! $item instanceof WC_Order ) {

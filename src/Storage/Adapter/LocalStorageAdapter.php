@@ -60,6 +60,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class LocalStorageAdapter implements StorageAdapterInterface, ChunkedStorageAdapterInterface, FilesystemAdapter, HookRegistrarInterface {
 	public const ENGINE_ID = 'local';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private LocalStorageConfiguration $configuration,
 		private ProtectedUploadDirectory $directory = new ProtectedUploadDirectory()
@@ -67,6 +73,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -82,6 +91,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::ENGINE_ID;
@@ -96,6 +108,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function persist( StorageFileConfiguration $configuration ): string|WP_Error {
 		$storage_path = $this->start_persist( $configuration );
@@ -111,6 +126,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function start_persist( StorageFileConfiguration $configuration ): string|WP_Error {
 		$source_stream = $this->open_read_stream( $configuration->source_path );
@@ -150,6 +168,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function append_attachments( string $storage_path, iterable $attachments ): true|WP_Error {
 		try {
@@ -332,6 +353,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function fileExists( string $path ): bool {
 		$reference = LocalStorageReference::from_storage_path( $path );
@@ -347,6 +371,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function write( string $path, string $contents, Config $config ): void {
 		$reference = $this->get_flysystem_reference( $path );
@@ -356,6 +383,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function writeStream( string $path, $contents, Config $config ): void {
 		$reference = $this->get_flysystem_reference( $path );
@@ -365,6 +395,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function read( string $path ): string {
 		$reference = $this->get_flysystem_reference( $path );
@@ -374,6 +407,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function readStream( string $path ) {
 		$reference = $this->get_flysystem_reference( $path );
@@ -383,6 +419,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function delete( string $path ): void {
 		$this->delete_file( $path );
@@ -390,6 +429,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function delete_file( string $storage_path ): void {
 		if ( ! $this->file_exists( $storage_path ) ) {
@@ -407,6 +449,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function file_exists( string $storage_path ): bool {
 		$reference = LocalStorageReference::from_storage_path( $storage_path );
@@ -422,6 +467,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_file( string $storage_path ): StorageFile|WP_Error {
 		$reference = LocalStorageReference::from_storage_path( $storage_path );
@@ -453,6 +501,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function deleteDirectory( string $path ): void {
 		$this->delete_directory( $path );
@@ -460,6 +511,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function delete_directory( string $storage_path ): void {
 		$reference = $this->get_flysystem_reference( $storage_path );
@@ -469,6 +523,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function createDirectory( string $path, Config $config ): void {
 		$reference = $this->get_flysystem_reference( $path );
@@ -478,6 +535,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function create_directory( string $storage_path ): void {
 		$this->createDirectory( $storage_path, new Config() );
@@ -485,6 +545,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function directoryExists( string $path ): bool {
 		$reference = $this->get_flysystem_reference( $path );
@@ -494,6 +557,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function directory_exists( string $storage_path ): bool {
 		try {
@@ -505,6 +571,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function setVisibility( string $path, string $visibility ): void {
 		$reference = $this->get_flysystem_reference( $path );
@@ -514,6 +583,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function set_visibility( string $storage_path, string $visibility ): void {
 		$this->setVisibility( $storage_path, $visibility );
@@ -521,6 +593,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_visibility( string $storage_path ): string|WP_Error {
 		try {
@@ -537,6 +612,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function visibility( string $path ): FileAttributes {
 		$reference = $this->get_flysystem_reference( $path );
@@ -546,6 +624,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function mimeType( string $path ): FileAttributes {
 		$reference = $this->get_flysystem_reference( $path );
@@ -555,6 +636,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_mime_type( string $storage_path ): string|WP_Error {
 		try {
@@ -571,6 +655,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function lastModified( string $path ): FileAttributes {
 		$reference = $this->get_flysystem_reference( $path );
@@ -580,6 +667,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_last_modified( string $storage_path ): int|WP_Error {
 		try {
@@ -596,6 +686,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function fileSize( string $path ): FileAttributes {
 		$reference = $this->get_flysystem_reference( $path );
@@ -605,6 +698,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_file_size( string $storage_path ): int|WP_Error {
 		try {
@@ -621,6 +717,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function listContents( string $path, bool $deep ): iterable {
 		$reference = $this->get_flysystem_reference( $path );
@@ -630,6 +729,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function move( string $source, string $destination, Config $config ): void {
 		$source_reference      = $this->get_flysystem_reference( $source );
@@ -653,6 +755,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function copy( string $source, string $destination, Config $config ): void {
 		$source_reference      = $this->get_flysystem_reference( $source );
@@ -675,6 +780,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ensure(): true|WP_Error {
 		$path = $this->configuration->get_root_path();
@@ -688,6 +796,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 	/**
 	 * Deletes the local archive directory when it contains only managed files.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function delete_if_empty(): void {
 		$path = $this->configuration->get_root_path();

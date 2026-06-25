@@ -21,6 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Describes one invoice file type provided by an invoice plugin.
  */
 final readonly class InvoiceFileType {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public string $id,
 		public string $label

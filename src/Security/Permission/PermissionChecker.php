@@ -21,12 +21,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Checks StoreAccountant action permissions.
  */
 final readonly class PermissionChecker {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private PermissionActionRegistry $actions
 	) {}
 
 	/**
 	 * Checks whether the current user can perform an action.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $action_id Permission action ID.
 	 * @param mixed  ...$args   Optional context arguments.
@@ -51,6 +60,9 @@ final readonly class PermissionChecker {
 
 	/**
 	 * Gets the capability for a known action, falling back when the action was filtered out.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_capability( string $action_id, string $fallback ): string {
 		$action = $this->actions->get( $action_id );

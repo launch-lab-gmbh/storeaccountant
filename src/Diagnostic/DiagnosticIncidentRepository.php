@@ -34,6 +34,9 @@ final readonly class DiagnosticIncidentRepository {
 	/**
 	 * Initializes the repository.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param DiagnosticLogConfiguration $configuration Diagnostic path configuration.
 	 * @param ProtectedUploadDirectory   $directory     Protected directory preparer.
 	 */
@@ -44,6 +47,9 @@ final readonly class DiagnosticIncidentRepository {
 
 	/**
 	 * Ensures the diagnostic log directory exists and is protected.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return true|WP_Error
 	 */
@@ -59,6 +65,9 @@ final readonly class DiagnosticIncidentRepository {
 
 	/**
 	 * Stores an incident payload.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string               $support_id Incident support ID.
 	 * @param array<string, mixed> $payload    Incident payload.
@@ -112,6 +121,9 @@ final readonly class DiagnosticIncidentRepository {
 	/**
 	 * Reads an incident payload as text.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $support_id Incident support ID.
 	 *
 	 * @return string|WP_Error
@@ -144,6 +156,9 @@ final readonly class DiagnosticIncidentRepository {
 
 	/**
 	 * Checks whether the support ID matches the generated format.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function is_valid_support_id( string $support_id ): bool {
 		return 1 === preg_match( '/^[a-f0-9-]{36}$/', $support_id );

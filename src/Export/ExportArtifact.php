@@ -33,6 +33,9 @@ final readonly class ExportArtifact {
 	/**
 	 * Initializes the export artifact.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string                     $source_path    Absolute path to the rendered export artifact.
 	 * @param string                     $file_extension Generated file extension.
 	 * @param string                     $mime_type      Generated file MIME type.

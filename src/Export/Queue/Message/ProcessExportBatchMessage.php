@@ -21,6 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Message that processes one export source batch.
  */
 final readonly class ProcessExportBatchMessage {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public int $export_id,
 		public int $batch_number,

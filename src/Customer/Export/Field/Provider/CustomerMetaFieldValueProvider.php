@@ -37,6 +37,9 @@ final readonly class CustomerMetaFieldValueProvider implements FieldValueProvide
 	/**
 	 * Initializes the customer meta field value provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param MetaFieldValueFormatter $formatter Metadata value formatter.
 	 */
 	public function __construct(
@@ -45,6 +48,9 @@ final readonly class CustomerMetaFieldValueProvider implements FieldValueProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -60,6 +66,9 @@ final readonly class CustomerMetaFieldValueProvider implements FieldValueProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -67,6 +76,9 @@ final readonly class CustomerMetaFieldValueProvider implements FieldValueProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( Field $field, ExportContext $context ): bool {
 		return CustomerExportAdapter::ADAPTER_ID === $context->export_type
@@ -75,6 +87,9 @@ final readonly class CustomerMetaFieldValueProvider implements FieldValueProvide
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_values( mixed $item, FieldCollection $fields, ExportContext $context ): array {
 		if ( CustomerExportAdapter::ADAPTER_ID !== $context->export_type || ! $item instanceof WC_Customer ) {

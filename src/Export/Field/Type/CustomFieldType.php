@@ -26,6 +26,9 @@ final readonly class CustomFieldType implements FieldTypeInterface {
 	/**
 	 * Initializes the custom field type.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $id Stable field type identifier.
 	 */
 	public function __construct(
@@ -34,6 +37,9 @@ final readonly class CustomFieldType implements FieldTypeInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return $this->id;

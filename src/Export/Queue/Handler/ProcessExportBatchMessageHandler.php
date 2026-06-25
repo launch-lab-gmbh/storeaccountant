@@ -43,6 +43,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Processes one export source batch.
  */
 final readonly class ProcessExportBatchMessageHandler {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private MessageBusInterface $message_bus,
 		private ExportAdapterRegistry $export_adapters,
@@ -56,6 +62,9 @@ final readonly class ProcessExportBatchMessageHandler {
 
 	/**
 	 * Handles the process batch message.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ProcessExportBatchMessage $message Process batch message.
 	 */
@@ -251,6 +260,13 @@ final readonly class ProcessExportBatchMessageHandler {
 	}
 
 	private function maybe_apply_debug_delay(): void {
+		/**
+		 * Filters the artificial queue debug delay in seconds.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $delay_seconds Debug delay in seconds.
+		 */
 		$delay_seconds = absint( apply_filters( 'storeaccountant_export_queue_debug_delay_seconds', 0 ) );
 
 		if ( $delay_seconds > 0 ) {

@@ -36,6 +36,9 @@ final readonly class InvoiceFieldProvider implements FieldProviderInterface, Hoo
 	/**
 	 * Initializes the provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param InvoicePluginDetector $detector Invoice plugin detector.
 	 */
 	public function __construct(
@@ -44,6 +47,9 @@ final readonly class InvoiceFieldProvider implements FieldProviderInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -59,6 +65,9 @@ final readonly class InvoiceFieldProvider implements FieldProviderInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -66,6 +75,9 @@ final readonly class InvoiceFieldProvider implements FieldProviderInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( ExportContext $context ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $context->export_type && $this->detector->is_enabled();
@@ -73,6 +85,9 @@ final readonly class InvoiceFieldProvider implements FieldProviderInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_fields( ExportContext $context ): array {
 		$fields = [

@@ -273,6 +273,9 @@ final readonly class ContainerBuilder {
 
 	/**
 	 * Builds the configured container.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function build(): Container {
 		$container = ( new Container(

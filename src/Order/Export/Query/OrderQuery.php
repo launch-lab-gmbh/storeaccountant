@@ -37,6 +37,9 @@ final readonly class OrderQuery {
 	/**
 	 * Initializes the order query service.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFilterRegistry $filters Export filter registry.
 	 */
 	public function __construct(
@@ -45,6 +48,9 @@ final readonly class OrderQuery {
 
 	/**
 	 * Gets WooCommerce orders for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -62,6 +68,9 @@ final readonly class OrderQuery {
 
 	/**
 	 * Counts WooCommerce orders for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -83,6 +92,9 @@ final readonly class OrderQuery {
 	/**
 	 * Gets one deterministic WooCommerce order batch.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportPayload $payload Export payload.
 	 * @param int           $offset  Zero-based item offset.
 	 * @param int           $limit   Batch size.
@@ -101,6 +113,9 @@ final readonly class OrderQuery {
 
 	/**
 	 * Gets matching WooCommerce order IDs.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -173,6 +188,9 @@ final readonly class OrderQuery {
 
 	/**
 	 * Gets WooCommerce orders by IDs.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, int|string> $ids Order IDs.
 	 *

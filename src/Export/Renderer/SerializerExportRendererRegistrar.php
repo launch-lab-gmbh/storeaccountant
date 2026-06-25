@@ -28,6 +28,9 @@ final readonly class SerializerExportRendererRegistrar implements HookRegistrarI
 	/**
 	 * Initializes the serializer export renderer registrar.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportTemplateNormalizerInterface $template_normalizer Template normalizer.
 	 * @param SerializerInterface               $serializer          Serializer.
 	 */
@@ -38,6 +41,9 @@ final readonly class SerializerExportRendererRegistrar implements HookRegistrarI
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
