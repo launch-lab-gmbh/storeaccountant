@@ -12,8 +12,6 @@ declare(strict_types=1);
 
 namespace StoreAccountant\Uninstall;
 
-use StoreAccountant\Export\Queue\ExportQueueCleanup;
-use StoreAccountant\Queue\Transport\ActionSchedulerTransport;
 use StoreAccountant\Uninstall\Contract\UninstallCleanupTaskInterface;
 use function as_unschedule_all_actions;
 use function array_keys;
@@ -32,6 +30,26 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Removes StoreAccountant plugin settings and technical database state.
  */
 final readonly class PluginSettingsCleanupTask implements UninstallCleanupTaskInterface {
+	/**
+	 * StoreAccountant cron hook for stale export queue cleanup.
+	 */
+	private const QUEUE_CLEANUP_HOOK = 'storeaccountant_cleanup_export_queue';
+
+	/**
+	 * StoreAccountant Action Scheduler hooks.
+	 *
+	 * Duplicated here intentionally so uninstall cleanup does not have to load Symfony-backed queue transport classes.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ACTION_SCHEDULER_HOOKS = [
+		'storeaccountant_export_queue_start',
+		'storeaccountant_export_queue_process_batch',
+		'storeaccountant_export_queue_finalize',
+		'storeaccountant_export_queue_finalize_attachments',
+		'storeaccountant_queue_message',
+	];
+
 	/**
 	 * StoreAccountant option names that should not survive uninstall.
 	 *
@@ -91,9 +109,9 @@ final readonly class PluginSettingsCleanupTask implements UninstallCleanupTaskIn
 	 * Deletes queued StoreAccountant cron and Action Scheduler records.
 	 */
 	private function delete_scheduled_queue_state(): void {
-		wp_clear_scheduled_hook( ExportQueueCleanup::HOOK );
+		wp_clear_scheduled_hook( self::QUEUE_CLEANUP_HOOK );
 
-		foreach ( ActionSchedulerTransport::get_hooks() as $hook ) {
+		foreach ( self::ACTION_SCHEDULER_HOOKS as $hook ) {
 			wp_clear_scheduled_hook( $hook );
 
 			if ( function_exists( 'as_unschedule_all_actions' ) ) {

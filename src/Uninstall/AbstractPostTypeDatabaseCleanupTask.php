@@ -26,6 +26,22 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 abstract readonly class AbstractPostTypeDatabaseCleanupTask implements UninstallCleanupTaskInterface {
 	/**
+	 * Post statuses that can contain StoreAccountant database artifacts.
+	 *
+	 * @var array<int, string>
+	 */
+	private const POST_STATUSES = [
+		'publish',
+		'future',
+		'draft',
+		'pending',
+		'private',
+		'trash',
+		'auto-draft',
+		'inherit',
+	];
+
+	/**
 	 * {@inheritDoc}
 	 */
 	final public function cleanup(): void {
@@ -51,7 +67,7 @@ abstract readonly class AbstractPostTypeDatabaseCleanupTask implements Uninstall
 				[
 					'fields'           => 'ids',
 					'post_type'        => $this->get_post_type(),
-					'post_status'      => 'any',
+					'post_status'      => self::POST_STATUSES,
 					'posts_per_page'   => -1,
 					'no_found_rows'    => true,
 					'suppress_filters' => true,

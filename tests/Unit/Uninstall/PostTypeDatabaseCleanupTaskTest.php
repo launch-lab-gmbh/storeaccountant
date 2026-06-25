@@ -52,11 +52,20 @@ final class PostTypeDatabaseCleanupTaskTest extends TestCase {
 			->once()
 			->with(
 				[
-					'fields'         => 'ids',
-					'post_type'      => $post_type,
-					'post_status'    => 'any',
-					'posts_per_page' => -1,
-					'no_found_rows'  => true,
+					'fields'           => 'ids',
+					'post_type'        => $post_type,
+					'post_status'      => [
+						'publish',
+						'future',
+						'draft',
+						'pending',
+						'private',
+						'trash',
+						'auto-draft',
+						'inherit',
+					],
+					'posts_per_page'   => -1,
+					'no_found_rows'    => true,
 					'suppress_filters' => true,
 				]
 			)
