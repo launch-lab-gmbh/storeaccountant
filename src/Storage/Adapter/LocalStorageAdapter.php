@@ -32,6 +32,7 @@ use StoreAccountant\Storage\Contract\StorageAdapterInterface;
 use StoreAccountant\Storage\StorageFile;
 use StoreAccountant\Storage\StorageFileConfiguration;
 use function basename;
+use function dirname;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Stream resources are required by Flysystem.
 use function fclose;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Stream resources are required by Flysystem.
@@ -180,6 +181,12 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 	 * @throws RuntimeException When the archive cannot be written.
 	 */
 	private function start_zip_archive( StorageFileConfiguration $configuration ): void {
+		$ensured = $this->ensure_archive_directory( $configuration->storage_path );
+
+		if ( is_wp_error( $ensured ) ) {
+			throw new RuntimeException( esc_html( $ensured->get_error_message() ) );
+		}
+
 		$archive_path = $this->configuration->get_archive_path( $configuration->storage_path );
 
 		if ( is_wp_error( $archive_path ) ) {
@@ -226,6 +233,12 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 	 * @throws RuntimeException When the archive cannot be written.
 	 */
 	private function append_zip_attachments( string $storage_path, iterable $attachments ): void {
+		$ensured = $this->ensure_archive_directory( $storage_path );
+
+		if ( is_wp_error( $ensured ) ) {
+			throw new RuntimeException( esc_html( $ensured->get_error_message() ) );
+		}
+
 		$archive_path = $this->configuration->get_archive_path( $storage_path );
 
 		if ( is_wp_error( $archive_path ) ) {
@@ -692,7 +705,7 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 	 * @throws RuntimeException When the local storage adapter is unavailable.
 	 */
 	private function get_adapter( string $archive_file ): ZipArchiveAdapter {
-		$result = $this->ensure();
+		$result = $this->ensure_archive_directory( $archive_file );
 
 		if ( is_wp_error( $result ) ) {
 			throw new RuntimeException( esc_html( $result->get_error_message() ) );
@@ -706,6 +719,32 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Chu
 
 		return new ZipArchiveAdapter(
 			new FilesystemZipArchiveProvider( $archive_path )
+		);
+	}
+
+	/**
+	 * Ensures the local archive parent directory exists and is protected.
+	 *
+	 * @param string $archive_file Relative archive file path.
+	 *
+	 * @return true|WP_Error
+	 */
+	private function ensure_archive_directory( string $archive_file ): true|WP_Error {
+		$root_path = $this->configuration->get_root_path();
+
+		if ( is_wp_error( $root_path ) ) {
+			return $root_path;
+		}
+
+		$relative_directory = dirname( $archive_file );
+
+		if ( '' === $archive_file || '.' === $relative_directory ) {
+			return $this->directory->ensure( $root_path, $this->configuration->display_root_path );
+		}
+
+		return $this->directory->ensure(
+			trailingslashit( $root_path ) . $relative_directory,
+			trailingslashit( $this->configuration->display_root_path ) . $relative_directory
 		);
 	}
 

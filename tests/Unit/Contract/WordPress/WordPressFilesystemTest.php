@@ -87,16 +87,35 @@ final class WordPressFilesystemTest extends TestCase {
 		self::assertSame( [ '/tmp/storeaccountant' ], $filesystem->removed );
 	}
 
+	public function test_delete_delegates_to_initialized_filesystem(): void {
+		$filesystem               = new class() {
+			public array $deleted = [];
+
+			public function delete( string $path, bool $recursive, string|false $type ): bool {
+				$this->deleted[] = [ $path, $recursive, $type ];
+
+				return true;
+			}
+		};
+		$GLOBALS['wp_filesystem'] = $filesystem;
+
+		Functions\expect( 'WP_Filesystem' )->never();
+
+		self::assertTrue( WordPressFilesystem::delete( '/tmp/storeaccountant/tmp/exports/42', true, 'd' ) );
+		self::assertSame( [ [ '/tmp/storeaccountant/tmp/exports/42', true, 'd' ] ], $filesystem->deleted );
+	}
+
 	public function test_methods_return_failure_values_when_filesystem_initialization_fails(): void {
 		$GLOBALS['wp_filesystem'] = null;
 
 		Functions\expect( 'WP_Filesystem' )
-			->times( 3 )
+			->times( 4 )
 			->andReturn( false );
 
 		self::assertFalse( WordPressFilesystem::put_contents( '/tmp/export.csv', 'contents' ) );
 		self::assertFalse( WordPressFilesystem::get_contents( '/tmp/export.csv' ) );
 		self::assertFalse( WordPressFilesystem::rmdir( '/tmp/storeaccountant' ) );
+		self::assertFalse( WordPressFilesystem::delete( '/tmp/storeaccountant/tmp/exports/42', true, 'd' ) );
 	}
 
 	public function test_methods_use_filesystem_created_during_initialization(): void {

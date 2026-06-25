@@ -34,6 +34,8 @@ as breaking changes.
 - Persisted exports.
 - Plugin settings for enabled storage locations.
 - Selectable queue transports with Action Scheduler loopback processing.
+- Database-only uninstall cleanup for plugin settings, export configurations,
+  and saved export records.
 
 ## Registry Rules
 
@@ -131,6 +133,12 @@ saving a tab, or running a custom export button. Role lists shown in the
 settings UI can be adjusted with `storeaccountant_assignable_permission_roles`;
 only roles intended for wp-admin access should be exposed there.
 
+Uninstall cleanup tasks use the shared hook
+`storeaccountant_uninstall_cleanup_task`. They run only when StoreAccountant is
+uninstalled, not when it is deactivated. Cleanup tasks should remove database
+artifacts only. The built-in export cleanup intentionally does not delete
+generated export files or diagnostic log files.
+
 ## Hook Overview
 
 | Hook | Purpose | Documentation |
@@ -156,6 +164,7 @@ only roles intended for wp-admin access should be exposed there.
 | `storeaccountant_permission_action` | Registers permission-controlled admin actions. | [Permissions](permissions.md) |
 | `storeaccountant_assignable_permission_roles` | Filters backend roles shown in the permission assignment UI. | [Permissions](permissions.md) |
 | `storeaccountant_queue_transport_provider` | Registers Symfony Messenger queue transport providers for background work. | [Queue Transports](extension-points/queue-transports.md) |
+| `storeaccountant_uninstall_cleanup_task` | Registers database-only cleanup tasks for plugin uninstall. | [Uninstall Cleanup Tasks](extension-points/uninstall-cleanup-tasks.md) |
 | `storeaccountant_export_batch_size` | Filters the saved batch size before export queue batches are enqueued. The configured export value remains the default. | [Queue Transports](extension-points/queue-transports.md) |
 | `storeaccountant_export_queue_debug_delay_seconds` | Adds an optional per-step delay for export queue debugging and polling tests. Default is `0`; production code should leave this unset. | [Queue Transports](extension-points/queue-transports.md) |
 | `storeaccountant_export_polling_scheduled_window_seconds` | Filters how close a scheduled export run must be before the admin export overview polls it. Default is five minutes. | [Queue Transports](extension-points/queue-transports.md) |
@@ -179,4 +188,5 @@ only roles intended for wp-admin access should be exposed there.
 - [Order Tax Field Providers](extension-points/order-tax-field-providers.md)
 - [Queue Transports](extension-points/queue-transports.md)
 - [Storage Adapters](extension-points/storage-adapters.md)
+- [Uninstall Cleanup Tasks](extension-points/uninstall-cleanup-tasks.md)
 - [Permissions](permissions.md)

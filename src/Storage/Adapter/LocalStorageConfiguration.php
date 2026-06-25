@@ -14,8 +14,6 @@ declare(strict_types=1);
 namespace StoreAccountant\Storage\Adapter;
 
 use WP_Error;
-use function dirname;
-use function is_dir;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -87,16 +85,6 @@ final readonly class LocalStorageConfiguration {
 			return trailingslashit( $root_path );
 		}
 
-		$archive_path = trailingslashit( $root_path ) . $archive_file;
-		$directory    = dirname( $archive_path );
-
-		if ( ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
-			return new WP_Error(
-				'storeaccountant_archive_directory_not_created',
-				__( 'StoreAccountant could not create the local archive directory.', 'storeaccountant' )
-			);
-		}
-
-		return $archive_path;
+		return trailingslashit( $root_path ) . $archive_file;
 	}
 }

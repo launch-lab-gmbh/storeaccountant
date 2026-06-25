@@ -21,6 +21,19 @@ This document describes the current technical state of StoreAccountant.
 Value objects such as `ExportPeriod` are intentionally not registered as
 container services.
 
+## Uninstall Cleanup
+
+Plugin deactivation and plugin uninstall are intentionally separate. Deactivation
+must not remove saved StoreAccountant data. Uninstall runs through
+`uninstall.php` and removes StoreAccountant database artifacts through cleanup
+tasks registered on `storeaccountant_uninstall_cleanup_task`.
+
+The built-in uninstall cleanup removes plugin settings, StoreAccountant role
+capabilities, queued StoreAccountant cron/action-scheduler state, saved export
+configurations, and saved export records. It is deliberately database-only:
+generated export archives below the StoreAccountant upload storage and diagnostic
+log files are not deleted during uninstall.
+
 ## WooCommerce HPOS Compatibility
 
 StoreAccountant declares compatibility with WooCommerce High-Performance Order

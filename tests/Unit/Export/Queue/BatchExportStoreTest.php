@@ -52,6 +52,40 @@ final class BatchExportStoreTest extends TestCase {
 			public function rmdir( string $path ): bool {
 				return @rmdir( $path );
 			}
+
+			public function delete( string $path, bool $recursive = false, string|false $type = false ): bool {
+				if ( ! is_dir( $path ) ) {
+					return false;
+				}
+
+				$items = scandir( $path );
+
+				if ( false === $items ) {
+					return false;
+				}
+
+				foreach ( $items as $item ) {
+					if ( '.' === $item || '..' === $item ) {
+						continue;
+					}
+
+					$item_path = $path . DIRECTORY_SEPARATOR . $item;
+
+					if ( is_dir( $item_path ) ) {
+						if ( ! $recursive || ! $this->delete( $item_path, true, 'd' ) ) {
+							return false;
+						}
+
+						continue;
+					}
+
+					if ( is_file( $item_path ) && ! unlink( $item_path ) ) {
+						return false;
+					}
+				}
+
+				return rmdir( $path );
+			}
 		};
 
 		Functions\when( '__' )->alias( static fn ( string $text ): string => $text );
@@ -60,6 +94,7 @@ final class BatchExportStoreTest extends TestCase {
 		Functions\when( 'get_temp_dir' )->alias( fn (): string => $this->tmp_dir );
 		Functions\when( 'trailingslashit' )->alias( static fn ( string $path ): string => rtrim( $path, '/\\' ) . '/' );
 		Functions\when( 'wp_mkdir_p' )->alias( static fn ( string $path ): bool => is_dir( $path ) || mkdir( $path, 0777, true ) );
+		Functions\when( 'wp_is_writable' )->alias( static fn ( string $path ): bool => is_writable( $path ) );
 		Functions\when( 'wp_json_encode' )->alias( static fn ( mixed $value ): string|false => json_encode( $value ) );
 		Functions\when( 'WP_Filesystem' )->alias( static fn (): bool => true );
 		Functions\when( 'wp_delete_file' )->alias(
@@ -89,8 +124,14 @@ final class BatchExportStoreTest extends TestCase {
 
 		self::assertFileExists( $path );
 		self::assertFileExists( $attachments_path );
+		self::assertFileExists( $this->tmp_dir . '/storeaccountant/index.html' );
+		self::assertFileExists( $this->tmp_dir . '/storeaccountant/.htaccess' );
+		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/index.html' );
+		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/.htaccess' );
 		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/exports/index.html' );
 		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/exports/.htaccess' );
+		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/exports/123/index.html' );
+		self::assertFileExists( $this->tmp_dir . '/storeaccountant/tmp/exports/123/.htaccess' );
 
 		$stored = json_decode( (string) file_get_contents( $path ), true );
 		$stored_attachments = json_decode( (string) file_get_contents( $attachments_path ), true );
@@ -167,6 +208,8 @@ final class BatchExportStoreTest extends TestCase {
 		self::assertTrue( $store->save_batch( 123, 1, $this->dataset( 'first', 'A' ) ) );
 
 		$directory = $this->tmp_dir . '/storeaccountant/tmp/exports/123';
+		mkdir( $directory . '/nested', 0777, true );
+		file_put_contents( $directory . '/nested/generated-list.dat', 'temporary export list' );
 		self::assertDirectoryExists( $directory );
 
 		$store->delete_export( 123 );

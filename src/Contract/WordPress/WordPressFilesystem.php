@@ -61,6 +61,23 @@ final readonly class WordPressFilesystem {
 	}
 
 	/**
+	 * Deletes a file or directory through WP_Filesystem.
+	 *
+	 * @param string $path      Absolute file or directory path.
+	 * @param bool   $recursive Whether directories should be deleted recursively.
+	 * @param string $type      Optional filesystem object type, such as 'f' or 'd'.
+	 */
+	public static function delete( string $path, bool $recursive = false, string $type = '' ): bool {
+		$filesystem = self::get_filesystem();
+
+		return null !== $filesystem && (bool) $filesystem->delete(
+			$path,
+			$recursive,
+			'' !== $type ? $type : false
+		);
+	}
+
+	/**
 	 * Gets the initialized WordPress filesystem object.
 	 */
 	private static function get_filesystem(): ?object {

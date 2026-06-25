@@ -17,10 +17,14 @@ use WP_Error;
 use StoreAccountant\Contract\WordPress\WordPressFilesystem;
 use function __;
 use function array_diff;
+use function array_reverse;
+use function basename;
+use function dirname;
 use function file_exists;
 use function function_exists;
 use function is_dir;
 use function is_file;
+use function is_wp_error;
 use function scandir;
 use function sprintf;
 use function trailingslashit;
@@ -75,7 +79,15 @@ final readonly class ProtectedUploadDirectory {
 			);
 		}
 
-		return $this->ensure_protection_files( $path, $display_path );
+		foreach ( $this->get_managed_directory_paths( $path ) as $directory_path ) {
+			$protected = $this->ensure_protection_files( $directory_path, $display_path );
+
+			if ( is_wp_error( $protected ) ) {
+				return $protected;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -142,6 +154,31 @@ final readonly class ProtectedUploadDirectory {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Gets all plugin-managed directories that should contain protection files.
+	 *
+	 * @param string $path Directory path.
+	 *
+	 * @return array<int, string>
+	 */
+	private function get_managed_directory_paths( string $path ): array {
+		$paths   = [];
+		$current = trailingslashit( $path );
+		$current = rtrim( $current, '/\\' );
+
+		while ( '' !== $current && dirname( $current ) !== $current ) {
+			$paths[] = $current;
+
+			if ( 'storeaccountant' === basename( $current ) ) {
+				return array_reverse( $paths );
+			}
+
+			$current = dirname( $current );
+		}
+
+		return [ rtrim( $path, '/\\' ) ];
 	}
 
 	/**

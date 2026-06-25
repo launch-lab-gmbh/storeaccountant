@@ -23,6 +23,7 @@ use StoreAccountant\Export\Field\FieldCollection;
 use StoreAccountant\Export\Field\FieldValue;
 use StoreAccountant\Export\Field\Type\NumberFieldType;
 use StoreAccountant\Contract\WordPress\WordPressFilesystem;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use function array_key_exists;
 use function array_slice;
 use function count;
@@ -32,7 +33,6 @@ use function dirname;
 use function fclose;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Temporary attachment streams require PHP resources.
 use function fopen;
-use function function_exists;
 use function is_array;
 use function is_dir;
 use function is_file;
@@ -40,6 +40,7 @@ use function is_iterable;
 use function is_resource;
 use function is_scalar;
 use function is_string;
+use function is_wp_error;
 use function json_decode;
 use function ksort;
 use function opendir;
@@ -50,7 +51,6 @@ use function stream_copy_to_stream;
 use function trailingslashit;
 use function trim;
 use function wp_json_encode;
-use function wp_delete_file;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -62,15 +62,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class BatchExportStore {
 	private const DIRECTORY = 'storeaccountant/tmp/exports';
 
-	private const INDEX_FILE = 'index.html';
-
-	private const HTACCESS_FILE = '.htaccess';
-
-	private const HTACCESS_CONTENT = 'deny from all';
-
 	private const ATTACHMENT_METADATA_FILE_FORMAT = 'batch-%05d-attachments.dat';
 
 	private const ITEM_ID_SNAPSHOT_FILE = 'item-ids.dat';
+
+	public function __construct(
+		private ProtectedUploadDirectory $directory = new ProtectedUploadDirectory()
+	) {}
 
 	/**
 	 * Saves one normalized export batch fragment.
@@ -314,7 +312,7 @@ final readonly class BatchExportStore {
 		$directory = $this->get_export_directory_path( $export_id );
 
 		if ( is_dir( $directory ) ) {
-			$this->delete_directory( $directory );
+			WordPressFilesystem::delete( $directory, true, 'd' );
 		}
 	}
 
@@ -357,17 +355,11 @@ final readonly class BatchExportStore {
 	 */
 	private function get_export_directory( int $export_id ): string|WP_Error {
 		$directory = $this->get_export_directory_path( $export_id );
+		$ensured   = $this->directory->ensure( $directory, $this->get_export_directory_display_path( $export_id ) );
 
-		if ( ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
-			return new WP_Error(
-				'storeaccountant_export_batch_directory_failed',
-				__( 'StoreAccountant could not create the temporary export directory.', 'storeaccountant' )
-			);
+		if ( is_wp_error( $ensured ) ) {
+			return $ensured;
 		}
-
-		$this->ensure_protection_file( $this->get_root_directory_path(), self::INDEX_FILE, '' );
-		$this->ensure_protection_file( $this->get_root_directory_path(), self::HTACCESS_FILE, self::HTACCESS_CONTENT );
-		$this->ensure_protection_file( $directory, self::INDEX_FILE, '' );
 
 		return $directory;
 	}
@@ -382,6 +374,15 @@ final readonly class BatchExportStore {
 	}
 
 	/**
+	 * Gets the export temp directory display path.
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	private function get_export_directory_display_path( int $export_id ): string {
+		return 'wp-content/uploads/' . self::DIRECTORY . '/' . (string) $export_id;
+	}
+
+	/**
 	 * Gets the queue temp root path.
 	 */
 	private function get_root_directory_path(): string {
@@ -389,25 +390,6 @@ final readonly class BatchExportStore {
 		$base    = is_array( $uploads ) && is_string( $uploads['basedir'] ?? null ) ? $uploads['basedir'] : get_temp_dir();
 
 		return trailingslashit( $base ) . self::DIRECTORY;
-	}
-
-	/**
-	 * Writes a protection file when absent.
-	 *
-	 * @param string $directory Directory path.
-	 * @param string $file      File name.
-	 * @param string $contents  File contents.
-	 */
-	private function ensure_protection_file( string $directory, string $file, string $contents ): void {
-		if ( ! is_dir( $directory ) ) {
-			wp_mkdir_p( $directory );
-		}
-
-		$path = trailingslashit( $directory ) . $file;
-
-		if ( ! is_file( $path ) ) {
-			WordPressFilesystem::put_contents( $path, $contents );
-		}
 	}
 
 	/**
@@ -842,51 +824,6 @@ final readonly class BatchExportStore {
 	}
 
 	/**
-	 * Recursively deletes one managed temp directory.
-	 *
-	 * @param string $directory Directory path.
-	 */
-	private function delete_directory( string $directory ): void {
-		$files = is_dir( $directory ) ? scandir( $directory ) : false;
-
-		if ( false === $files ) {
-			return;
-		}
-
-		foreach ( $files as $file ) {
-			if ( '.' === $file || '..' === $file ) {
-				continue;
-			}
-
-			$path = trailingslashit( $directory ) . $file;
-
-			if ( is_dir( $path ) ) {
-				$this->delete_directory( $path );
-				continue;
-			}
-
-			if ( is_file( $path ) ) {
-				$this->delete_file( $path );
-			}
-		}
-
-		$this->delete_empty_directory( $directory );
-	}
-
-	/**
-	 * Deletes a file.
-	 *
-	 * @param string $path File path.
-	 */
-	private function delete_file( string $path ): void {
-		if ( ! function_exists( 'wp_delete_file' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-		}
-
-		wp_delete_file( $path );
-	}
-
-	/**
 	 * Opens a write stream for temporary attachment storage.
 	 *
 	 * @param string $path File path.
@@ -920,14 +857,5 @@ final readonly class BatchExportStore {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Temporary attachment storage requires PHP streams.
 			fclose( $stream );
 		}
-	}
-
-	/**
-	 * Deletes an empty local directory through WP_Filesystem.
-	 *
-	 * @param string $directory Directory path.
-	 */
-	private function delete_empty_directory( string $directory ): void {
-		WordPressFilesystem::rmdir( $directory );
 	}
 }

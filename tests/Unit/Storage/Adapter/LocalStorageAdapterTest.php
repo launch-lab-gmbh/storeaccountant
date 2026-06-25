@@ -116,6 +116,8 @@ final class LocalStorageAdapterTest extends TestCase {
 		);
 
 		self::assertSame( 'exports/token.zip', $result );
+		self::assertFileExists( $this->root . '/exports/index.html' );
+		self::assertFileExists( $this->root . '/exports/.htaccess' );
 		self::assertTrue( $this->adapter()->file_exists( 'exports/token.zip' ) );
 
 		$file = $this->adapter()->get_file( 'exports/token.zip' );

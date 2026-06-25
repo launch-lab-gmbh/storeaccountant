@@ -118,6 +118,7 @@ use StoreAccountant\Export\ExportStoragePathGenerator;
 use StoreAccountant\Export\Queue\BatchExportStore;
 use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\ExportQueueCleanup;
+use StoreAccountant\Export\Queue\ExportTemporaryFilesCleanupSubscriber;
 use StoreAccountant\Export\Queue\Handler\FinalizeExportAttachmentsMessageHandler;
 use StoreAccountant\Export\Queue\Handler\FinalizeExportMessageHandler;
 use StoreAccountant\Export\Queue\Handler\ProcessExportBatchMessageHandler;
@@ -303,8 +304,11 @@ final readonly class ContainerBuilder {
 				->addArgument( RolePermissionRepository::class );
 			$container->addShared( ExportEventLogSubscriber::class )
 				->addArgument( ExportRepository::class );
+			$container->addShared( ExportTemporaryFilesCleanupSubscriber::class )
+				->addArgument( BatchExportStore::class );
 			$container->addShared( EventSubscriberRegistrar::class )
-				->addArgument( ExportEventLogSubscriber::class );
+				->addArgument( ExportEventLogSubscriber::class )
+				->addArgument( ExportTemporaryFilesCleanupSubscriber::class );
 			$container->addShared(
 				MessengerTransportSerializerInterface::class,
 				static fn (): MessengerTransportSerializerInterface => new MessengerTransportSerializer()

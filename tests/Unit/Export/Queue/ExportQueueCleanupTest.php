@@ -59,6 +59,40 @@ final class ExportQueueCleanupTest extends TestCase {
 			public function rmdir( string $path ): bool {
 				return is_dir( $path ) && rmdir( $path );
 			}
+
+			public function delete( string $path, bool $recursive = false, string|false $type = false ): bool {
+				if ( ! is_dir( $path ) ) {
+					return false;
+				}
+
+				$items = scandir( $path );
+
+				if ( false === $items ) {
+					return false;
+				}
+
+				foreach ( $items as $item ) {
+					if ( '.' === $item || '..' === $item ) {
+						continue;
+					}
+
+					$item_path = $path . DIRECTORY_SEPARATOR . $item;
+
+					if ( is_dir( $item_path ) ) {
+						if ( ! $recursive || ! $this->delete( $item_path, true, 'd' ) ) {
+							return false;
+						}
+
+						continue;
+					}
+
+					if ( is_file( $item_path ) && ! unlink( $item_path ) ) {
+						return false;
+					}
+				}
+
+				return rmdir( $path );
+			}
 		};
 
 		Functions\when( '__' )->returnArg( 1 );
