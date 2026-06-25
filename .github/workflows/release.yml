@@ -481,7 +481,7 @@ jobs:
           path: build/docs
 
       - name: Create GitHub Initial Release
-        if: ${{ github.ref_name == '1.0.0' }}
+        if: ${{ github.ref_name == '1.0.1' }}
         uses: softprops/action-gh-release@v2
         with:
           name: StoreAccountant ${{ github.ref_name }}
@@ -495,7 +495,7 @@ jobs:
             build/docs/storeaccountant-documentation-developer.zip
 
       - name: Create GitHub Release
-        if: ${{ github.ref_name != '1.0.0' }}
+        if: ${{ github.ref_name != '1.0.1' }}
         uses: softprops/action-gh-release@v2
         with:
           name: StoreAccountant ${{ github.ref_name }}
