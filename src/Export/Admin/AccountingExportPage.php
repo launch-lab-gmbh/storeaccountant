@@ -402,7 +402,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		$export_adapter      = $draft['export_adapter'];
 		$export_writer       = Request::post_key( 'storeaccountant_export_writer', CsvExportRenderer::RENDERER_ID );
 		$batch_size          = $this->settings_fields->get_batch_size_from_request( $request );
-		$password            = Request::post_text( 'storeaccountant_export_download_password' );
+		$password            = Request::post_secret( 'storeaccountant_export_download_password' );
 		$filters             = $this->get_filter_selections_from_request( $export_adapter, $request );
 		$tax_provider_id     = $this->settings_fields->get_tax_provider_id_from_request( $export_adapter, $request );
 		$additional_settings = $this->settings_fields->get_additional_settings_from_request( $export_adapter, $request );

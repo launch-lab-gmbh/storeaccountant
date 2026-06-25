@@ -57,7 +57,7 @@ final class ExportDownloadControllerTest extends TestCase {
 			42 => [
 				ExportPostType::META_DOWNLOAD_TOKEN => $this->token,
 				ExportPostType::META_STATUS         => ExportStatus::COMPLETED,
-				ExportPostType::META_DOWNLOAD_PASSWORD_HASH => password_hash( 'secret', PASSWORD_DEFAULT ),
+				ExportPostType::META_DOWNLOAD_PASSWORD_HASH => password_hash( '>j(Hq^ENVD Xnz86v/<j/s', PASSWORD_DEFAULT ),
 				ExportPostType::META_PATH           => 'exports/may.csv',
 				ExportPostType::META_STORAGE_ENGINE => 'local',
 			],

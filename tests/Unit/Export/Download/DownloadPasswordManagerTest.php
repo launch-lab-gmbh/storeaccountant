@@ -85,6 +85,37 @@ final class DownloadPasswordManagerTest extends TestCase {
 		self::assertTrue( $this->manager()->verify( 'secret-password', (string) $stored_hash ) );
 	}
 
+	public function test_save_global_password_preserves_special_characters(): void {
+		$password    = '\'"$&%?>=`j(Hq^ENVD Xnz86v/<j/s';
+		$stored_hash = null;
+
+		Functions\expect( 'update_option' )
+			->once()
+			->with(
+				DownloadPasswordManager::OPTION_GLOBAL_PASSWORD,
+				Mockery::type( 'string' ),
+				false
+			);
+		Functions\expect( 'update_option' )
+			->once()
+			->with(
+				DownloadPasswordManager::OPTION_GLOBAL_PASSWORD_HASH,
+				Mockery::type( 'string' ),
+				false
+			)
+			->andReturnUsing(
+				static function ( string $option, string $value ) use ( &$stored_hash ): bool {
+					$stored_hash = $value;
+
+					return true;
+				}
+			);
+
+		self::assertTrue( $this->manager()->save_global_password( $password ) );
+		self::assertTrue( $this->manager()->verify( $password, (string) $stored_hash ) );
+		self::assertFalse( $this->manager()->verify( 'j(Hq^ENVD Xnz86v/j/s', (string) $stored_hash ) );
+	}
+
 	public function test_empty_submission_reuses_existing_global_password(): void {
 		$encrypted = $this->encrypted( 'existing-password' );
 		$hash      = password_hash( 'existing-password', PASSWORD_DEFAULT );

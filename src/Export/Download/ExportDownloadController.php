@@ -152,7 +152,7 @@ final readonly class ExportDownloadController implements HookRegistrarInterface 
 				$this->render_password_form( $export_id, __( 'The download request could not be verified.', 'storeaccountant' ) );
 			}
 
-			$password = Request::post_text( 'storeaccountant_export_download_password' );
+			$password = Request::post_secret( 'storeaccountant_export_download_password' );
 
 			if ( $this->passwords->verify( $password, (string) get_post_meta( $export_id, ExportPostType::META_DOWNLOAD_PASSWORD_HASH, true ) ) ) {
 				$this->stream_export( $export_id );

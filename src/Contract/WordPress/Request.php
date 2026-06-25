@@ -87,6 +87,23 @@ final readonly class Request {
 	}
 
 	/**
+	 * Gets an unsanitized scalar POST value for secrets that must preserve special characters.
+	 *
+	 * Use this only for values that are validated through exact comparison, hashing, or cryptographic checks.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param string $name     Request field name.
+	 * @param string $fallback Fallback value.
+	 */
+	public static function post_secret( string $name, string $fallback = '' ): string {
+		$value = filter_input( INPUT_POST, $name, FILTER_UNSAFE_RAW );
+
+		return is_scalar( $value ) ? (string) $value : $fallback;
+	}
+
+	/**
 	 * Gets a sanitized key value from POST data.
 	 *
 	 * @since 1.0.0

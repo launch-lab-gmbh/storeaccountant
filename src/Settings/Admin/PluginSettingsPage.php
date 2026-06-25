@@ -336,7 +336,7 @@ final readonly class PluginSettingsPage implements HookRegistrarInterface {
 		}
 
 		if ( self::TAB_SECURITY === $active_tab ) {
-			$new_password = Request::post_text( 'storeaccountant_global_download_password' );
+			$new_password = Request::post_secret( 'storeaccountant_global_download_password' );
 
 			if ( '' !== $new_password ) {
 				$result = $this->passwords->save_global_password( $new_password );

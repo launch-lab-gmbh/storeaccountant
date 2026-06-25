@@ -218,7 +218,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		$additional_settings    = [];
 		$stored_tax_provider_id = '';
 		$batch_size             = $this->settings_fields->get_batch_size_from_request( $request );
-		$password               = Request::post_text( 'storeaccountant_configuration_download_password' );
+		$password               = Request::post_secret( 'storeaccountant_configuration_download_password' );
 		$redirect_with_error    = function ( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [] ) use ( $configuration_id ): void {
 			$incident = $this->log_save_error( $reason, $configuration_id, $wp_error, $context );
 			$this->redirect_with_error( $error, $configuration_id, $incident );
