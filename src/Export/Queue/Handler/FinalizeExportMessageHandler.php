@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace StoreAccountant\Export\Queue\Handler;
 
+use Symfony\Component\Messenger\MessageBusInterface;
 use Throwable;
 use WP_Error;
 use StoreAccountant\Export\Event\ExportEventDispatcher;
@@ -20,7 +21,9 @@ use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Export\ExportRepository;
 use StoreAccountant\Export\ExportStatus;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\QueuedExportFinalizer;
+use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use function __;
 use function absint;
@@ -37,13 +40,24 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Finalizes an export after all batches have finished.
  */
 final readonly class FinalizeExportMessageHandler {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
+		private MessageBusInterface $message_bus,
 		private QueuedExportFinalizer $finalizer,
-		private ExportRepository $repository
+		private ExportRepository $repository,
+		private ExportDetailLogger $detail_logger
 	) {}
 
 	/**
 	 * Handles the finalize export message.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param FinalizeExportMessage $message Finalize export message.
 	 */
@@ -59,7 +73,28 @@ final readonly class FinalizeExportMessageHandler {
 			return true;
 		}
 
+		$this->detail_logger->log(
+			$message->export_id,
+			'info',
+			'export_finalization_message_received',
+			[
+				'message'     => FinalizeExportMessage::class,
+				'export_id'   => $message->export_id,
+				'renderer_id' => $message->renderer_id,
+			]
+		);
+
 		if ( ! $this->repository->all_batches_processed( $message->export_id ) ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_finalization_waiting_for_batches',
+				[
+					'message'     => FinalizeExportMessage::class,
+					'export_id'   => $message->export_id,
+					'renderer_id' => $message->renderer_id,
+				]
+			);
 			return true;
 		}
 
@@ -79,6 +114,17 @@ final readonly class FinalizeExportMessageHandler {
 		try {
 			$result = $this->finalizer->finalize( $message->export_id, $message->renderer_id );
 		} catch ( Throwable $exception ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'error',
+				'export_finalization_failed',
+				[
+					'message'     => FinalizeExportMessage::class,
+					'export_id'   => $message->export_id,
+					'renderer_id' => $message->renderer_id,
+				],
+				$exception
+			);
 			$this->repository->mark_failed(
 				$message->export_id,
 				__( 'Unexpected export finalization error.', 'storeaccountant' ),
@@ -98,6 +144,17 @@ final readonly class FinalizeExportMessageHandler {
 		}
 
 		if ( is_wp_error( $result ) ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'error',
+				'export_finalization_failed',
+				[
+					'message'       => FinalizeExportMessage::class,
+					'export_id'     => $message->export_id,
+					'renderer_id'   => $message->renderer_id,
+					'wp_error_code' => $result->get_error_code(),
+				]
+			);
 			$this->repository->mark_failed_from_error(
 				$message->export_id,
 				$result,
@@ -111,7 +168,71 @@ final readonly class FinalizeExportMessageHandler {
 			return $result;
 		}
 
-		$this->repository->mark_completed( $message->export_id );
+		if ( ! $result->complete ) {
+			$this->message_bus->dispatch(
+				new FinalizeExportAttachmentsMessage(
+					$message->export_id,
+					$message->renderer_id,
+					$result->storage_path,
+					0,
+					$result->attachment_batch_size,
+					$result->total_attachments
+				)
+			);
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_attachment_finalization_queued',
+				[
+					'message'               => FinalizeExportAttachmentsMessage::class,
+					'export_id'             => $message->export_id,
+					'renderer_id'           => $message->renderer_id,
+					'storage_path'          => $result->storage_path,
+					'total_attachments'     => $result->total_attachments,
+					'attachment_batch_size' => $result->attachment_batch_size,
+				]
+			);
+
+			ExportEventDispatcher::dispatch(
+				ExportEvents::FINALIZATION_QUEUED,
+				$message->export_id,
+				[
+					'message'               => FinalizeExportAttachmentsMessage::class,
+					'export_id'             => $message->export_id,
+					'renderer_id'           => $message->renderer_id,
+					'total_attachments'     => $result->total_attachments,
+					'attachment_batch_size' => $result->attachment_batch_size,
+				]
+			);
+
+			return true;
+		}
+
+		$this->complete_export( $message->export_id, $message->renderer_id, FinalizeExportMessage::class );
+		$this->detail_logger->log(
+			$message->export_id,
+			'info',
+			'export_completed',
+			[
+				'message'      => FinalizeExportMessage::class,
+				'export_id'    => $message->export_id,
+				'renderer_id'  => $message->renderer_id,
+				'storage_path' => $result->storage_path,
+			]
+		);
+
+		return true;
+	}
+
+	/**
+	 * Marks an export completed and dispatches the completed event.
+	 *
+	 * @param int         $export_id     Export post ID.
+	 * @param string|null $renderer_id   Renderer ID.
+	 * @param string      $message_class Queue message class.
+	 */
+	private function complete_export( int $export_id, ?string $renderer_id, string $message_class ): void {
+		$this->repository->mark_completed( $export_id );
 
 		/**
 		 * Fires after an export has been successfully finalized and marked completed.
@@ -123,18 +244,23 @@ final readonly class FinalizeExportMessageHandler {
 		 */
 		ExportEventDispatcher::dispatch(
 			ExportEvents::COMPLETED,
-			$message->export_id,
+			$export_id,
 			[
-				'message'     => FinalizeExportMessage::class,
-				'export_id'   => $message->export_id,
-				'renderer_id' => $message->renderer_id,
+				'message'     => $message_class,
+				'export_id'   => $export_id,
+				'renderer_id' => $renderer_id,
 			]
 		);
-
-		return true;
 	}
 
 	private function maybe_apply_debug_delay(): void {
+		/**
+		 * Filters the artificial queue debug delay in seconds.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $delay_seconds Debug delay in seconds.
+		 */
 		$delay_seconds = absint( apply_filters( 'storeaccountant_export_queue_debug_delay_seconds', 0 ) );
 
 		if ( $delay_seconds > 0 ) {

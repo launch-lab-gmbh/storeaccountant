@@ -24,6 +24,9 @@ final readonly class StartExportMessage {
 	/**
 	 * Initializes the message.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int         $export_id   Export post ID.
 	 * @param string|null $renderer_id Optional renderer override.
 	 */

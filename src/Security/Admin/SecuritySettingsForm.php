@@ -30,6 +30,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class SecuritySettingsForm {
 	/**
 	 * Initializes the form.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function __construct(
 		private DownloadPasswordManager $passwords,
@@ -38,6 +41,9 @@ final readonly class SecuritySettingsForm {
 
 	/**
 	 * Renders the security settings fields.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_fields(): void {
 		$this->passwords->ensure_global_password();

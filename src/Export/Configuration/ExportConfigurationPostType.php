@@ -59,6 +59,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 	/**
 	 * Initializes the export configuration post type.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param AccountingHeaderBar    $header_bar               Accounting header bar.
 	 * @param ExportAdapterRegistry  $export_adapters          Export adapter registry.
 	 * @param ExportRendererRegistry $export_writers           Export writer registry.
@@ -75,6 +78,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_post_type' ] );
@@ -95,6 +101,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * Registers the export configuration post type.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register_post_type(): void {
 		register_post_type(
@@ -137,6 +146,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 	/**
 	 * Replaces admin list columns for saved export configurations.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, string> $columns Registered columns.
 	 *
 	 * @return array<string, string>
@@ -155,6 +167,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * Renders custom admin list column values.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $column_name Column name.
 	 * @param int    $post_id     Configuration post ID.
@@ -188,6 +203,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 	/**
 	 * Removes editing actions from the native list table bulk actions.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, string> $actions Bulk actions.
 	 *
 	 * @return array<string, string>
@@ -204,6 +222,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * Removes editing actions from saved export configuration row actions.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, string> $actions Row actions.
 	 * @param WP_Post               $post    Current post.
@@ -247,6 +268,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 	/**
 	 * Points native configuration title links to the custom read view.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string|null $link    Edit link.
 	 * @param int         $post_id Post ID.
 	 * @param string      $context Link context.
@@ -270,6 +294,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 	/**
 	 * Restores export configurations as published records instead of drafts.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $new_status      New post status.
 	 * @param int    $post_id         Post ID.
 	 * @param string $previous_status Previous post status.
@@ -284,6 +311,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * Removes native post state labels such as Draft or Private for configurations.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, string> $post_states Native post states.
 	 * @param WP_Post               $post        Current post.
@@ -301,6 +331,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 	/**
 	 * Renders plugin action buttons above the native configuration list table.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, string> $views Native list table views.
 	 *
 	 * @return array<string, string>
@@ -313,6 +346,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * Highlights StoreAccountant while rendering the hidden configuration list.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string|null $parent_file Parent file.
 	 */
@@ -327,6 +363,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 	/**
 	 * Highlights the exports submenu while rendering the hidden configuration list.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string|null $submenu_file Submenu file.
 	 */
 	public function filter_submenu_file( ?string $submenu_file ): string {
@@ -339,6 +378,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * Renders the export configuration created notice.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_created_notice(): void {
 		$screen = get_current_screen();
@@ -359,6 +401,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * Redirects the native post edit screen to the custom configuration read view.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function redirect_native_edit_screen(): void {
 		$post_id = Request::get_int( 'post' );
@@ -374,6 +419,9 @@ final readonly class ExportConfigurationPostType implements HookRegistrarInterfa
 
 	/**
 	 * Prevents direct access to the native configuration list without StoreAccountant admin access.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function guard_native_list_screen(): void {
 		$post_type = Request::get_key( 'post_type', 'post' );

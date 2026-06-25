@@ -17,6 +17,8 @@ use Throwable;
 use WP_Error;
 use Symfony\Component\Messenger\MessageBusInterface;
 use StoreAccountant\Export\Contract\BatchExportAdapterInterface;
+use StoreAccountant\Export\Contract\ExportRendererSupportsAttachmentsInterface;
+use StoreAccountant\Export\Contract\SnapshotExportAdapterInterface;
 use StoreAccountant\Export\ExportAdapterRegistry;
 use StoreAccountant\Export\ExportDatasetBuilder;
 use StoreAccountant\Export\ExportPayload;
@@ -27,11 +29,16 @@ use StoreAccountant\Export\ExportStatus;
 use StoreAccountant\Export\Event\ExportEventDispatcher;
 use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
-use StoreAccountant\Export\Contract\ExportRendererSupportsAttachmentsInterface;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\Message\ProcessExportBatchMessage;
 use StoreAccountant\Export\Queue\Message\StartExportMessage;
+use function ceil;
+use function count;
+use function is_scalar;
+use function max;
+use function trim;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -43,6 +50,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class StartExportMessageHandler {
 	/**
 	 * Initializes the handler.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param MessageBusInterface             $message_bus       Message bus.
 	 * @param ExportAdapterRegistry           $export_adapters   Export adapter registry.
@@ -59,11 +69,15 @@ final readonly class StartExportMessageHandler {
 		private ExportFilterSelectionSerializer $filter_serializer,
 		private ExportRendererRegistry $renderers,
 		private ExportDatasetBuilder $dataset_builder,
-		private BatchExportStore $batch_store
+		private BatchExportStore $batch_store,
+		private ExportDetailLogger $detail_logger
 	) {}
 
 	/**
 	 * Handles the start export message.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param StartExportMessage $message Start export message.
 	 */
@@ -78,6 +92,17 @@ final readonly class StartExportMessageHandler {
 		if ( ExportStatus::COMPLETED === $this->repository->get_status( $message->export_id ) ) {
 			return true;
 		}
+
+		$this->detail_logger->log(
+			$message->export_id,
+			'info',
+			'export_start_message_received',
+			[
+				'message'     => StartExportMessage::class,
+				'export_id'   => $message->export_id,
+				'renderer_id' => $message->renderer_id,
+			]
+		);
 
 		ExportEventDispatcher::dispatch(
 			ExportEvents::STARTED,
@@ -100,38 +125,86 @@ final readonly class StartExportMessageHandler {
 				);
 			}
 
-			$payload     = $this->get_payload( $message->export_id, $adapter->get_id() );
-			$total_items = $adapter->count_items( $payload );
+			$payload  = $this->get_payload( $message->export_id, $adapter->get_id() );
+			$item_ids = $this->get_snapshot_item_ids( $adapter, $payload );
 
-			if ( is_wp_error( $total_items ) ) {
+			if ( is_wp_error( $item_ids ) ) {
 				$this->repository->mark_failed_from_error(
 					$message->export_id,
-					$total_items,
+					$item_ids,
 					[
 						'message'   => StartExportMessage::class,
 						'export_id' => $message->export_id,
 					]
 				);
 
-				return $total_items;
+				return $item_ids;
 			}
 
-			$batch_size        = $this->get_batch_size( $message->export_id );
-				$total_batches = max( 1, (int) ceil( $total_items / $batch_size ) );
+			if ( null !== $item_ids ) {
+				$stored_item_ids = $this->batch_store->save_item_ids( $message->export_id, $item_ids );
 
-				$this->repository->initialize_progress( $message->export_id, $total_items, $total_batches );
-					ExportEventDispatcher::dispatch(
-						ExportEvents::BATCHES_CALCULATED,
+				if ( is_wp_error( $stored_item_ids ) ) {
+					$this->repository->mark_failed_from_error(
 						$message->export_id,
+						$stored_item_ids,
 						[
-							'message'       => StartExportMessage::class,
-							'export_id'     => $message->export_id,
-							'adapter_id'    => $adapter->get_id(),
-							'total_items'   => $total_items,
-							'total_batches' => $total_batches,
-							'batch_size'    => $batch_size,
+							'message'   => StartExportMessage::class,
+							'export_id' => $message->export_id,
 						]
 					);
+
+					return $stored_item_ids;
+				}
+
+				$total_items = count( $item_ids );
+			} else {
+				$total_items = $adapter->count_items( $payload );
+
+				if ( is_wp_error( $total_items ) ) {
+					$this->repository->mark_failed_from_error(
+						$message->export_id,
+						$total_items,
+						[
+							'message'   => StartExportMessage::class,
+							'export_id' => $message->export_id,
+						]
+					);
+
+					return $total_items;
+				}
+			}
+
+			$batch_size    = $this->get_batch_size( $message->export_id );
+			$total_batches = max( 1, (int) ceil( $total_items / $batch_size ) );
+
+			$this->repository->initialize_progress( $message->export_id, $total_items, $total_batches );
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_batches_calculated',
+				[
+					'message'       => StartExportMessage::class,
+					'export_id'     => $message->export_id,
+					'adapter_id'    => $adapter->get_id(),
+					'total_items'   => $total_items,
+					'total_batches' => $total_batches,
+					'batch_size'    => $batch_size,
+					'snapshot'      => null !== $item_ids,
+				]
+			);
+			ExportEventDispatcher::dispatch(
+				ExportEvents::BATCHES_CALCULATED,
+				$message->export_id,
+				[
+					'message'       => StartExportMessage::class,
+					'export_id'     => $message->export_id,
+					'adapter_id'    => $adapter->get_id(),
+					'total_items'   => $total_items,
+					'total_batches' => $total_batches,
+					'batch_size'    => $batch_size,
+				]
+			);
 
 			if ( 0 === $total_items ) {
 				$empty_dataset = $this->dataset_builder->build_from_items( $adapter, $payload, [] );
@@ -164,27 +237,38 @@ final readonly class StartExportMessageHandler {
 					return $stored;
 				}
 
-					$this->repository->mark_batch_processed( $message->export_id, 0 );
-						ExportEventDispatcher::dispatch(
-							ExportEvents::BATCH_PROCESSED,
-							$message->export_id,
-							[
-								'message'         => StartExportMessage::class,
-								'export_id'       => $message->export_id,
-								'batch_number'    => 1,
-								'processed_items' => 0,
-							]
-						);
-					$this->message_bus->dispatch( new FinalizeExportMessage( $message->export_id, $message->renderer_id ) );
-						ExportEventDispatcher::dispatch(
-							ExportEvents::FINALIZATION_QUEUED,
-							$message->export_id,
-							[
-								'message'     => FinalizeExportMessage::class,
-								'export_id'   => $message->export_id,
-								'renderer_id' => $message->renderer_id,
-							]
-						);
+				$this->repository->mark_batch_processed( $message->export_id, 0 );
+				ExportEventDispatcher::dispatch(
+					ExportEvents::BATCH_PROCESSED,
+					$message->export_id,
+					[
+						'message'         => StartExportMessage::class,
+						'export_id'       => $message->export_id,
+						'batch_number'    => 1,
+						'processed_items' => 0,
+					]
+				);
+				$this->message_bus->dispatch( new FinalizeExportMessage( $message->export_id, $message->renderer_id ) );
+				$this->detail_logger->log(
+					$message->export_id,
+					'info',
+					'export_finalization_queued',
+					[
+						'message'     => FinalizeExportMessage::class,
+						'export_id'   => $message->export_id,
+						'renderer_id' => $message->renderer_id,
+						'reason'      => 'empty_export',
+					]
+				);
+				ExportEventDispatcher::dispatch(
+					ExportEvents::FINALIZATION_QUEUED,
+					$message->export_id,
+					[
+						'message'     => FinalizeExportMessage::class,
+						'export_id'   => $message->export_id,
+						'renderer_id' => $message->renderer_id,
+					]
+				);
 
 				return true;
 			}
@@ -200,16 +284,39 @@ final readonly class StartExportMessageHandler {
 				);
 			}
 
-					ExportEventDispatcher::dispatch(
-						ExportEvents::BATCH_JOBS_QUEUED,
-						$message->export_id,
-						[
-							'message'       => StartExportMessage::class,
-							'export_id'     => $message->export_id,
-							'total_batches' => $total_batches,
-						]
-					);
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_batch_jobs_queued',
+				[
+					'message'       => ProcessExportBatchMessage::class,
+					'export_id'     => $message->export_id,
+					'total_batches' => $total_batches,
+					'batch_size'    => $batch_size,
+				]
+			);
+
+			ExportEventDispatcher::dispatch(
+				ExportEvents::BATCH_JOBS_QUEUED,
+				$message->export_id,
+				[
+					'message'       => StartExportMessage::class,
+					'export_id'     => $message->export_id,
+					'total_batches' => $total_batches,
+				]
+			);
 		} catch ( Throwable $exception ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'error',
+				'export_start_failed',
+				[
+					'message'     => StartExportMessage::class,
+					'export_id'   => $message->export_id,
+					'renderer_id' => $message->renderer_id,
+				],
+				$exception
+			);
 			$this->repository->mark_failed(
 				$message->export_id,
 				__( 'Unexpected export generation error.', 'storeaccountant' ),
@@ -271,11 +378,60 @@ final readonly class StartExportMessageHandler {
 	}
 
 	/**
+	 * Gets a stable export item ID snapshot when the adapter supports it.
+	 *
+	 * @param BatchExportAdapterInterface $adapter Export adapter.
+	 * @param ExportPayload               $payload Export payload.
+	 *
+	 * @return array<int, int|string>|WP_Error|null
+	 */
+	private function get_snapshot_item_ids( BatchExportAdapterInterface $adapter, ExportPayload $payload ): array|WP_Error|null {
+		if ( ! $adapter instanceof SnapshotExportAdapterInterface ) {
+			return null;
+		}
+
+		$item_ids = $adapter->get_item_ids( $payload );
+
+		if ( is_wp_error( $item_ids ) ) {
+			return $item_ids;
+		}
+
+		$normalized = [];
+		$seen       = [];
+
+		foreach ( $item_ids as $item_id ) {
+			if ( ! is_scalar( $item_id ) ) {
+				continue;
+			}
+
+			$item_id = trim( (string) $item_id );
+
+			if ( '' === $item_id || isset( $seen[ $item_id ] ) ) {
+				continue;
+			}
+
+			$seen[ $item_id ] = true;
+			$normalized[]     = $item_id;
+		}
+
+		return $normalized;
+	}
+
+	/**
 	 * Gets the configured batch size.
 	 */
 	private function get_batch_size( int $export_id ): int {
 		$batch_size = (int) get_post_meta( $export_id, ExportPostType::META_BATCH_SIZE, true );
 		$batch_size = $batch_size > 0 ? $batch_size : ExportPostType::DEFAULT_BATCH_SIZE;
+
+		/**
+		 * Filters the export batch size before queue jobs are created.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $batch_size Batch size.
+		 * @param int $export_id  Export post ID.
+		 */
 		$batch_size = (int) apply_filters( 'storeaccountant_export_batch_size', $batch_size, $export_id );
 
 		return max( ExportPostType::MIN_BATCH_SIZE, $batch_size );

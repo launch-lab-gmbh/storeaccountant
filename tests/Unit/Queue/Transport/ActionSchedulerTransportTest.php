@@ -18,6 +18,7 @@ use Brain\Monkey\Functions;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\Message\ProcessExportBatchMessage;
 use StoreAccountant\Export\Queue\Message\StartExportMessage;
@@ -49,6 +50,7 @@ final class ActionSchedulerTransportTest extends TestCase {
 				ActionSchedulerTransport::HOOK_EXPORT_START,
 				ActionSchedulerTransport::HOOK_EXPORT_PROCESS_BATCH,
 				ActionSchedulerTransport::HOOK_EXPORT_FINALIZE,
+				ActionSchedulerTransport::HOOK_EXPORT_FINALIZE_ATTACHMENTS,
 				ActionSchedulerTransport::HOOK_DEFAULT,
 			],
 			ActionSchedulerTransport::get_hooks()
@@ -160,6 +162,12 @@ final class ActionSchedulerTransportTest extends TestCase {
 		yield 'finalize export' => [
 			new FinalizeExportMessage( 789 ),
 			ActionSchedulerTransport::HOOK_EXPORT_FINALIZE,
+			[ 'export_id' => 789 ],
+		];
+
+		yield 'finalize export attachments' => [
+			new FinalizeExportAttachmentsMessage( 789, 'csv', 'exports/export.zip', 0, 100, 200 ),
+			ActionSchedulerTransport::HOOK_EXPORT_FINALIZE_ATTACHMENTS,
 			[ 'export_id' => 789 ],
 		];
 

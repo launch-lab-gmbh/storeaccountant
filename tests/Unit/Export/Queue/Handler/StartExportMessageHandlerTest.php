@@ -16,9 +16,13 @@ namespace StoreAccountant\Tests\Unit\Export\Queue\Handler;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Attachment\ExportAttachmentProviderRegistry;
 use StoreAccountant\Export\Contract\BatchExportAdapterInterface;
 use StoreAccountant\Export\Contract\ExportRendererInterface;
+use StoreAccountant\Export\Contract\SnapshotExportAdapterInterface;
 use StoreAccountant\Export\Dataset\ExportDataset;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
 use StoreAccountant\Export\ExportAdapterRegistry;
@@ -36,11 +40,13 @@ use StoreAccountant\Export\Field\Mapping\FieldMappingRepository;
 use StoreAccountant\Export\Field\Mutator\FieldValueMutatorRegistry;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\Handler\StartExportMessageHandler;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\Message\ProcessExportBatchMessage;
 use StoreAccountant\Export\Queue\Message\StartExportMessage;
 use StoreAccountant\Security\ReversibleCrypto;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use WP_Error;
@@ -71,6 +77,7 @@ final class StartExportMessageHandlerTest extends TestCase {
 		Functions\when( 'add_option' )->justReturn( true );
 		Functions\when( 'delete_option' )->justReturn( true );
 		Functions\when( 'get_option' )->justReturn( 0 );
+		Functions\when( 'wp_cache_delete' )->justReturn( true );
 		Functions\when( 'do_action' )->justReturn();
 	}
 
@@ -105,6 +112,37 @@ final class StartExportMessageHandlerTest extends TestCase {
 		self::assertSame( 25, $this->dispatched[0]->limit );
 		self::assertSame( 3, $this->dispatched[2]->batch_number );
 		self::assertSame( 50, $this->dispatched[2]->offset );
+	}
+
+	public function test_snapshot_adapter_initializes_progress_from_stable_item_ids(): void {
+		$this->meta = [
+			ExportPostType::META_EXPORT_ADAPTER   => 'orders',
+			ExportPostType::META_EXPORT_WRITER    => 'csv',
+			ExportPostType::META_FILTERS          => '[]',
+			ExportPostType::META_CONFIGURATION_ID => '77',
+			ExportPostType::META_BATCH_SIZE       => '10',
+		];
+
+		$this->mock_filesystem();
+
+		$adapter = $this->createMock( SnapshotExportAdapterInterface::class );
+		$adapter->method( 'get_id' )->willReturn( 'orders' );
+		$adapter->expects( self::never() )->method( 'count_items' );
+		$adapter->method( 'get_item_ids' )->willReturn( array_merge( range( 1, 21 ), [ 21 ] ) );
+
+		$this->mock_wordpress_state( $adapter, $this->renderer() );
+
+		$result = $this->handler()->__invoke( new StartExportMessage( 42, 'csv' ) );
+
+		self::assertTrue( $result );
+		self::assertSame( '21', $this->meta[ ExportPostType::META_TOTAL_ITEMS ] );
+		self::assertSame( '3', $this->meta[ ExportPostType::META_TOTAL_BATCHES ] );
+		self::assertCount( 3, $this->dispatched );
+		self::assertSame( 1, $this->dispatched[0]->batch_number );
+		self::assertSame( 0, $this->dispatched[0]->offset );
+		self::assertSame( 10, $this->dispatched[0]->limit );
+		self::assertSame( 3, $this->dispatched[2]->batch_number );
+		self::assertSame( 20, $this->dispatched[2]->offset );
 	}
 
 	public function test_empty_export_stores_empty_batch_and_dispatches_finalizer(): void {
@@ -178,6 +216,7 @@ final class StartExportMessageHandlerTest extends TestCase {
 
 		Functions\when( 'wp_upload_dir' )->alias( static fn (): array => [ 'basedir' => $uploads ] );
 		Functions\when( 'wp_mkdir_p' )->alias( static fn ( string $path ): bool => is_dir( $path ) || mkdir( $path, 0777, true ) );
+		Functions\when( 'wp_is_writable' )->alias( static fn ( string $path ): bool => is_writable( $path ) );
 		Functions\when( 'trailingslashit' )->alias( static fn ( string $path ): string => rtrim( $path, '/\\' ) . '/' );
 		Functions\when( 'wp_json_encode' )->alias( static fn ( mixed $value ): string|false => json_encode( $value ) );
 
@@ -228,7 +267,18 @@ final class StartExportMessageHandlerTest extends TestCase {
 				new ExportFieldResolver( new FieldProviderRegistry(), new FieldMappingRepository() ),
 				new ExportAttachmentProviderRegistry()
 			),
-			new BatchExportStore()
+			new BatchExportStore(),
+			$this->detail_logger()
+		);
+	}
+
+	private function detail_logger(): ExportDetailLogger {
+		$configuration = new DiagnosticLogConfiguration( '/tmp/storeaccountant-export-detail-test', 'wp-content/uploads/storeaccountant/logging' );
+
+		return new ExportDetailLogger(
+			new DiagnosticSettings(),
+			new DiagnosticIncidentRepository( $configuration, new ProtectedUploadDirectory() ),
+			$configuration
 		);
 	}
 

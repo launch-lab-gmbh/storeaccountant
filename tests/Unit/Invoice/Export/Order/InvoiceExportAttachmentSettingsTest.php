@@ -17,6 +17,7 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
+use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Invoice\Contract\InvoicePluginInterface;
 use StoreAccountant\Invoice\Export\Order\InvoiceExportAttachmentSettings;
 use StoreAccountant\Invoice\InvoiceFileType;
@@ -113,6 +114,28 @@ final class InvoiceExportAttachmentSettingsTest extends TestCase {
 
 		self::assertTrue( $settings->is_enabled( 42, $plugin ) );
 		self::assertFalse( $settings->is_enabled( 42, $plugin ) );
+	}
+
+	public function test_get_selected_file_types_reads_quick_export_settings_when_no_configuration_exists(): void {
+		Functions\expect( 'get_post_meta' )
+			->once()
+			->with( 123, ExportPostType::META_ADDITIONAL_SETTINGS, true )
+			->andReturn(
+				json_encode(
+					[
+						InvoiceExportAttachmentSettings::PROVIDER_ID => [
+							InvoiceExportAttachmentSettings::OPTION_FILE_TYPES => [ 'credit_note_pdf' ],
+						],
+					]
+				)
+			);
+
+		$settings = new InvoiceExportAttachmentSettings();
+
+		self::assertSame(
+			[ 'credit_note_pdf' ],
+			$settings->get_selected_file_types( 0, $this->plugin_with_file_types(), 123 )
+		);
 	}
 
 	public function test_get_selected_file_types_returns_empty_array_for_invalid_configuration_or_settings(): void {

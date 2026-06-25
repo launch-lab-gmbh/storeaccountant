@@ -24,6 +24,9 @@ final readonly class StorageFile {
 	/**
 	 * Initializes the stored file.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param resource $stream File stream.
 	 */
 	public function __construct(

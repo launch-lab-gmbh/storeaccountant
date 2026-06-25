@@ -35,12 +35,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class ExportStoragePathGenerator {
 	private const EXPORT_DIRECTORY = 'exports';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private LocalStorageConfiguration $local_storage_configuration
 	) {}
 
 	/**
 	 * Builds the storage reference for an export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int            $post_id            Export post ID.
 	 * @param string         $storage_adapter_id Storage adapter ID.
@@ -82,6 +91,9 @@ final readonly class ExportStoragePathGenerator {
 
 	/**
 	 * Gets a user-facing display path for a storage reference.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $storage_adapter_id Storage adapter ID.
 	 * @param string $storage_path       Storage reference.

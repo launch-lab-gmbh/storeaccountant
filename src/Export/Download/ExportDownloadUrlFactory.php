@@ -28,6 +28,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class ExportDownloadUrlFactory {
 	/**
 	 * Builds a frontend download URL for an export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_url( int $export_id ): string {
 		$token = (string) get_post_meta( $export_id, ExportPostType::META_DOWNLOAD_TOKEN, true );

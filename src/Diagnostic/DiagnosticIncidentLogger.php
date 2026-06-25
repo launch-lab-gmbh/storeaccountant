@@ -38,6 +38,9 @@ final readonly class DiagnosticIncidentLogger {
 	/**
 	 * Initializes the logger.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param DiagnosticSettings           $settings   Diagnostic settings.
 	 * @param DiagnosticIncidentRepository $repository Incident repository.
 	 */
@@ -48,6 +51,9 @@ final readonly class DiagnosticIncidentLogger {
 
 	/**
 	 * Logs an error incident when diagnostic logging is enabled.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string               $source    Incident source.
 	 * @param string               $message   User-facing summary.

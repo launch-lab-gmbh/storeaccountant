@@ -45,6 +45,9 @@ final readonly class CsvExportRenderer implements ExportRendererInterface, Expor
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -60,6 +63,9 @@ final readonly class CsvExportRenderer implements ExportRendererInterface, Expor
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::RENDERER_ID;
@@ -67,6 +73,9 @@ final readonly class CsvExportRenderer implements ExportRendererInterface, Expor
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_file_extension(): string {
 		return 'csv';
@@ -74,6 +83,9 @@ final readonly class CsvExportRenderer implements ExportRendererInterface, Expor
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_mime_type(): string {
 		return 'text/csv';
@@ -81,6 +93,9 @@ final readonly class CsvExportRenderer implements ExportRendererInterface, Expor
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( ExportDataset $dataset, ExportPayload $payload ): ExportArtifact|WP_Error {
 		$this->load_file_helpers();

@@ -28,12 +28,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class OrderStatusField {
 	public const FIELD_NAME = 'storeaccountant_order_statuses';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private OrderStatusProvider $order_statuses
 	) {}
 
 	/**
 	 * Renders the order status checkbox field.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, string> $selected_statuses Selected order status keys.
 	 */
@@ -132,6 +141,9 @@ final readonly class OrderStatusField {
 	/**
 	 * Gets selected order statuses from request data.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, mixed> $request Request data.
 	 *
 	 * @return array<int, string>
@@ -142,6 +154,9 @@ final readonly class OrderStatusField {
 
 	/**
 	 * Gets the default selected order statuses.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array<int, string>
 	 */

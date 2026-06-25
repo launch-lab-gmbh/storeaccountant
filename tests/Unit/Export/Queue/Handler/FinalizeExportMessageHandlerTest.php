@@ -16,6 +16,9 @@ namespace StoreAccountant\Tests\Unit\Export\Queue\Handler;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
 use StoreAccountant\Export\ExportAdapterRegistry;
 use StoreAccountant\Export\ExportPostType;
@@ -25,12 +28,16 @@ use StoreAccountant\Export\ExportStatus;
 use StoreAccountant\Export\ExportStoragePathGenerator;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\Handler\FinalizeExportMessageHandler;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\QueuedExportFinalizer;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\StorageAdapterRegistry;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
 use WP_Error;
 
 /**
@@ -54,6 +61,7 @@ final class FinalizeExportMessageHandlerTest extends TestCase {
 		Functions\when( 'absint' )->alias( static fn ( mixed $value ): int => abs( (int) $value ) );
 		Functions\when( 'do_action' )->justReturn();
 		Functions\when( 'apply_filters' )->alias( static fn ( string $hook, mixed $value ): mixed => $value );
+		Functions\when( 'get_option' )->justReturn( '0' );
 	}
 
 	protected function tearDown(): void {
@@ -106,6 +114,7 @@ final class FinalizeExportMessageHandlerTest extends TestCase {
 		);
 
 		return new FinalizeExportMessageHandler(
+			$this->message_bus(),
 			new QueuedExportFinalizer(
 				new BatchExportStore(),
 				new StorageAdapterRegistry(),
@@ -113,9 +122,29 @@ final class FinalizeExportMessageHandlerTest extends TestCase {
 				new ExportRendererRegistry(),
 				$repository,
 				new ExportStoragePathGenerator( new LocalStorageConfiguration( '/tmp/storeaccountant', 'wp-content/uploads/storeaccountant' ) ),
-				new ExportFilterSelectionSerializer()
+				new ExportFilterSelectionSerializer(),
+				$this->detail_logger()
 			),
-			$repository
+			$repository,
+			$this->detail_logger()
 		);
+	}
+
+	private function detail_logger(): ExportDetailLogger {
+		$configuration = new DiagnosticLogConfiguration( '/tmp/storeaccountant-export-detail-test', 'wp-content/uploads/storeaccountant/logging' );
+
+		return new ExportDetailLogger(
+			new DiagnosticSettings(),
+			new DiagnosticIncidentRepository( $configuration, new ProtectedUploadDirectory() ),
+			$configuration
+		);
+	}
+
+	private function message_bus(): MessageBusInterface {
+		return new class() implements MessageBusInterface {
+			public function dispatch( object $message, array $stamps = [] ): Envelope {
+				return new Envelope( $message, $stamps );
+			}
+		};
 	}
 }

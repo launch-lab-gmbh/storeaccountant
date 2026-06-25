@@ -16,6 +16,9 @@ namespace StoreAccountant\Tests\Unit\Export\Queue;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Contract\ExportAdapterInterface;
 use StoreAccountant\Export\Contract\ExportRendererInterface;
 use StoreAccountant\Export\Contract\ExportRendererSupportsAttachmentsInterface;
@@ -34,10 +37,14 @@ use StoreAccountant\Export\Field\FieldCollection;
 use StoreAccountant\Export\Field\FieldValue;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
+use StoreAccountant\Export\Queue\QueuedExportFinalizationResult;
 use StoreAccountant\Export\Queue\QueuedExportFinalizer;
 use StoreAccountant\Security\ReversibleCrypto;
 use StoreAccountant\Storage\Adapter\LocalStorageConfiguration;
+use StoreAccountant\Storage\Contract\ChunkedStorageAdapterInterface;
 use StoreAccountant\Storage\Contract\StorageAdapterInterface;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use StoreAccountant\Storage\StorageFileConfiguration;
 use WP_Error;
@@ -84,6 +91,40 @@ final class QueuedExportFinalizerTest extends TestCase {
 			public function rmdir( string $path ): bool {
 				return is_dir( $path ) && rmdir( $path );
 			}
+
+			public function delete( string $path, bool $recursive = false, string|false $type = false ): bool {
+				if ( ! is_dir( $path ) ) {
+					return false;
+				}
+
+				$items = scandir( $path );
+
+				if ( false === $items ) {
+					return false;
+				}
+
+				foreach ( $items as $item ) {
+					if ( '.' === $item || '..' === $item ) {
+						continue;
+					}
+
+					$item_path = $path . DIRECTORY_SEPARATOR . $item;
+
+					if ( is_dir( $item_path ) ) {
+						if ( ! $recursive || ! $this->delete( $item_path, true, 'd' ) ) {
+							return false;
+						}
+
+						continue;
+					}
+
+					if ( is_file( $item_path ) && ! unlink( $item_path ) ) {
+						return false;
+					}
+				}
+
+				return rmdir( $path );
+			}
 		};
 
 		Functions\when( '__' )->returnArg( 1 );
@@ -93,6 +134,7 @@ final class QueuedExportFinalizerTest extends TestCase {
 		Functions\when( 'wp_mkdir_p' )->alias(
 			static fn ( string $path ): bool => is_dir( $path ) || mkdir( $path, 0777, true )
 		);
+		Functions\when( 'wp_is_writable' )->alias( static fn ( string $path ): bool => is_writable( $path ) );
 		Functions\when( 'trailingslashit' )->alias( static fn ( string $path ): string => rtrim( $path, '/\\' ) . '/' );
 		Functions\when( 'sanitize_key' )->alias(
 			static fn ( string $value ): string => strtolower( preg_replace( '/[^a-zA-Z0-9_\\-]/', '', $value ) ?? '' )
@@ -105,6 +147,7 @@ final class QueuedExportFinalizerTest extends TestCase {
 			}
 		);
 		Functions\when( 'do_action' )->justReturn();
+		Functions\when( 'get_option' )->justReturn( '0' );
 	}
 
 	protected function tearDown(): void {
@@ -184,12 +227,79 @@ final class QueuedExportFinalizerTest extends TestCase {
 
 		$this->mock_wordpress_state( $adapter, $renderer, $storage );
 
-		self::assertTrue( $this->finalizer( $batch_store )->finalize( 42 ) );
+		$result = $this->finalizer( $batch_store )->finalize( 42 );
+
+		self::assertInstanceOf( QueuedExportFinalizationResult::class, $result );
+		self::assertTrue( $result->complete );
 		self::assertSame( 'exports/queuedtoken.zip', $this->meta[ ExportPostType::META_PATH ] );
 		self::assertSame( 1, $GLOBALS['storeaccountant_finalizer_record_count'] );
 		self::assertTrue( $GLOBALS['storeaccountant_finalizer_payload_options'][ ExportPayload::OPTION_INCLUDE_ATTACHMENTS ] );
 		self::assertFalse( is_file( $this->artifact_path ) );
 		self::assertFalse( is_dir( $this->upload_dir . '/storeaccountant/tmp/exports/42' ) );
+	}
+
+	public function test_finalize_starts_chunked_storage_and_returns_pending_attachment_result(): void {
+		$this->artifact_path = tempnam( sys_get_temp_dir(), 'storeaccountant-final-artifact-' );
+		self::assertIsString( $this->artifact_path );
+
+		$this->meta = [
+			ExportPostType::META_EXPORT_ADAPTER   => 'orders',
+			ExportPostType::META_EXPORT_WRITER    => 'zipcsv',
+			ExportPostType::META_STORAGE_ENGINE   => 'local',
+			ExportPostType::META_FILTERS          => '[]',
+			ExportPostType::META_CONFIGURATION_ID => '77',
+			ExportPostType::META_DOWNLOAD_TOKEN   => 'queuedtoken',
+			ExportPostType::META_BATCH_SIZE       => '25',
+		];
+
+		$batch_store = new BatchExportStore();
+		self::assertTrue( $batch_store->save_batch( 42, 1, $this->dataset_with_attachment() ) );
+
+		$renderer = new class( $this->artifact_path ) implements ExportRendererInterface, ExportRendererSupportsAttachmentsInterface {
+			public function __construct(
+				private readonly string $artifact_path
+			) {}
+
+			public function get_id(): string {
+				return 'zipcsv';
+			}
+
+			public function get_file_extension(): string {
+				return 'csv';
+			}
+
+			public function get_mime_type(): string {
+				return 'text/csv';
+			}
+
+			public function render( ExportDataset $dataset, ExportPayload $payload ): ExportArtifact|WP_Error {
+				file_put_contents( $this->artifact_path, 'csv' );
+
+				return new ExportArtifact( $this->artifact_path, 'csv', 'text/csv', $dataset->attachments );
+			}
+		};
+		$storage = $this->createMockForIntersectionOfInterfaces(
+			[
+				StorageAdapterInterface::class,
+				ChunkedStorageAdapterInterface::class,
+			]
+		);
+		$storage->method( 'get_id' )->willReturn( 'local' );
+		$storage->expects( self::never() )->method( 'persist' );
+		$storage->method( 'start_persist' )->willReturn( 'exports/queuedtoken.zip' );
+		$storage->expects( self::never() )->method( 'append_attachments' );
+
+		$this->mock_wordpress_state( $this->adapter(), $renderer, $storage );
+
+		$result = $this->finalizer( $batch_store )->finalize( 42 );
+
+		self::assertInstanceOf( QueuedExportFinalizationResult::class, $result );
+		self::assertFalse( $result->complete );
+		self::assertSame( 'exports/queuedtoken.zip', $result->storage_path );
+		self::assertSame( 1, $result->total_attachments );
+		self::assertSame( 25, $result->attachment_batch_size );
+		self::assertArrayNotHasKey( ExportPostType::META_PATH, $this->meta );
+		self::assertDirectoryExists( $this->upload_dir . '/storeaccountant/tmp/exports/42' );
 	}
 
 	public function test_finalize_returns_batch_load_errors_without_persisting(): void {
@@ -282,6 +392,20 @@ final class QueuedExportFinalizerTest extends TestCase {
 		return $storage;
 	}
 
+	private function dataset_with_attachment(): ExportDataset {
+		$stream = fopen( 'php://temp', 'rb+' );
+		self::assertIsResource( $stream );
+		fwrite( $stream, 'invoice' );
+		rewind( $stream );
+
+		return new ExportDataset(
+			new FieldCollection( [ new Field( 'order_id', 'Order ID' ) ] ),
+			[ new ExportRecord( '1001', [ new FieldValue( 'order_id', '1001' ) ] ) ],
+			[ new \StoreAccountant\Export\Attachment\ExportAttachment( $stream, 'invoice.pdf', 'application/pdf', 'invoices/invoice.pdf' ) ],
+			[ 'type' => 'orders' ]
+		);
+	}
+
 	private function finalizer( BatchExportStore $batch_store ): QueuedExportFinalizer {
 		return new QueuedExportFinalizer(
 			$batch_store,
@@ -290,7 +414,18 @@ final class QueuedExportFinalizerTest extends TestCase {
 			new ExportRendererRegistry(),
 			new ExportRepository( new ExportFilterSelectionSerializer(), new DownloadPasswordManager( new ReversibleCrypto() ) ),
 			new ExportStoragePathGenerator( new LocalStorageConfiguration( '/tmp/storeaccountant', 'wp-content/uploads/storeaccountant' ) ),
-			new ExportFilterSelectionSerializer()
+			new ExportFilterSelectionSerializer(),
+			$this->detail_logger()
+		);
+	}
+
+	private function detail_logger(): ExportDetailLogger {
+		$configuration = new DiagnosticLogConfiguration( '/tmp/storeaccountant-export-detail-test', 'wp-content/uploads/storeaccountant/logging' );
+
+		return new ExportDetailLogger(
+			new DiagnosticSettings(),
+			new DiagnosticIncidentRepository( $configuration, new ProtectedUploadDirectory() ),
+			$configuration
 		);
 	}
 

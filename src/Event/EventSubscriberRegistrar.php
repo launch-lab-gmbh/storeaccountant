@@ -32,12 +32,21 @@ final readonly class EventSubscriberRegistrar implements HookRegistrarInterface 
 	 */
 	private array $subscribers;
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct( EventSubscriberInterface ...$subscribers ) {
 		$this->subscribers = $subscribers;
 	}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		foreach ( $this->subscribers as $subscriber ) {

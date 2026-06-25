@@ -36,12 +36,21 @@ final readonly class ActionSchedulerLoopbackRunner {
 	private const MAX_ACTIONS = 10;
 	private const MAX_SECONDS = 20;
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private ExportRepository $exports
 	) {}
 
 	/**
 	 * Runs due queued actions for one export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 *

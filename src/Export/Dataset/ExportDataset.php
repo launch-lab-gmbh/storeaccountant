@@ -26,6 +26,9 @@ final readonly class ExportDataset {
 	/**
 	 * Initializes the export dataset.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param FieldCollection        $fields  Dataset fields keyed by identifier.
 	 * @param iterable<ExportRecord> $records Dataset records.
 	 * @param iterable<mixed>        $attachments Additional export attachments.

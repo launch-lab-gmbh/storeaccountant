@@ -39,6 +39,9 @@ final readonly class ProductVariantExportFilter implements ExportFilterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -54,6 +57,9 @@ final readonly class ProductVariantExportFilter implements ExportFilterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::FILTER_ID;
@@ -61,6 +67,9 @@ final readonly class ProductVariantExportFilter implements ExportFilterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $export_type ): bool {
 		return ProductExportAdapter::ADAPTER_ID === $export_type;
@@ -68,6 +77,9 @@ final readonly class ProductVariantExportFilter implements ExportFilterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function apply( mixed $query, ExportFilterSelection $selection, ExportPayload $payload ): true|WP_Error {
 		if ( ! $query instanceof ProductQueryCriteria ) {
@@ -82,6 +94,9 @@ final readonly class ProductVariantExportFilter implements ExportFilterInterface
 	/**
 	 * Gets available variant export modes.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<string, string>
 	 */
 	public static function get_modes(): array {
@@ -93,6 +108,9 @@ final readonly class ProductVariantExportFilter implements ExportFilterInterface
 
 	/**
 	 * Sanitizes a requested variant export mode.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param mixed $mode Requested mode.
 	 */

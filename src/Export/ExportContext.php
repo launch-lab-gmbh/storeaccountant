@@ -24,6 +24,9 @@ final readonly class ExportContext {
 	/**
 	 * Initializes the export context.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string               $export_type      Export adapter identifier.
 	 * @param int                  $configuration_id Export configuration post ID.
 	 * @param array<int, mixed>    $items            Source items.
@@ -39,6 +42,9 @@ final readonly class ExportContext {
 	/**
 	 * Gets an additional context value.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $key     Value key.
 	 * @param mixed  $fallback Fallback value.
 	 */
@@ -48,6 +54,9 @@ final readonly class ExportContext {
 
 	/**
 	 * Returns a copy with one additional context value.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $key   Value key.
 	 * @param mixed  $value Context value.

@@ -55,6 +55,12 @@ final readonly class ExportDetailsReadTabProvider implements ExportReadTabProvid
 	public const PROVIDER_ID = 'export_details';
 	public const TAB_ID      = 'export-details';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private ExportAdapterRegistry $adapter_registry,
 		private ExportRendererRegistry $writer_registry,
@@ -67,6 +73,9 @@ final readonly class ExportDetailsReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -82,6 +91,9 @@ final readonly class ExportDetailsReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -89,6 +101,9 @@ final readonly class ExportDetailsReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( WP_Post $export ): bool {
 		return ExportPostType::POST_TYPE === $export->post_type;
@@ -96,6 +111,9 @@ final readonly class ExportDetailsReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_tabs( WP_Post $export ): array {
 		return [
@@ -105,6 +123,9 @@ final readonly class ExportDetailsReadTabProvider implements ExportReadTabProvid
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( string $tab, WP_Post $export ): void {
 		if ( self::TAB_ID !== $tab ) {

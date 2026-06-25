@@ -21,6 +21,19 @@ This document describes the current technical state of StoreAccountant.
 Value objects such as `ExportPeriod` are intentionally not registered as
 container services.
 
+## Uninstall Cleanup
+
+Plugin deactivation and plugin uninstall are intentionally separate. Deactivation
+must not remove saved StoreAccountant data. Uninstall runs through
+`uninstall.php` and removes StoreAccountant database artifacts through cleanup
+tasks registered on `storeaccountant_uninstall_cleanup_task`.
+
+The built-in uninstall cleanup removes plugin settings, StoreAccountant role
+capabilities, queued StoreAccountant cron/action-scheduler state, saved export
+configurations, and saved export records. It is deliberately database-only:
+generated export archives below the StoreAccountant upload storage and diagnostic
+log files are not deleted during uninstall.
+
 ## WooCommerce HPOS Compatibility
 
 StoreAccountant declares compatibility with WooCommerce High-Performance Order
@@ -83,6 +96,8 @@ Important meta fields:
 - `_storeaccountant_storage_engine`
 - `_storeaccountant_export_adapter`
 - `_storeaccountant_export_writer`
+- `_storeaccountant_additional_settings`
+- `_storeaccountant_order_tax_field_provider`
 - `_storeaccountant_batch_size`
 - `_storeaccountant_path`
 - `_storeaccountant_triggered_by`
@@ -124,9 +139,12 @@ are ignored so the export record can still be deleted cleanly.
 Each export run stores a random public download token and a snapshot of the
 effective download password. The snapshot stores both an encrypted reversible
 value for authorized backend reveal screens and a separate verification hash for
-frontend password checks. Configuration records store their own download
-password snapshot; saving a configuration with an empty password field stores
-the current global download password on that configuration.
+frontend password checks. Quick exports also snapshot additional provider
+settings and the selected order tax field provider on the export record, because
+they intentionally have no configuration relation. Configuration records store
+their own download password snapshot; saving a configuration with an empty
+password field stores the current global download password on that
+configuration.
 
 ### Export Configurations
 
@@ -353,10 +371,12 @@ WooCommerce PDF Invoices & Packing Slips integration registers itself through
 `storeaccountant_invoice_plugin` with the plugin ID
 `woocommerce-pdf-invoices-packing-slips`. Administrators enable at most one
 active invoice plugin integration on the plugin settings page. The generic
-invoice field provider contributes `invoice_number`, `invoice_date`, and
-`invoice_file_name` for the `orders` export type only when an invoice plugin
-integration is enabled, and its value provider reads through that enabled
-integration. The bundled integration reads the invoice document API without
+invoice field provider contributes `invoice_number`, `invoice_date`, and one
+typed `invoice_file_name_{type}` field per invoice file type, for example
+`invoice_file_name_pdf` and `invoice_file_name_xml`, for the `orders` export
+type only when an invoice plugin integration is enabled. Its value provider
+reads through that enabled integration. The bundled integration reads the
+invoice document API without
 creating a missing invoice, with stored order metadata as fallback. It also
 exposes invoice files through `get_invoice_file()` for workflows that need the
 source document rather than a CSV-safe field value. The WooCommerce PDF Invoices
@@ -391,8 +411,10 @@ as separate export rows alongside products.
 
 Selected invoice files are written below the localized invoice attachment
 directory in the generated zip archive. In English this is `Invoices/{type}/`;
-in German it is `Rechnungen/{type}/`. The `invoice_file_name` export field
-lists the same file names used for those attachments. Extended tax
+in German it is `Rechnungen/{type}/`. The typed `invoice_file_name_{type}`
+export fields list the same file names used for those attachments. Invoice
+attachments are generated only for file types that are both selected in the
+invoice attachment settings and enabled in the field mapping. Extended tax
 columns are based on all configured WooCommerce tax rates, not only rates
 present in the exported orders. Their headers follow
 `tax_{rate}_{tax-name-slug}_{country}_{items|shipping|total}`.
@@ -441,7 +463,7 @@ Each export stores its own `_storeaccountant_batch_size`; saved export
 configurations store `_storeaccountant_config_batch_size` and copy that value to
 new exports created from the configuration. Quick
 exports store the submitted batch size directly on the export record. The
-minimum batch size is `10`; the default batch size is `100`.
+minimum batch size is `10`; the default batch size is `50`.
 
 Scheduled exports are not configured on export configuration records. Future
 scheduled export workflows should use a focused scheduling model instead of

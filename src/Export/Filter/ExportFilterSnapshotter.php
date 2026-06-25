@@ -29,6 +29,9 @@ final readonly class ExportFilterSnapshotter {
 	/**
 	 * Initializes the snapshotter.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param PeriodProviderRegistry $period_providers Period provider registry.
 	 */
 	public function __construct(
@@ -37,6 +40,9 @@ final readonly class ExportFilterSnapshotter {
 
 	/**
 	 * Creates export-time snapshots for filter selections.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, ExportFilterSelection> $selections Filter selections.
 	 *

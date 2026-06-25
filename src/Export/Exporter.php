@@ -36,6 +36,9 @@ final readonly class Exporter {
 	/**
 	 * Initializes the exporter.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param StorageAdapterRegistry          $storage_adapters  storage adapter registry.
 	 * @param ExportAdapterRegistry           $export_adapters   Export adapter registry.
 	 * @param ExportRendererRegistry          $renderer_registry Export renderer registry.
@@ -56,6 +59,9 @@ final readonly class Exporter {
 
 	/**
 	 * Generates the export file for a saved export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int         $post_id          Export post ID.
 	 * @param string|null $renderer_id      Export renderer identifier.

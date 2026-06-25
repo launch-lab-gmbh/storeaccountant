@@ -32,6 +32,9 @@ final readonly class StorageLocationsForm {
 	/**
 	 * Initializes the form.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param StorageAdapterRegistry $storage_adapters storage adapter registry.
 	 */
 	public function __construct(
@@ -40,6 +43,9 @@ final readonly class StorageLocationsForm {
 
 	/**
 	 * Renders the storage locations fields.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_fields(): void {
 		$enabled  = array_map(

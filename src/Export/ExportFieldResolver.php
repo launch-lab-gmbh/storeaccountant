@@ -31,6 +31,9 @@ final readonly class ExportFieldResolver {
 	/**
 	 * Initializes the export field resolver.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param FieldProviderRegistry  $field_providers Field provider registry.
 	 * @param FieldMappingRepository $field_mapping   Field mapping repository.
 	 */
@@ -41,6 +44,9 @@ final readonly class ExportFieldResolver {
 
 	/**
 	 * Gets mapped fields for an adapter payload.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportAdapterInterface $adapter Export adapter.
 	 * @param ExportPayload          $payload Export payload.
@@ -55,6 +61,9 @@ final readonly class ExportFieldResolver {
 
 	/**
 	 * Gets mapped fields for an export type.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportContext        $context           Export context.
 	 * @param FieldCollection|null $additional_fields Adapter-provided additional fields.

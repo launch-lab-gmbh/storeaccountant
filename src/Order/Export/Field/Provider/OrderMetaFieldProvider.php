@@ -105,6 +105,9 @@ final readonly class OrderMetaFieldProvider implements FieldProviderInterface, H
 	/**
 	 * Initializes the order meta field provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param MetaFieldCollector $collector Metadata field collector.
 	 */
 	public function __construct(
@@ -113,6 +116,9 @@ final readonly class OrderMetaFieldProvider implements FieldProviderInterface, H
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -128,6 +134,9 @@ final readonly class OrderMetaFieldProvider implements FieldProviderInterface, H
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -135,6 +144,9 @@ final readonly class OrderMetaFieldProvider implements FieldProviderInterface, H
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( ExportContext $context ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $context->export_type;
@@ -142,6 +154,9 @@ final readonly class OrderMetaFieldProvider implements FieldProviderInterface, H
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_fields( ExportContext $context ): array {
 		return $this->collector->get_fields( $context, self::FIELD_ID_PREFIX, self::RESERVED_META_KEYS );
@@ -149,6 +164,9 @@ final readonly class OrderMetaFieldProvider implements FieldProviderInterface, H
 
 	/**
 	 * Gets the stable export field ID for an order meta key.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $meta_key WooCommerce order meta key.
 	 */

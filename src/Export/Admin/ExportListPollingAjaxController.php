@@ -38,6 +38,12 @@ final readonly class ExportListPollingAjaxController implements HookRegistrarInt
 	public const ACTION       = 'storeaccountant_poll_exports';
 	public const NONCE_ACTION = 'storeaccountant_poll_exports';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private ExportListPollingResponseFactory $response_factory,
 		private PermissionChecker $permissions
@@ -45,6 +51,9 @@ final readonly class ExportListPollingAjaxController implements HookRegistrarInt
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'wp_ajax_' . self::ACTION, [ $this, 'handle' ] );
@@ -52,6 +61,9 @@ final readonly class ExportListPollingAjaxController implements HookRegistrarInt
 
 	/**
 	 * Handles an export polling request.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle(): void {
 		check_ajax_referer( self::NONCE_ACTION, 'nonce' );

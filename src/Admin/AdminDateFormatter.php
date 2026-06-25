@@ -29,6 +29,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class AdminDateFormatter {
 	/**
 	 * Gets the admin datetime format for the active user locale.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public static function get_datetime_format(): string {
 		return sprintf(
@@ -40,6 +43,9 @@ final readonly class AdminDateFormatter {
 
 	/**
 	 * Formats a stored UTC MySQL datetime.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $datetime Date and time in MySQL format.
 	 */

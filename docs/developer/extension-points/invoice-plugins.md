@@ -15,6 +15,7 @@ Methods:
 
 - `get_id(): string`
 - `is_active(): bool`
+- `has_invoice(\WC_Order $order): bool`
 - `get_invoice_number(\WC_Order $order): string`
 - `get_invoice_date(\WC_Order $order): string`
 - `get_invoice_file_types(): array`
@@ -52,9 +53,10 @@ The bundled WooCommerce PDF Invoices & Packing Slips integration uses the ID
 Its order export providers live below
 `StoreAccountant\Invoice\Export\Order`:
 
-- `InvoiceFieldProvider` contributes `invoice_number`, `invoice_date`, and
-  `invoice_file_name` to the `orders` export type when an invoice plugin
-  integration is enabled.
+- `InvoiceFieldProvider` contributes `invoice_number`, `invoice_date`, and one
+  typed `invoice_file_name_{type}` field per invoice file type, such as
+  `invoice_file_name_pdf` and `invoice_file_name_xml`, to the `orders` export
+  type when an invoice plugin integration is enabled.
 - `InvoiceFieldValueProvider` resolves those fields through the enabled invoice
   plugin integration.
 - `InvoiceAttachmentProvider` adds selected invoice files to the export ZIP
@@ -67,6 +69,9 @@ not offered in export field mapping.
 Export configurations can select one or more invoice file types to attach to
 the export. The bundled WooCommerce PDF Invoices & Packing Slips integration
 offers `pdf` and, when its EDI/XML feature is available, `xml`.
+Attachment generation also requires the matching typed invoice file name field
+to be enabled in field mapping, for example `invoice_file_name_pdf` for PDF
+files or `invoice_file_name_xml` for XML files.
 
 Saved export configurations may still contain invoice field mapping entries from
 an earlier state. Those entries are intentionally ignored while the related
@@ -111,6 +116,10 @@ final class AcmeInvoicePlugin implements InvoicePluginInterface {
 
 	public function is_active(): bool {
 		return class_exists( \Acme_Invoices::class );
+	}
+
+	public function has_invoice( \WC_Order $order ): bool {
+		return '' !== $this->get_invoice_number( $order );
 	}
 
 	public function get_invoice_number( \WC_Order $order ): string {

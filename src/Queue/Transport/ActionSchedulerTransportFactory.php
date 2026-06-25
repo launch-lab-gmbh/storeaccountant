@@ -31,6 +31,9 @@ final readonly class ActionSchedulerTransportFactory implements TransportFactory
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function createTransport( string $dsn, array $options, SerializerInterface $serializer ): TransportInterface {
 		$queue_name = $this->get_queue_name( $dsn );
@@ -40,6 +43,9 @@ final readonly class ActionSchedulerTransportFactory implements TransportFactory
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $dsn, array $options ): bool {
 		return self::SCHEME === (string) wp_parse_url( $dsn, PHP_URL_SCHEME );

@@ -41,6 +41,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class StorageFileStreamer {
 	/**
 	 * Streams a storage file to the browser.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function stream( StorageFile $file ): void {
 		if ( ! is_resource( $file->stream ) ) {

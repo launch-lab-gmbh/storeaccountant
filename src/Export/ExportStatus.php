@@ -30,6 +30,9 @@ final class ExportStatus {
 	/**
 	 * Checks whether a status is known.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $status Export status.
 	 */
 	public static function is_valid( string $status ): bool {
@@ -38,6 +41,9 @@ final class ExportStatus {
 
 	/**
 	 * Gets the translated admin label for a status.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $status Export status.
 	 */

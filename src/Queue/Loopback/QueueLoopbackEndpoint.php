@@ -18,6 +18,12 @@ use StoreAccountant\Export\Event\ExportEventDispatcher;
 use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Contract\WordPress\Request;
+use function add_action;
+use function add_filter;
+use function add_rewrite_rule;
+use function get_post_type;
+use function get_query_var;
+use function status_header;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -27,8 +33,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Handles async HTTP loopback requests for StoreAccountant queue processing.
  */
 final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
-	public const ACTION = 'storeaccountant_run_export_queue_loopback';
+	public const ROUTE_PATH = 'storeaccountant/queue-loopback';
+	private const QUERY_VAR = 'storeaccountant_queue_loopback';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private QueueLoopbackDispatcher $dispatcher,
 		private ActionSchedulerLoopbackRunner $runner
@@ -36,14 +49,65 @@ final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
-		add_action( 'admin_post_' . self::ACTION, [ $this, 'handle' ] );
-		add_action( 'admin_post_nopriv_' . self::ACTION, [ $this, 'handle' ] );
+		add_action( 'init', [ $this, 'register_rewrite_rule' ] );
+		add_filter( 'query_vars', [ $this, 'register_query_var' ] );
+		add_action( 'template_redirect', [ $this, 'handle_request' ] );
+	}
+
+	/**
+	 * Registers the pretty queue loopback route.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
+	public function register_rewrite_rule(): void {
+		add_rewrite_rule(
+			'^' . self::ROUTE_PATH . '/?$',
+			'index.php?' . self::QUERY_VAR . '=1',
+			'top'
+		);
+	}
+
+	/**
+	 * Adds the queue loopback query var.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param array<int, string> $query_vars Public query vars.
+	 *
+	 * @return array<int, string>
+	 */
+	public function register_query_var( array $query_vars ): array {
+		$query_vars[] = self::QUERY_VAR;
+
+		return $query_vars;
+	}
+
+	/**
+	 * Handles a frontend queue loopback request.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
+	public function handle_request(): void {
+		if ( '1' !== (string) get_query_var( self::QUERY_VAR ) ) {
+			return;
+		}
+
+		$this->handle();
 	}
 
 	/**
 	 * Handles the loopback request.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle(): void {
 		$export_id = Request::post_int( 'export_id' );
@@ -54,7 +118,7 @@ final readonly class QueueLoopbackEndpoint implements HookRegistrarInterface {
 			exit;
 		}
 
-			$should_continue = $this->runner->run( $export_id );
+		$should_continue = $this->runner->run( $export_id );
 
 		if ( $should_continue ) {
 			$this->dispatcher->refresh_token( $export_id, $token );

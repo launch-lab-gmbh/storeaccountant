@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace StoreAccountant\Invoice\Export\Order;
 
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
+use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Invoice\Contract\InvoicePluginInterface;
 use function array_filter;
 use function array_values;
@@ -37,23 +38,31 @@ final readonly class InvoiceExportAttachmentSettings {
 	/**
 	 * Checks whether invoice files should be exported.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int                    $configuration_id Export configuration post ID.
 	 * @param InvoicePluginInterface $plugin           Invoice plugin integration.
+	 * @param int                    $export_id        Export post ID.
 	 */
-	public function is_enabled( int $configuration_id, InvoicePluginInterface $plugin ): bool {
-		return [] !== $this->get_selected_file_types( $configuration_id, $plugin );
+	public function is_enabled( int $configuration_id, InvoicePluginInterface $plugin, int $export_id = 0 ): bool {
+		return [] !== $this->get_selected_file_types( $configuration_id, $plugin, $export_id );
 	}
 
 	/**
 	 * Gets selected invoice file types.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int                    $configuration_id Export configuration post ID.
 	 * @param InvoicePluginInterface $plugin           Invoice plugin integration.
+	 * @param int                    $export_id        Export post ID.
 	 *
 	 * @return array<int, string>
 	 */
-	public function get_selected_file_types( int $configuration_id, InvoicePluginInterface $plugin ): array {
-		$settings = $this->get_settings( $configuration_id );
+	public function get_selected_file_types( int $configuration_id, InvoicePluginInterface $plugin, int $export_id = 0 ): array {
+		$settings = $this->get_settings( $configuration_id, $export_id );
 		$selected = $settings[ self::OPTION_FILE_TYPES ] ?? [];
 
 		if ( ! is_array( $selected ) ) {
@@ -86,15 +95,19 @@ final readonly class InvoiceExportAttachmentSettings {
 	 * Gets stored invoice attachment settings.
 	 *
 	 * @param int $configuration_id Export configuration post ID.
+	 * @param int $export_id        Export post ID.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function get_settings( int $configuration_id ): array {
-		if ( $configuration_id <= 0 ) {
+	private function get_settings( int $configuration_id, int $export_id ): array {
+		if ( $configuration_id <= 0 && $export_id <= 0 ) {
 			return [];
 		}
 
-		$additional_settings = json_decode( (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_ADDITIONAL_SETTINGS, true ), true );
+		$meta_source_id = $configuration_id > 0 ? $configuration_id : $export_id;
+		$meta_key       = $configuration_id > 0 ? ExportConfigurationPostType::META_ADDITIONAL_SETTINGS : ExportPostType::META_ADDITIONAL_SETTINGS;
+
+		$additional_settings = json_decode( (string) get_post_meta( $meta_source_id, $meta_key, true ), true );
 
 		if ( ! is_array( $additional_settings ) ) {
 			return [];

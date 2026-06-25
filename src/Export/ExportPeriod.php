@@ -24,6 +24,9 @@ final readonly class ExportPeriod {
 	/**
 	 * Initializes the period.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $start_at Report start date and time in UTC MySQL format.
 	 * @param string $end_at   Report end date and time in UTC MySQL format.
 	 */

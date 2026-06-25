@@ -34,6 +34,9 @@ final readonly class OrderStatusProvider {
 	/**
 	 * Gets all WooCommerce order statuses.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<string, string>
 	 */
 	public function get_statuses(): array {
@@ -57,6 +60,9 @@ final readonly class OrderStatusProvider {
 	/**
 	 * Gets the default selected order statuses.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<int, string>
 	 */
 	public function get_default_statuses(): array {
@@ -65,6 +71,9 @@ final readonly class OrderStatusProvider {
 
 	/**
 	 * Sanitizes requested order statuses against the available WooCommerce statuses.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param mixed $value Submitted order status value.
 	 *

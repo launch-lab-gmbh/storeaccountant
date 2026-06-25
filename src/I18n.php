@@ -28,6 +28,9 @@ final readonly class I18n {
 	/**
 	 * Translates a built-in dynamic registry label or formats an extension ID.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $prefix Registry label prefix.
 	 * @param string $id     Registry item ID.
 	 */

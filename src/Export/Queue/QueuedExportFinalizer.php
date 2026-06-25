@@ -25,10 +25,13 @@ use StoreAccountant\Export\ExportRepository;
 use StoreAccountant\Export\ExportStoragePathGenerator;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Renderer\CsvExportRenderer;
+use StoreAccountant\Storage\Contract\ChunkedStorageAdapterInterface;
 use StoreAccountant\Storage\StorageAdapterRegistry;
+use StoreAccountant\Storage\StorageFileConfiguration;
 use function function_exists;
 use function is_file;
 use function is_string;
+use function max;
 use function sanitize_key;
 use function wp_delete_file;
 
@@ -42,6 +45,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class QueuedExportFinalizer {
 	/**
 	 * Initializes the finalizer.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param BatchExportStore                $batch_store            Temporary batch store.
 	 * @param StorageAdapterRegistry          $storage_adapters       Storage adapter registry.
@@ -58,18 +64,22 @@ final readonly class QueuedExportFinalizer {
 		private ExportRendererRegistry $renderer_registry,
 		private ExportRepository $repository,
 		private ExportStoragePathGenerator $storage_path_generator,
-		private ExportFilterSelectionSerializer $filter_serializer
+		private ExportFilterSelectionSerializer $filter_serializer,
+		private ExportDetailLogger $detail_logger
 	) {}
 
 	/**
 	 * Finalizes a queued export.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int         $post_id     Export post ID.
 	 * @param string|null $renderer_id Renderer ID.
 	 *
-	 * @return true|WP_Error
+	 * @return QueuedExportFinalizationResult|WP_Error
 	 */
-	public function finalize( int $post_id, ?string $renderer_id = null ): true|WP_Error {
+	public function finalize( int $post_id, ?string $renderer_id = null ): QueuedExportFinalizationResult|WP_Error {
 		$export_adapter = $this->export_adapters->get( $this->get_adapter_id( $post_id ) );
 
 		if ( null === $export_adapter ) {
@@ -104,6 +114,17 @@ final readonly class QueuedExportFinalizer {
 			return $dataset;
 		}
 
+		$this->detail_logger->log(
+			$post_id,
+			'info',
+			'export_dataset_loaded',
+			[
+				'export_id'   => $post_id,
+				'adapter_id'  => $export_adapter->get_id(),
+				'renderer_id' => $renderer->get_id(),
+			]
+		);
+
 		ExportEventDispatcher::dispatch(
 			ExportEvents::DATASET_LOADED,
 			$post_id,
@@ -130,6 +151,19 @@ final readonly class QueuedExportFinalizer {
 			return $artifact;
 		}
 
+		$this->detail_logger->log(
+			$post_id,
+			'info',
+			'export_artifact_rendered',
+			[
+				'export_id'   => $post_id,
+				'renderer_id' => $renderer->get_id(),
+				'format'      => $artifact->file_extension,
+				'mime_type'   => $artifact->mime_type,
+				'source_path' => $artifact->source_path,
+			]
+		);
+
 		ExportEventDispatcher::dispatch(
 			ExportEvents::ARTIFACT_RENDERED,
 			$post_id,
@@ -143,13 +177,87 @@ final readonly class QueuedExportFinalizer {
 
 		try {
 			$storage_file_configuration = $this->storage_path_generator->generate( $post_id, $storage_adapter->get_id(), $artifact );
-			$storage_path               = $storage_adapter->persist( $storage_file_configuration );
+			$this->detail_logger->log(
+				$post_id,
+				'info',
+				'export_storage_persist_started',
+				[
+					'export_id'       => $post_id,
+					'storage_engine'  => $storage_adapter->get_id(),
+					'storage_path'    => $storage_file_configuration->storage_path,
+					'source_path'     => $storage_file_configuration->source_path,
+					'file_name'       => $storage_file_configuration->file_name,
+					'chunk_supported' => $storage_adapter instanceof ChunkedStorageAdapterInterface,
+				]
+			);
+			$result = $storage_adapter instanceof ChunkedStorageAdapterInterface
+				? $this->start_chunked_persist( $post_id, $storage_adapter, $storage_file_configuration )
+				: $this->persist_complete_export( $post_id, $storage_adapter->persist( $storage_file_configuration ), $storage_adapter->get_id() );
 		} finally {
 			if ( is_file( $artifact->source_path ) ) {
 				$this->delete_file( $artifact->source_path );
 			}
 		}
 
+		return $result;
+	}
+
+	/**
+	 * Starts a chunked persist operation for storage adapters that can append attachments later.
+	 *
+	 * @param int                            $post_id       Export post ID.
+	 * @param ChunkedStorageAdapterInterface $storage       Chunked storage adapter.
+	 * @param StorageFileConfiguration       $configuration Storage file configuration.
+	 *
+	 * @return QueuedExportFinalizationResult|WP_Error
+	 */
+	private function start_chunked_persist(
+		int $post_id,
+		ChunkedStorageAdapterInterface $storage,
+		StorageFileConfiguration $configuration
+	): QueuedExportFinalizationResult|WP_Error {
+		$storage_path = $storage->start_persist( $configuration );
+
+		if ( is_wp_error( $storage_path ) ) {
+			return $storage_path;
+		}
+
+		$total_attachments = $this->batch_store->count_attachments( $post_id );
+
+		if ( $total_attachments > 0 ) {
+			$attachment_batch_size = $this->get_attachment_batch_size( $post_id );
+
+			$this->detail_logger->log(
+				$post_id,
+				'info',
+				'export_attachment_finalization_pending',
+				[
+					'export_id'             => $post_id,
+					'storage_path'          => $storage_path,
+					'total_attachments'     => $total_attachments,
+					'attachment_batch_size' => $attachment_batch_size,
+				]
+			);
+			return QueuedExportFinalizationResult::pending(
+				$storage_path,
+				$total_attachments,
+				$attachment_batch_size
+			);
+		}
+
+		return $this->persist_complete_export( $post_id, $storage_path, $this->get_storage_adapter_id( $post_id ) );
+	}
+
+	/**
+	 * Persists final export metadata and removes temporary batch state.
+	 *
+	 * @param int             $post_id        Export post ID.
+	 * @param string|WP_Error $storage_path   Stored export path.
+	 * @param string          $storage_engine Storage engine ID.
+	 *
+	 * @return QueuedExportFinalizationResult|WP_Error
+	 */
+	private function persist_complete_export( int $post_id, string|WP_Error $storage_path, string $storage_engine ): QueuedExportFinalizationResult|WP_Error {
 		if ( is_wp_error( $storage_path ) ) {
 			return $storage_path;
 		}
@@ -160,13 +268,34 @@ final readonly class QueuedExportFinalizer {
 			$post_id,
 			[
 				'export_id'      => $post_id,
-				'storage_engine' => $storage_adapter->get_id(),
+				'storage_engine' => $storage_engine,
 				'storage_path'   => $storage_path,
 			]
 		);
 		$this->batch_store->delete_export( $post_id );
+		$this->detail_logger->log(
+			$post_id,
+			'info',
+			'export_artifact_persisted',
+			[
+				'export_id'      => $post_id,
+				'storage_engine' => $storage_engine,
+				'storage_path'   => $storage_path,
+			]
+		);
 
-		return true;
+		return QueuedExportFinalizationResult::complete( $storage_path );
+	}
+
+	/**
+	 * Gets the attachment chunk size from the export's configured batch size.
+	 *
+	 * @param int $post_id Export post ID.
+	 */
+	private function get_attachment_batch_size( int $post_id ): int {
+		$batch_size = (int) get_post_meta( $post_id, ExportPostType::META_BATCH_SIZE, true );
+
+		return max( ExportPostType::MIN_BATCH_SIZE, $batch_size > 0 ? $batch_size : ExportPostType::DEFAULT_BATCH_SIZE );
 	}
 
 	/**
@@ -182,6 +311,15 @@ final readonly class QueuedExportFinalizer {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Gets the configured storage adapter identifier.
+	 *
+	 * @param int $post_id Export post ID.
+	 */
+	private function get_storage_adapter_id( int $post_id ): string {
+		return sanitize_key( (string) get_post_meta( $post_id, ExportPostType::META_STORAGE_ENGINE, true ) );
 	}
 
 	/**

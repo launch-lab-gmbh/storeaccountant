@@ -28,6 +28,9 @@ final readonly class FieldProviderRegistry extends Registry {
 	/**
 	 * Gets all fields for an export type.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportContext $context Export context.
 	 */
 	public function get_fields( ExportContext $context ): FieldCollection {

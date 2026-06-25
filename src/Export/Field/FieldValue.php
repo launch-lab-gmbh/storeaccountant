@@ -24,6 +24,9 @@ final readonly class FieldValue {
 	/**
 	 * Initializes the export value.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string               $field_id Field identifier.
 	 * @param mixed                $value    Field value.
 	 * @param array<string, mixed> $options  Additional value options.

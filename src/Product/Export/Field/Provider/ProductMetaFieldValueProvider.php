@@ -38,6 +38,9 @@ final readonly class ProductMetaFieldValueProvider implements FieldValueProvider
 	/**
 	 * Initializes the product meta field value provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param MetaFieldValueFormatter $formatter Metadata value formatter.
 	 */
 	public function __construct(
@@ -46,6 +49,9 @@ final readonly class ProductMetaFieldValueProvider implements FieldValueProvider
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -61,6 +67,9 @@ final readonly class ProductMetaFieldValueProvider implements FieldValueProvider
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -68,6 +77,9 @@ final readonly class ProductMetaFieldValueProvider implements FieldValueProvider
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( Field $field, ExportContext $context ): bool {
 		return ProductExportAdapter::ADAPTER_ID === $context->export_type
@@ -76,6 +88,9 @@ final readonly class ProductMetaFieldValueProvider implements FieldValueProvider
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_values( mixed $item, FieldCollection $fields, ExportContext $context ): array {
 		if ( ProductExportAdapter::ADAPTER_ID !== $context->export_type || ! $item instanceof WC_Product ) {

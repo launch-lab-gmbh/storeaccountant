@@ -28,6 +28,9 @@ final readonly class ActionSchedulerTransportProcessor implements HookRegistrarI
 	/**
 	 * Initializes the processor.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param SerializerInterface      $serializer Messenger transport serializer.
 	 * @param HandlersLocatorInterface $handlers   Messenger handler locator.
 	 */
@@ -38,6 +41,9 @@ final readonly class ActionSchedulerTransportProcessor implements HookRegistrarI
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		foreach ( ActionSchedulerTransport::get_hooks() as $hook ) {
@@ -47,6 +53,9 @@ final readonly class ActionSchedulerTransportProcessor implements HookRegistrarI
 
 	/**
 	 * Processes one encoded Messenger envelope.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param mixed $queue_name    Queue name.
 	 * @param mixed $encoded       Encoded envelope.

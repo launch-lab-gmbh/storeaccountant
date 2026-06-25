@@ -15,6 +15,7 @@ namespace StoreAccountant\Export;
 
 use WP_Error;
 use StoreAccountant\Export\Contract\ExportAdapterInterface;
+use StoreAccountant\Export\Contract\ExportAttachmentProviderInterface;
 use StoreAccountant\Export\Contract\FieldValueMutatorInterface;
 use StoreAccountant\Export\Contract\FieldValueProviderInterface;
 use StoreAccountant\Export\Dataset\ExportDataset;
@@ -36,6 +37,9 @@ final readonly class ExportDatasetBuilder {
 	/**
 	 * Initializes the export dataset builder.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param FieldValueProviderRegistry       $field_value_providers Field value provider registry.
 	 * @param FieldValueMutatorRegistry        $field_value_mutators  Field value mutator registry.
 	 * @param ExportFieldResolver              $field_resolver        Export field resolver.
@@ -50,6 +54,9 @@ final readonly class ExportDatasetBuilder {
 
 	/**
 	 * Builds an export dataset for an adapter payload.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportAdapterInterface $adapter Export adapter.
 	 * @param ExportPayload          $payload Export payload.
@@ -68,6 +75,9 @@ final readonly class ExportDatasetBuilder {
 
 	/**
 	 * Builds an export dataset for an already loaded source item batch.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportAdapterInterface $adapter Export adapter.
 	 * @param ExportPayload          $payload Export payload.
@@ -88,31 +98,19 @@ final readonly class ExportDatasetBuilder {
 		$attachment_providers = true === ( $payload->options[ ExportPayload::OPTION_INCLUDE_ATTACHMENTS ] ?? false )
 			? $this->attachment_providers->get_providers( $context )
 			: [];
-		$records              = [];
-		$attachments          = [];
 
-		foreach ( $items as $item ) {
-			$records[] = $this->get_record(
-				$item,
+		return new ExportDataset(
+			$fields,
+			$this->get_records(
+				$items,
 				$fields,
 				$value_providers,
 				$value_mutators,
 				$context,
 				$adapter,
 				$payload
-			);
-
-			foreach ( $attachment_providers as $provider ) {
-				foreach ( $provider->get_attachments( $item, $payload, $context ) as $attachment ) {
-					$attachments[] = $attachment;
-				}
-			}
-		}
-
-		return new ExportDataset(
-			$fields,
-			$records,
-			$attachments,
+			),
+			$this->get_attachments( $items, $attachment_providers, $payload, $context ),
 			[
 				'type' => $export_type,
 			]
@@ -179,5 +177,60 @@ final readonly class ExportDatasetBuilder {
 		}
 
 		return new ExportRecord( $adapter->get_record_id( $item ), $record_values );
+	}
+
+	/**
+	 * Lazily gets export records for source items.
+	 *
+	 * @param array<int, mixed>                                $items     Source items.
+	 * @param FieldCollection                                  $fields    Dataset fields.
+	 * @param array<string, FieldValueProviderInterface>       $providers Field value providers.
+	 * @param array<string, FieldValueMutatorInterface>        $mutators  Field value mutators.
+	 * @param ExportContext                                    $context   Export context.
+	 * @param ExportAdapterInterface                           $adapter   Export adapter.
+	 * @param ExportPayload                                    $payload   Export payload.
+	 *
+	 * @return iterable<ExportRecord>
+	 */
+	private function get_records(
+		array $items,
+		FieldCollection $fields,
+		array $providers,
+		array $mutators,
+		ExportContext $context,
+		ExportAdapterInterface $adapter,
+		ExportPayload $payload
+	): iterable {
+		foreach ( $items as $item ) {
+			yield $this->get_record(
+				$item,
+				$fields,
+				$providers,
+				$mutators,
+				$context,
+				$adapter,
+				$payload
+			);
+		}
+	}
+
+	/**
+	 * Lazily gets export attachments for source items.
+	 *
+	 * @param array<int, mixed>                                $items     Source items.
+	 * @param array<string, ExportAttachmentProviderInterface> $providers Attachment providers.
+	 * @param ExportPayload                                    $payload   Export payload.
+	 * @param ExportContext                                    $context   Export context.
+	 *
+	 * @return iterable<mixed>
+	 */
+	private function get_attachments( array $items, array $providers, ExportPayload $payload, ExportContext $context ): iterable {
+		foreach ( $items as $item ) {
+			foreach ( $providers as $provider ) {
+				foreach ( $provider->get_attachments( $item, $payload, $context ) as $attachment ) {
+					yield $attachment;
+				}
+			}
+		}
 	}
 }

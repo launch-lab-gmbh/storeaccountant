@@ -41,12 +41,21 @@ final readonly class DownloadPasswordManager {
 	public const OPTION_GLOBAL_PASSWORD      = 'storeaccountant_download_password';
 	public const OPTION_GLOBAL_PASSWORD_HASH = 'storeaccountant_download_password_hash';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private ReversibleCrypto $crypto
 	) {}
 
 	/**
 	 * Checks whether password storage and reveal can work.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function is_available(): bool {
 		return $this->crypto->is_available();
@@ -54,6 +63,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Ensures a global password exists.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ensure_global_password(): bool|WP_Error {
 		if ( $this->has_global_password() ) {
@@ -72,6 +84,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Stores a new global password.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function save_global_password( string $plain_text ): bool|WP_Error {
 		return $this->save_password_options( $plain_text, self::OPTION_GLOBAL_PASSWORD, self::OPTION_GLOBAL_PASSWORD_HASH );
@@ -79,6 +94,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Resolves the plain text password that will be stored for a password submission.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_password_for_submission( string $plain_text ): string|WP_Error {
 		$plain_text = trim( $plain_text );
@@ -98,6 +116,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Resolves the plain text password that will be stored for a configuration submission.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_configuration_password_for_submission( string $plain_text ): string|WP_Error {
 		return $this->get_password_for_submission( $plain_text );
@@ -105,6 +126,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Gets an encrypted password snapshot from a submitted password value.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array{encrypted:string, hash:string}|WP_Error
 	 */
@@ -138,6 +162,9 @@ final readonly class DownloadPasswordManager {
 	 * Stores a configuration download password.
 	 *
 	 * An empty submitted password snapshots the current global download password.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function save_configuration_password( int $configuration_id, string $plain_text ): bool|WP_Error {
 		$snapshot = $this->get_snapshot_for_submission( $plain_text );
@@ -154,6 +181,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Gets the encrypted password snapshot for an export creation.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array{encrypted:string, hash:string}|WP_Error
 	 */
@@ -194,6 +224,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Reveals the current global password.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function reveal_global_password(): string|WP_Error {
 		return $this->reveal( (string) get_option( self::OPTION_GLOBAL_PASSWORD, '' ) );
@@ -201,6 +234,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Reveals the stored configuration override.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function reveal_configuration_override( int $configuration_id ): string|WP_Error {
 		return $this->reveal( (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_DOWNLOAD_PASSWORD, true ) );
@@ -208,6 +244,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Reveals the stored configuration download password.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function reveal_configuration_password( int $configuration_id ): string|WP_Error {
 		return $this->reveal_configuration_override( $configuration_id );
@@ -215,6 +254,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Reveals the password snapshot stored on an export run.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function reveal_export_password( int $export_id ): string|WP_Error {
 		return $this->reveal( (string) get_post_meta( $export_id, ExportPostType::META_DOWNLOAD_PASSWORD, true ) );
@@ -222,6 +264,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Verifies a submitted password against a stored hash.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function verify( string $plain_text, string $hash ): bool {
 		if ( '' === $hash ) {
@@ -235,6 +280,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Checks whether a global password exists.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function has_global_password(): bool {
 		return '' !== (string) get_option( self::OPTION_GLOBAL_PASSWORD, '' )
@@ -243,6 +291,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Checks whether a configuration has an override.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function has_configuration_override( int $configuration_id ): bool {
 		return '' !== (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_DOWNLOAD_PASSWORD, true )
@@ -251,6 +302,9 @@ final readonly class DownloadPasswordManager {
 
 	/**
 	 * Checks whether a configuration has a stored download password.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function has_configuration_password( int $configuration_id ): bool {
 		return $this->has_configuration_override( $configuration_id );

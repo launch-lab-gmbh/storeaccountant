@@ -14,8 +14,6 @@ declare(strict_types=1);
 namespace StoreAccountant\Storage\Adapter;
 
 use WP_Error;
-use function dirname;
-use function is_dir;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -27,6 +25,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class LocalStorageConfiguration {
 	public const RELATIVE_PATH = 'storeaccountant';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public string $root_path,
 		public string $display_root_path
@@ -34,6 +38,9 @@ final readonly class LocalStorageConfiguration {
 
 	/**
 	 * Builds the default local storage configuration from WordPress uploads.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return self|WP_Error
 	 */
@@ -56,6 +63,9 @@ final readonly class LocalStorageConfiguration {
 	/**
 	 * Gets the configured local storage root path.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return string|WP_Error
 	 */
 	public function get_root_path(): string|WP_Error {
@@ -72,6 +82,9 @@ final readonly class LocalStorageConfiguration {
 	/**
 	 * Gets the absolute zip archive path.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $archive_file Relative archive file path.
 	 *
 	 * @return string|WP_Error
@@ -87,16 +100,6 @@ final readonly class LocalStorageConfiguration {
 			return trailingslashit( $root_path );
 		}
 
-		$archive_path = trailingslashit( $root_path ) . $archive_file;
-		$directory    = dirname( $archive_path );
-
-		if ( ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
-			return new WP_Error(
-				'storeaccountant_archive_directory_not_created',
-				__( 'StoreAccountant could not create the local archive directory.', 'storeaccountant' )
-			);
-		}
-
-		return $archive_path;
+		return trailingslashit( $root_path ) . $archive_file;
 	}
 }

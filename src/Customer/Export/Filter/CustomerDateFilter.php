@@ -41,6 +41,9 @@ final readonly class CustomerDateFilter implements ExportFilterInterface, HookRe
 	/**
 	 * Initializes the customer date filter.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param PeriodProviderRegistry $period_providers Period provider registry.
 	 */
 	public function __construct(
@@ -49,6 +52,9 @@ final readonly class CustomerDateFilter implements ExportFilterInterface, HookRe
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -64,6 +70,9 @@ final readonly class CustomerDateFilter implements ExportFilterInterface, HookRe
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::FILTER_ID;
@@ -71,6 +80,9 @@ final readonly class CustomerDateFilter implements ExportFilterInterface, HookRe
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $export_type ): bool {
 		return CustomerExportAdapter::ADAPTER_ID === $export_type;
@@ -78,6 +90,9 @@ final readonly class CustomerDateFilter implements ExportFilterInterface, HookRe
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function apply( mixed $query, ExportFilterSelection $selection, ExportPayload $payload ): true|WP_Error {
 		if ( ! $query instanceof CustomerQueryCriteria ) {

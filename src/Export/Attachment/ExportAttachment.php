@@ -24,6 +24,9 @@ final readonly class ExportAttachment {
 	/**
 	 * Initializes the export attachment.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param resource $stream Attachment stream.
 	 */
 	public function __construct(

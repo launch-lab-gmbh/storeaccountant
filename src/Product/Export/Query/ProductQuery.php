@@ -46,6 +46,9 @@ final readonly class ProductQuery {
 	/**
 	 * Initializes the product query service.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFilterRegistry $filters Export filter registry.
 	 */
 	public function __construct(
@@ -54,6 +57,9 @@ final readonly class ProductQuery {
 
 	/**
 	 * Gets WooCommerce products for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -67,6 +73,9 @@ final readonly class ProductQuery {
 
 	/**
 	 * Counts WooCommerce products for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -87,6 +96,9 @@ final readonly class ProductQuery {
 	/**
 	 * Gets one deterministic WooCommerce product batch.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportPayload $payload Export payload.
 	 * @param int           $offset  Zero-based item offset.
 	 * @param int           $limit   Batch size.
@@ -102,11 +114,14 @@ final readonly class ProductQuery {
 	/**
 	 * Gets matching WooCommerce product IDs.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
 	 * @return array<int, int>|WP_Error
 	 */
-	private function get_product_ids( ExportPayload $payload, int $limit = -1, int $offset = 0 ): array|WP_Error {
+	public function get_product_ids( ExportPayload $payload, int $limit = -1, int $offset = 0 ): array|WP_Error {
 		$criteria = $this->get_criteria( $payload );
 
 		if ( is_wp_error( $criteria ) ) {
@@ -225,11 +240,14 @@ final readonly class ProductQuery {
 	/**
 	 * Gets WooCommerce products by IDs.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<int, int|string> $ids Product IDs.
 	 *
 	 * @return array<int, WC_Product>
 	 */
-	private function get_products_by_ids( array $ids ): array {
+	public function get_products_by_ids( array $ids ): array {
 		return array_values(
 			array_filter(
 				array_map(

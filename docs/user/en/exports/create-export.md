@@ -34,7 +34,7 @@ In the second step, configure the details:
 2. Choose the `Export Format`, for example CSV or JSON.
 3. Choose the `Storage Location`.
 4. Optionally enter a `Download Password`. If you leave the field empty, the current global download password is used.
-5. Check the `Batch Size`. If you are unsure, keep the default value `100`.
+5. Check the `Batch Size`. If you are unsure, keep the default value `50`.
 6. Click `Start Quick Export`.
 
 [Screenshot: Quick export details]

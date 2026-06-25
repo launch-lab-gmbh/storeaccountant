@@ -101,16 +101,18 @@ final class ExportDatasetBuilderTest extends TestCase {
 		);
 
 		$dataset = $this->builder()->build_from_items( $adapter, $payload, [ [ 'id' => 1001 ], [ 'id' => 1002 ] ] );
+		$records = is_array( $dataset->records ) ? $dataset->records : iterator_to_array( $dataset->records, false );
 
 		self::assertSame( [ 'name', 'amount', 'extra' ], $dataset->fields->ids() );
 		self::assertSame( 'orders', $dataset->options['type'] );
-		self::assertCount( 2, $dataset->records );
-		self::assertSame( '1001', $dataset->records[0]->id );
-		self::assertSame( 'first', $dataset->records[0]->get_value( 'name' ) );
-		self::assertSame( 'mutated-12', $dataset->records[0]->get_value( 'amount' ) );
-		self::assertSame( 'extra-1001', $dataset->records[0]->get_value( 'extra' ) );
-		self::assertCount( 2, $dataset->attachments );
-		self::assertSame( 'Invoices/invoice.pdf', $dataset->attachments[0]->internal_path );
+		self::assertCount( 2, $records );
+		self::assertSame( '1001', $records[0]->id );
+		self::assertSame( 'first', $records[0]->get_value( 'name' ) );
+		self::assertSame( 'mutated-12', $records[0]->get_value( 'amount' ) );
+		self::assertSame( 'extra-1001', $records[0]->get_value( 'extra' ) );
+		$attachments = is_array( $dataset->attachments ) ? $dataset->attachments : iterator_to_array( $dataset->attachments, false );
+		self::assertCount( 2, $attachments );
+		self::assertSame( 'Invoices/invoice.pdf', $attachments[0]->internal_path );
 	}
 
 	public function test_build_from_items_uses_empty_values_for_missing_fields_and_skips_attachments_when_disabled(): void {
@@ -143,9 +145,10 @@ final class ExportDatasetBuilderTest extends TestCase {
 		);
 
 		$dataset = $this->builder()->build_from_items( $adapter, new ExportPayload( 7, 'orders' ), [ [ 'id' => 1001 ] ] );
+		$records = is_array( $dataset->records ) ? $dataset->records : iterator_to_array( $dataset->records, false );
 
-		self::assertSame( '', $dataset->records[0]->get_value( 'missing' ) );
-		self::assertSame( [], $dataset->attachments );
+		self::assertSame( '', $records[0]->get_value( 'missing' ) );
+		self::assertSame( [], is_array( $dataset->attachments ) ? $dataset->attachments : iterator_to_array( $dataset->attachments, false ) );
 	}
 
 	private function builder(): ExportDatasetBuilder {

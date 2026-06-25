@@ -19,6 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Defines public export event hook names.
+ *
+ * @since 1.0.0
  */
 enum ExportEvents: string {
 	case LOG_ENTRY            = 'storeaccountant_export_log_entry';

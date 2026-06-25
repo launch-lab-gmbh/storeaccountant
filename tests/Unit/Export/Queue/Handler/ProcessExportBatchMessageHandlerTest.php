@@ -16,9 +16,13 @@ namespace StoreAccountant\Tests\Unit\Export\Queue\Handler;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Diagnostic\DiagnosticIncidentRepository;
+use StoreAccountant\Diagnostic\DiagnosticLogConfiguration;
+use StoreAccountant\Diagnostic\DiagnosticSettings;
 use StoreAccountant\Export\Attachment\ExportAttachmentProviderRegistry;
 use StoreAccountant\Export\Contract\BatchExportAdapterInterface;
 use StoreAccountant\Export\Contract\ExportRendererInterface;
+use StoreAccountant\Export\Contract\SnapshotExportAdapterInterface;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
 use StoreAccountant\Export\ExportAdapterRegistry;
 use StoreAccountant\Export\ExportDatasetBuilder;
@@ -34,10 +38,12 @@ use StoreAccountant\Export\Field\Mapping\FieldMappingRepository;
 use StoreAccountant\Export\Field\Mutator\FieldValueMutatorRegistry;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\Handler\ProcessExportBatchMessageHandler;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\Message\ProcessExportBatchMessage;
 use StoreAccountant\Security\ReversibleCrypto;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use WP_Error;
@@ -72,9 +78,11 @@ final class ProcessExportBatchMessageHandlerTest extends TestCase {
 		Functions\when( 'add_option' )->justReturn( true );
 		Functions\when( 'delete_option' )->justReturn( true );
 		Functions\when( 'get_option' )->justReturn( 0 );
+		Functions\when( 'wp_cache_delete' )->justReturn( true );
 		Functions\when( 'do_action' )->justReturn();
 		Functions\when( 'wp_upload_dir' )->alias( fn (): array => [ 'basedir' => $this->upload_dir ] );
 		Functions\when( 'wp_mkdir_p' )->alias( static fn ( string $path ): bool => is_dir( $path ) || mkdir( $path, 0777, true ) );
+		Functions\when( 'wp_is_writable' )->alias( static fn ( string $path ): bool => is_writable( $path ) );
 		Functions\when( 'trailingslashit' )->alias( static fn ( string $path ): string => rtrim( $path, '/\\' ) . '/' );
 		Functions\when( 'wp_json_encode' )->alias( static fn ( mixed $value ): string|false => json_encode( $value ) );
 
@@ -89,6 +97,10 @@ final class ProcessExportBatchMessageHandlerTest extends TestCase {
 				}
 
 				return false !== file_put_contents( $path, $contents );
+			}
+
+			public function get_contents( string $path ): string|false {
+				return file_get_contents( $path );
 			}
 		};
 	}
@@ -121,6 +133,41 @@ final class ProcessExportBatchMessageHandlerTest extends TestCase {
 		self::assertCount( 1, $this->dispatched );
 		self::assertInstanceOf( FinalizeExportMessage::class, $this->dispatched[0] );
 		self::assertFileExists( $this->upload_dir . '/storeaccountant/tmp/exports/42/batch-00001.dat' );
+	}
+
+	public function test_snapshot_adapter_processes_batch_from_saved_item_id_slice(): void {
+		$this->meta = [
+			ExportPostType::META_EXPORT_ADAPTER    => 'orders',
+			ExportPostType::META_EXPORT_WRITER     => 'csv',
+			ExportPostType::META_FILTERS           => '[]',
+			ExportPostType::META_CONFIGURATION_ID  => '77',
+			ExportPostType::META_TOTAL_ITEMS       => '3',
+			ExportPostType::META_TOTAL_BATCHES     => '2',
+			ExportPostType::META_PROCESSED_ITEMS   => '1',
+			ExportPostType::META_PROCESSED_BATCHES => '1',
+		];
+
+		self::assertTrue( ( new BatchExportStore() )->save_item_ids( 42, [ 1001, 1002, 1003 ] ) );
+
+		$adapter = $this->createMock( SnapshotExportAdapterInterface::class );
+		$adapter->method( 'get_id' )->willReturn( 'orders' );
+		$adapter->expects( self::never() )->method( 'get_batch_items' );
+		$adapter->expects( self::once() )
+			->method( 'get_items_by_ids' )
+			->with( self::anything(), [ '1002', '1003' ] )
+			->willReturn( [ [ 'id' => 1002 ], [ 'id' => 1003 ] ] );
+		$adapter->method( 'get_context' )->willReturn( new \StoreAccountant\Export\ExportContext( 'orders' ) );
+		$adapter->method( 'get_additional_fields' )->willReturn( new FieldCollection() );
+		$adapter->method( 'get_additional_values' )->willReturn( [] );
+		$adapter->method( 'get_record_id' )->willReturnCallback( static fn ( mixed $item ): string => (string) ( $item['id'] ?? '' ) );
+
+		$this->mock_wordpress_state( $adapter, $this->renderer() );
+
+		self::assertTrue( $this->handler()->__invoke( new ProcessExportBatchMessage( 42, 2, 1, 2 ) ) );
+		self::assertSame( '3', $this->meta[ ExportPostType::META_PROCESSED_ITEMS ] );
+		self::assertSame( '2', $this->meta[ ExportPostType::META_PROCESSED_BATCHES ] );
+		self::assertCount( 1, $this->dispatched );
+		self::assertInstanceOf( FinalizeExportMessage::class, $this->dispatched[0] );
 	}
 
 	public function test_batch_item_error_marks_export_failed_and_returns_error(): void {
@@ -195,7 +242,18 @@ final class ProcessExportBatchMessageHandlerTest extends TestCase {
 				new ExportFieldResolver( new FieldProviderRegistry(), new FieldMappingRepository() ),
 				new ExportAttachmentProviderRegistry()
 			),
-			new BatchExportStore()
+			new BatchExportStore(),
+			$this->detail_logger()
+		);
+	}
+
+	private function detail_logger(): ExportDetailLogger {
+		$configuration = new DiagnosticLogConfiguration( '/tmp/storeaccountant-export-detail-test', 'wp-content/uploads/storeaccountant/logging' );
+
+		return new ExportDetailLogger(
+			new DiagnosticSettings(),
+			new DiagnosticIncidentRepository( $configuration, new ProtectedUploadDirectory() ),
+			$configuration
 		);
 	}
 

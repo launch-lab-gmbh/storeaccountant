@@ -28,6 +28,9 @@ final readonly class StorageActivationNotice implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_notices', [ $this, 'render' ] );
@@ -35,6 +38,9 @@ final readonly class StorageActivationNotice implements HookRegistrarInterface {
 
 	/**
 	 * Renders and clears the activation notice.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		$message = get_transient( self::TRANSIENT_NAME );

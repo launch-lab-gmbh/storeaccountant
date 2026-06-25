@@ -36,6 +36,9 @@ final readonly class InvoicePluginHelper {
 	/**
 	 * Gets the first scalar order meta value from a list of candidate meta keys.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param WC_Order          $order     WooCommerce order.
 	 * @param array<int,string> $meta_keys Candidate meta keys.
 	 */
@@ -57,6 +60,9 @@ final readonly class InvoicePluginHelper {
 
 	/**
 	 * Gets the first scalar value from an array stored in order meta.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param WC_Order          $order     WooCommerce order.
 	 * @param string            $meta_key  Array meta key.
@@ -87,6 +93,9 @@ final readonly class InvoicePluginHelper {
 	/**
 	 * Formats a plugin-provided invoice number value.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param mixed $number Invoice number value.
 	 */
 	public function format_invoice_number_value( mixed $number ): string {
@@ -109,6 +118,9 @@ final readonly class InvoicePluginHelper {
 
 	/**
 	 * Formats a plugin-provided invoice date value.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param mixed  $date   Invoice date value.
 	 * @param string $format Output date format.
@@ -143,6 +155,9 @@ final readonly class InvoicePluginHelper {
 
 	/**
 	 * Sanitizes a file name and makes sure it has the expected extension.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $file_name File name.
 	 * @param string $extension File extension without leading dot.

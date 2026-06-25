@@ -23,19 +23,24 @@ use StoreAccountant\Export\Field\FieldCollection;
 use StoreAccountant\Export\Field\FieldValue;
 use StoreAccountant\Export\Field\Type\NumberFieldType;
 use StoreAccountant\Contract\WordPress\WordPressFilesystem;
+use StoreAccountant\Storage\ProtectedUploadDirectory;
 use function array_key_exists;
+use function array_slice;
+use function count;
 use function closedir;
+use function dirname;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Temporary attachment streams require PHP resources.
 use function fclose;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Temporary attachment streams require PHP resources.
 use function fopen;
-use function function_exists;
 use function is_array;
 use function is_dir;
 use function is_file;
 use function is_iterable;
 use function is_resource;
+use function is_scalar;
 use function is_string;
+use function is_wp_error;
 use function json_decode;
 use function ksort;
 use function opendir;
@@ -44,8 +49,8 @@ use function readdir;
 use function sprintf;
 use function stream_copy_to_stream;
 use function trailingslashit;
+use function trim;
 use function wp_json_encode;
-use function wp_delete_file;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -57,14 +62,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class BatchExportStore {
 	private const DIRECTORY = 'storeaccountant/tmp/exports';
 
-	private const INDEX_FILE = 'index.html';
+	private const ATTACHMENT_METADATA_FILE_FORMAT = 'batch-%05d-attachments.dat';
 
-	private const HTACCESS_FILE = '.htaccess';
+	private const ITEM_ID_SNAPSHOT_FILE = 'item-ids.dat';
 
-	private const HTACCESS_CONTENT = 'deny from all';
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
+	public function __construct(
+		private ProtectedUploadDirectory $directory = new ProtectedUploadDirectory()
+	) {}
 
 	/**
 	 * Saves one normalized export batch fragment.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int           $export_id    Export post ID.
 	 * @param int           $batch_number One-based batch number.
@@ -129,11 +145,101 @@ final readonly class BatchExportStore {
 			);
 		}
 
+		$this->save_attachment_metadata( $export_id, $batch_number, $attachments );
+
 		return true;
 	}
 
 	/**
+	 * Saves the stable source item ID snapshot for a queued export.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param int                    $export_id Export post ID.
+	 * @param array<int, int|string> $item_ids  Snapshot source item IDs.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function save_item_ids( int $export_id, array $item_ids ): true|WP_Error {
+		$directory = $this->get_export_directory( $export_id );
+
+		if ( is_wp_error( $directory ) ) {
+			return $directory;
+		}
+
+		$contents = wp_json_encode( $this->normalize_item_ids( $item_ids ) );
+
+		if ( false === $contents ) {
+			return new WP_Error(
+				'storeaccountant_export_item_snapshot_encode_failed',
+				__( 'StoreAccountant could not encode the export item snapshot.', 'storeaccountant' )
+			);
+		}
+
+		if ( ! WordPressFilesystem::put_contents( $this->get_item_id_snapshot_path( $export_id ), $contents ) ) {
+			return new WP_Error(
+				'storeaccountant_export_item_snapshot_write_failed',
+				__( 'StoreAccountant could not write the export item snapshot.', 'storeaccountant' )
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Checks whether a stable source item ID snapshot exists for an export.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	public function has_item_id_snapshot( int $export_id ): bool {
+		return is_file( $this->get_item_id_snapshot_path( $export_id ) );
+	}
+
+	/**
+	 * Counts saved source item IDs.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	public function count_item_ids( int $export_id ): int {
+		$item_ids = $this->read_item_ids( $export_id );
+
+		return is_wp_error( $item_ids ) ? 0 : count( $item_ids );
+	}
+
+	/**
+	 * Loads one source item ID slice from the export snapshot.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param int $export_id Export post ID.
+	 * @param int $offset    Zero-based item offset.
+	 * @param int $limit     Maximum IDs to load.
+	 *
+	 * @return array<int, string>|WP_Error
+	 */
+	public function load_item_ids( int $export_id, int $offset, int $limit ): array|WP_Error {
+		$item_ids = $this->read_item_ids( $export_id );
+
+		if ( is_wp_error( $item_ids ) ) {
+			return $item_ids;
+		}
+
+		return array_slice( $item_ids, max( 0, $offset ), max( 0, $limit ) );
+	}
+
+	/**
 	 * Loads all saved batch fragments as one iterable dataset.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 *
@@ -149,7 +255,7 @@ final readonly class BatchExportStore {
 			);
 		}
 
-		$first = $this->read_batch( (string) reset( $batches ) );
+		$first = $this->read_batch( (string) reset( $batches ), true, false, false );
 
 		if ( is_wp_error( $first ) ) {
 			return $first;
@@ -164,7 +270,74 @@ final readonly class BatchExportStore {
 	}
 
 	/**
+	 * Counts saved attachments without hydrating export records.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	public function count_attachments( int $export_id ): int {
+		$count = 0;
+
+		foreach ( $this->get_batches( $export_id ) as $batch_number => $path ) {
+			foreach ( $this->read_attachment_metadata( (int) $batch_number, $path ) as $attachment ) {
+				if ( is_array( $attachment ) && is_file( (string) ( $attachment['path'] ?? '' ) ) ) {
+					++$count;
+				}
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Streams one attachment slice from saved fragments.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param int $export_id Export post ID.
+	 * @param int $offset    Zero-based attachment offset.
+	 * @param int $limit     Maximum attachments to load.
+	 *
+	 * @return iterable<ExportAttachment>
+	 */
+	public function load_attachments( int $export_id, int $offset, int $limit ): iterable {
+		if ( $limit <= 0 ) {
+			return;
+		}
+
+		$seen    = 0;
+		$yielded = 0;
+
+		foreach ( $this->get_batches( $export_id ) as $batch_number => $path ) {
+			foreach ( $this->read_attachment_metadata( (int) $batch_number, $path ) as $attachment ) {
+				$export_attachment = $this->hydrate_attachment( $attachment );
+
+				if ( null === $export_attachment ) {
+					continue;
+				}
+
+				if ( $seen++ < $offset ) {
+					$this->close_stream( $export_attachment->stream );
+					continue;
+				}
+
+				yield $export_attachment;
+
+				if ( ++$yielded >= $limit ) {
+					return;
+				}
+			}
+		}
+	}
+
+	/**
 	 * Deletes all temporary files for one export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */
@@ -172,7 +345,7 @@ final readonly class BatchExportStore {
 		$directory = $this->get_export_directory_path( $export_id );
 
 		if ( is_dir( $directory ) ) {
-			$this->delete_directory( $directory );
+			WordPressFilesystem::delete( $directory, true, 'd' );
 		}
 	}
 
@@ -187,6 +360,26 @@ final readonly class BatchExportStore {
 	}
 
 	/**
+	 * Gets a saved attachment metadata fragment path.
+	 *
+	 * @param int $export_id    Export post ID.
+	 * @param int $batch_number One-based batch number.
+	 */
+	private function get_attachment_metadata_path( int $export_id, int $batch_number ): string {
+		return trailingslashit( $this->get_export_directory_path( $export_id ) )
+			. sprintf( self::ATTACHMENT_METADATA_FILE_FORMAT, $batch_number );
+	}
+
+	/**
+	 * Gets the saved item ID snapshot path.
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	private function get_item_id_snapshot_path( int $export_id ): string {
+		return trailingslashit( $this->get_export_directory_path( $export_id ) ) . self::ITEM_ID_SNAPSHOT_FILE;
+	}
+
+	/**
 	 * Gets and creates the export temp directory.
 	 *
 	 * @param int $export_id Export post ID.
@@ -195,17 +388,11 @@ final readonly class BatchExportStore {
 	 */
 	private function get_export_directory( int $export_id ): string|WP_Error {
 		$directory = $this->get_export_directory_path( $export_id );
+		$ensured   = $this->directory->ensure( $directory, $this->get_export_directory_display_path( $export_id ) );
 
-		if ( ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
-			return new WP_Error(
-				'storeaccountant_export_batch_directory_failed',
-				__( 'StoreAccountant could not create the temporary export directory.', 'storeaccountant' )
-			);
+		if ( is_wp_error( $ensured ) ) {
+			return $ensured;
 		}
-
-		$this->ensure_protection_file( $this->get_root_directory_path(), self::INDEX_FILE, '' );
-		$this->ensure_protection_file( $this->get_root_directory_path(), self::HTACCESS_FILE, self::HTACCESS_CONTENT );
-		$this->ensure_protection_file( $directory, self::INDEX_FILE, '' );
 
 		return $directory;
 	}
@@ -220,6 +407,15 @@ final readonly class BatchExportStore {
 	}
 
 	/**
+	 * Gets the export temp directory display path.
+	 *
+	 * @param int $export_id Export post ID.
+	 */
+	private function get_export_directory_display_path( int $export_id ): string {
+		return 'wp-content/uploads/' . self::DIRECTORY . '/' . (string) $export_id;
+	}
+
+	/**
 	 * Gets the queue temp root path.
 	 */
 	private function get_root_directory_path(): string {
@@ -227,25 +423,6 @@ final readonly class BatchExportStore {
 		$base    = is_array( $uploads ) && is_string( $uploads['basedir'] ?? null ) ? $uploads['basedir'] : get_temp_dir();
 
 		return trailingslashit( $base ) . self::DIRECTORY;
-	}
-
-	/**
-	 * Writes a protection file when absent.
-	 *
-	 * @param string $directory Directory path.
-	 * @param string $file      File name.
-	 * @param string $contents  File contents.
-	 */
-	private function ensure_protection_file( string $directory, string $file, string $contents ): void {
-		if ( ! is_dir( $directory ) ) {
-			wp_mkdir_p( $directory );
-		}
-
-		$path = trailingslashit( $directory ) . $file;
-
-		if ( ! is_file( $path ) ) {
-			WordPressFilesystem::put_contents( $path, $contents );
-		}
 	}
 
 	/**
@@ -265,6 +442,82 @@ final readonly class BatchExportStore {
 				'options'     => $dataset->options,
 			]
 		);
+	}
+
+	/**
+	 * Saves attachment metadata separately so finalization can avoid decoding records.
+	 *
+	 * @param int                 $export_id    Export post ID.
+	 * @param int                 $batch_number One-based batch number.
+	 * @param array<int, mixed[]> $attachments  Stored attachment metadata.
+	 */
+	private function save_attachment_metadata( int $export_id, int $batch_number, array $attachments ): void {
+		$contents = wp_json_encode( $attachments );
+
+		if ( false === $contents ) {
+			return;
+		}
+
+		WordPressFilesystem::put_contents( $this->get_attachment_metadata_path( $export_id, $batch_number ), $contents );
+	}
+
+	/**
+	 * Reads the stable source item ID snapshot.
+	 *
+	 * @param int $export_id Export post ID.
+	 *
+	 * @return array<int, string>|WP_Error
+	 */
+	private function read_item_ids( int $export_id ): array|WP_Error {
+		$path     = $this->get_item_id_snapshot_path( $export_id );
+		$contents = is_file( $path ) ? WordPressFilesystem::get_contents( $path ) : false;
+
+		if ( ! is_string( $contents ) ) {
+			return new WP_Error(
+				'storeaccountant_export_item_snapshot_read_failed',
+				__( 'StoreAccountant could not read the export item snapshot.', 'storeaccountant' )
+			);
+		}
+
+		try {
+			$item_ids = json_decode( $contents, true, 512, JSON_THROW_ON_ERROR );
+		} catch ( JsonException ) {
+			return new WP_Error(
+				'storeaccountant_export_item_snapshot_invalid',
+				__( 'StoreAccountant found an invalid export item snapshot.', 'storeaccountant' )
+			);
+		}
+
+		return is_array( $item_ids ) ? $this->normalize_item_ids( $item_ids ) : [];
+	}
+
+	/**
+	 * Normalizes source item IDs for temporary storage.
+	 *
+	 * @param array<int, mixed> $item_ids Source item IDs.
+	 *
+	 * @return array<int, string>
+	 */
+	private function normalize_item_ids( array $item_ids ): array {
+		$normalized = [];
+		$seen       = [];
+
+		foreach ( $item_ids as $item_id ) {
+			if ( ! is_scalar( $item_id ) ) {
+				continue;
+			}
+
+			$item_id = trim( (string) $item_id );
+
+			if ( '' === $item_id || isset( $seen[ $item_id ] ) ) {
+				continue;
+			}
+
+			$seen[ $item_id ] = true;
+			$normalized[]     = $item_id;
+		}
+
+		return $normalized;
 	}
 
 	/**
@@ -380,7 +633,12 @@ final readonly class BatchExportStore {
 	 *
 	 * @return array<string, mixed>|WP_Error
 	 */
-	private function read_batch( string $path ): array|WP_Error {
+	private function read_batch(
+		string $path,
+		bool $hydrate_fields = true,
+		bool $hydrate_records = true,
+		bool $include_attachments = true
+	): array|WP_Error {
 		$contents = is_file( $path ) ? WordPressFilesystem::get_contents( $path ) : false;
 
 		if ( ! is_string( $contents ) ) {
@@ -407,9 +665,9 @@ final readonly class BatchExportStore {
 		}
 
 		return [
-			'fields'      => $this->hydrate_fields( $batch['fields'] ),
-			'records'     => $this->hydrate_records( $batch['records'] ),
-			'attachments' => is_array( $batch['attachments'] ?? null ) ? $batch['attachments'] : [],
+			'fields'      => $hydrate_fields ? $this->hydrate_fields( $batch['fields'] ) : new FieldCollection(),
+			'records'     => $hydrate_records ? $this->hydrate_records( $batch['records'] ) : [],
+			'attachments' => $include_attachments && is_array( $batch['attachments'] ?? null ) ? $batch['attachments'] : [],
 			'options'     => is_array( $batch['options'] ?? null ) ? $batch['options'] : [],
 		];
 	}
@@ -508,7 +766,7 @@ final readonly class BatchExportStore {
 	 */
 	private function record_generator( array $batches ): iterable {
 		foreach ( $batches as $path ) {
-			$batch = $this->read_batch( $path );
+			$batch = $this->read_batch( $path, false, true, false );
 
 			if ( is_wp_error( $batch ) || ! is_iterable( $batch['records'] ) ) {
 				continue;
@@ -528,77 +786,74 @@ final readonly class BatchExportStore {
 	 * @return iterable<ExportAttachment>
 	 */
 	private function attachment_generator( array $batches ): iterable {
-		foreach ( $batches as $path ) {
-			$batch = $this->read_batch( $path );
+		foreach ( $batches as $batch_number => $path ) {
+			foreach ( $this->read_attachment_metadata( (int) $batch_number, $path ) as $attachment ) {
+				$export_attachment = $this->hydrate_attachment( $attachment );
 
-			if ( is_wp_error( $batch ) || ! is_array( $batch['attachments'] ?? null ) ) {
-				continue;
-			}
-
-			foreach ( $batch['attachments'] as $attachment ) {
-				if ( ! is_array( $attachment ) || ! is_file( (string) ( $attachment['path'] ?? '' ) ) ) {
+				if ( null === $export_attachment ) {
 					continue;
 				}
 
-				$stream = $this->open_read_stream( (string) $attachment['path'] );
-
-				if ( false === $stream ) {
-					continue;
-				}
-
-				yield new ExportAttachment(
-					$stream,
-					(string) ( $attachment['file_name'] ?? '' ),
-					(string) ( $attachment['mime_type'] ?? 'application/octet-stream' ),
-					(string) ( $attachment['internal_path'] ?? '' )
-				);
+				yield $export_attachment;
 			}
 		}
 	}
 
 	/**
-	 * Recursively deletes one managed temp directory.
+	 * Rebuilds one temporary attachment from stored metadata.
 	 *
-	 * @param string $directory Directory path.
+	 * @param mixed $attachment Stored attachment metadata.
 	 */
-	private function delete_directory( string $directory ): void {
-		$files = is_dir( $directory ) ? scandir( $directory ) : false;
-
-		if ( false === $files ) {
-			return;
+	private function hydrate_attachment( mixed $attachment ): ?ExportAttachment {
+		if ( ! is_array( $attachment ) || ! is_file( (string) ( $attachment['path'] ?? '' ) ) ) {
+			return null;
 		}
 
-		foreach ( $files as $file ) {
-			if ( '.' === $file || '..' === $file ) {
-				continue;
-			}
+		$stream = $this->open_read_stream( (string) $attachment['path'] );
 
-			$path = trailingslashit( $directory ) . $file;
-
-			if ( is_dir( $path ) ) {
-				$this->delete_directory( $path );
-				continue;
-			}
-
-			if ( is_file( $path ) ) {
-				$this->delete_file( $path );
-			}
+		if ( false === $stream ) {
+			return null;
 		}
 
-		$this->delete_empty_directory( $directory );
+		return new ExportAttachment(
+			$stream,
+			(string) ( $attachment['file_name'] ?? '' ),
+			(string) ( $attachment['mime_type'] ?? 'application/octet-stream' ),
+			(string) ( $attachment['internal_path'] ?? '' )
+		);
 	}
 
 	/**
-	 * Deletes a file.
+	 * Reads one attachment metadata fragment.
 	 *
-	 * @param string $path File path.
+	 * @param int    $batch_number One-based batch number.
+	 * @param string $batch_path   Main batch fragment path.
+	 *
+	 * @return array<int, mixed>
 	 */
-	private function delete_file( string $path ): void {
-		if ( ! function_exists( 'wp_delete_file' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
+	private function read_attachment_metadata( int $batch_number, string $batch_path ): array {
+		$metadata_path = trailingslashit( dirname( $batch_path ) )
+			. sprintf( self::ATTACHMENT_METADATA_FILE_FORMAT, $batch_number );
+		$contents      = is_file( $metadata_path ) ? WordPressFilesystem::get_contents( $metadata_path ) : false;
+
+		if ( is_string( $contents ) ) {
+			try {
+				$attachments = json_decode( $contents, true, 512, JSON_THROW_ON_ERROR );
+
+				if ( is_array( $attachments ) ) {
+					return $attachments;
+				}
+			} catch ( JsonException $exception ) {
+				unset( $exception );
+				// Fall through to the main batch fragment for older or invalid metadata files.
+			}
 		}
 
-		wp_delete_file( $path );
+		$batch = $this->read_batch( $batch_path, false, false, true );
+
+		return is_wp_error( $batch ) || ! is_array( $batch['attachments'] ?? null )
+			? []
+			: $batch['attachments'];
 	}
 
 	/**
@@ -635,14 +890,5 @@ final readonly class BatchExportStore {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Temporary attachment storage requires PHP streams.
 			fclose( $stream );
 		}
-	}
-
-	/**
-	 * Deletes an empty local directory through WP_Filesystem.
-	 *
-	 * @param string $directory Directory path.
-	 */
-	private function delete_empty_directory( string $directory ): void {
-		WordPressFilesystem::rmdir( $directory );
 	}
 }

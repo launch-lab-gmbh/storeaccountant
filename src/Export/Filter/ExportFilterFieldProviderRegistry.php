@@ -28,6 +28,9 @@ final readonly class ExportFilterFieldProviderRegistry extends Registry {
 	/**
 	 * Gets field providers for an export type.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $export_type Export adapter identifier.
 	 *
 	 * @return array<string, ExportFilterFieldProviderInterface>

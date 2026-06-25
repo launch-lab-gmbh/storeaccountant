@@ -18,6 +18,7 @@ use Symfony\Component\Messenger\Exception\TransportException;
 use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 use Symfony\Component\Messenger\Transport\TransportInterface;
+use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\Message\ProcessExportBatchMessage;
 use StoreAccountant\Export\Queue\Message\StartExportMessage;
@@ -33,14 +34,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Messenger transport backed by WooCommerce Action Scheduler.
  */
 final readonly class ActionSchedulerTransport implements TransportInterface {
-	public const HOOK_EXPORT_START         = 'storeaccountant_export_queue_start';
-	public const HOOK_EXPORT_PROCESS_BATCH = 'storeaccountant_export_queue_process_batch';
-	public const HOOK_EXPORT_FINALIZE      = 'storeaccountant_export_queue_finalize';
-	public const HOOK_DEFAULT              = 'storeaccountant_queue_message';
-	private const GROUP                    = 'storeaccountant';
+	public const HOOK_EXPORT_START                = 'storeaccountant_export_queue_start';
+	public const HOOK_EXPORT_PROCESS_BATCH        = 'storeaccountant_export_queue_process_batch';
+	public const HOOK_EXPORT_FINALIZE             = 'storeaccountant_export_queue_finalize';
+	public const HOOK_EXPORT_FINALIZE_ATTACHMENTS = 'storeaccountant_export_queue_finalize_attachments';
+	public const HOOK_DEFAULT                     = 'storeaccountant_queue_message';
+	private const GROUP                           = 'storeaccountant';
 
 	/**
 	 * Initializes the transport.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string              $queue_name Queue name.
 	 * @param SerializerInterface $serializer Messenger transport serializer.
@@ -52,6 +57,9 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @throws TransportException When Action Scheduler or WordPress cron cannot queue the message.
 	 */
@@ -90,6 +98,9 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get(): iterable {
 		return [];
@@ -97,16 +108,25 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ack( Envelope $envelope ): void {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function reject( Envelope $envelope ): void {}
 
 	/**
 	 * Gets all Action Scheduler hooks handled by this transport.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @return array<int, string>
 	 */
@@ -115,6 +135,7 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 			self::HOOK_EXPORT_START,
 			self::HOOK_EXPORT_PROCESS_BATCH,
 			self::HOOK_EXPORT_FINALIZE,
+			self::HOOK_EXPORT_FINALIZE_ATTACHMENTS,
 			self::HOOK_DEFAULT,
 		];
 	}
@@ -129,6 +150,7 @@ final readonly class ActionSchedulerTransport implements TransportInterface {
 			StartExportMessage::class => self::HOOK_EXPORT_START,
 			ProcessExportBatchMessage::class => self::HOOK_EXPORT_PROCESS_BATCH,
 			FinalizeExportMessage::class => self::HOOK_EXPORT_FINALIZE,
+			FinalizeExportAttachmentsMessage::class => self::HOOK_EXPORT_FINALIZE_ATTACHMENTS,
 			default => self::HOOK_DEFAULT,
 		};
 	}

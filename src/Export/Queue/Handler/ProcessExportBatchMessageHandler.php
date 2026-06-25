@@ -18,6 +18,7 @@ use WP_Error;
 use Symfony\Component\Messenger\MessageBusInterface;
 use StoreAccountant\Export\Contract\BatchExportAdapterInterface;
 use StoreAccountant\Export\Contract\ExportRendererSupportsAttachmentsInterface;
+use StoreAccountant\Export\Contract\SnapshotExportAdapterInterface;
 use StoreAccountant\Export\ExportAdapterRegistry;
 use StoreAccountant\Export\ExportDatasetBuilder;
 use StoreAccountant\Export\ExportPayload;
@@ -28,6 +29,7 @@ use StoreAccountant\Export\Event\ExportEventDispatcher;
 use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\Filter\ExportFilterSelectionSerializer;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\Message\ProcessExportBatchMessage;
 use function count;
@@ -41,6 +43,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Processes one export source batch.
  */
 final readonly class ProcessExportBatchMessageHandler {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private MessageBusInterface $message_bus,
 		private ExportAdapterRegistry $export_adapters,
@@ -48,11 +56,15 @@ final readonly class ProcessExportBatchMessageHandler {
 		private ExportFilterSelectionSerializer $filter_serializer,
 		private ExportRendererRegistry $renderers,
 		private ExportDatasetBuilder $dataset_builder,
-		private BatchExportStore $batch_store
+		private BatchExportStore $batch_store,
+		private ExportDetailLogger $detail_logger
 	) {}
 
 	/**
 	 * Handles the process batch message.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ProcessExportBatchMessage $message Process batch message.
 	 */
@@ -65,6 +77,18 @@ final readonly class ProcessExportBatchMessageHandler {
 		}
 
 		try {
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_batch_started',
+				[
+					'message'      => ProcessExportBatchMessage::class,
+					'export_id'    => $message->export_id,
+					'batch_number' => $message->batch_number,
+					'offset'       => $message->offset,
+					'limit'        => $message->limit,
+				]
+			);
 			ExportEventDispatcher::dispatch(
 				ExportEvents::LOG_ENTRY,
 				$message->export_id,
@@ -90,11 +114,8 @@ final readonly class ProcessExportBatchMessageHandler {
 				);
 			}
 
-			$items = $adapter->get_batch_items(
-				$this->get_payload( $message->export_id, $adapter->get_id() ),
-				$message->offset,
-				$message->limit
-			);
+			$payload = $this->get_payload( $message->export_id, $adapter->get_id() );
+			$items   = $this->get_batch_items( $adapter, $payload, $message );
 
 			if ( is_wp_error( $items ) ) {
 				$this->repository->mark_failed_from_error(
@@ -112,7 +133,7 @@ final readonly class ProcessExportBatchMessageHandler {
 
 			$dataset = $this->dataset_builder->build_from_items(
 				$adapter,
-				$this->get_payload( $message->export_id, $adapter->get_id() ),
+				$payload,
 				$items
 			);
 
@@ -166,6 +187,17 @@ final readonly class ProcessExportBatchMessageHandler {
 			if ( $this->repository->all_batches_processed( $message->export_id ) ) {
 				$renderer_id = sanitize_key( (string) get_post_meta( $message->export_id, ExportPostType::META_EXPORT_WRITER, true ) );
 				$this->message_bus->dispatch( new FinalizeExportMessage( $message->export_id, '' !== $renderer_id ? $renderer_id : null ) );
+				$this->detail_logger->log(
+					$message->export_id,
+					'info',
+					'export_finalization_queued',
+					[
+						'message'               => FinalizeExportMessage::class,
+						'export_id'             => $message->export_id,
+						'renderer_id'           => '' !== $renderer_id ? $renderer_id : null,
+						'all_batches_processed' => true,
+					]
+				);
 				ExportEventDispatcher::dispatch(
 					ExportEvents::FINALIZATION_QUEUED,
 					$message->export_id,
@@ -177,7 +209,33 @@ final readonly class ProcessExportBatchMessageHandler {
 					]
 				);
 			}
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_batch_processed',
+				[
+					'message'         => ProcessExportBatchMessage::class,
+					'export_id'       => $message->export_id,
+					'batch_number'    => $message->batch_number,
+					'offset'          => $message->offset,
+					'limit'           => $message->limit,
+					'processed_items' => is_countable( $items ) ? count( $items ) : $message->limit,
+				]
+			);
 		} catch ( Throwable $exception ) {
+			$this->detail_logger->log(
+				$message->export_id,
+				'error',
+				'export_batch_failed',
+				[
+					'message'      => ProcessExportBatchMessage::class,
+					'export_id'    => $message->export_id,
+					'batch_number' => $message->batch_number,
+					'offset'       => $message->offset,
+					'limit'        => $message->limit,
+				],
+				$exception
+			);
 			$this->repository->mark_failed(
 				$message->export_id,
 				__( 'Unexpected export batch error.', 'storeaccountant' ),
@@ -202,6 +260,13 @@ final readonly class ProcessExportBatchMessageHandler {
 	}
 
 	private function maybe_apply_debug_delay(): void {
+		/**
+		 * Filters the artificial queue debug delay in seconds.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $delay_seconds Debug delay in seconds.
+		 */
 		$delay_seconds = absint( apply_filters( 'storeaccountant_export_queue_debug_delay_seconds', 0 ) );
 
 		if ( $delay_seconds > 0 ) {
@@ -235,5 +300,46 @@ final readonly class ProcessExportBatchMessageHandler {
 		$renderer    = '' !== $renderer_id ? $this->renderers->get( $renderer_id ) : null;
 
 		return $renderer instanceof ExportRendererSupportsAttachmentsInterface;
+	}
+
+	/**
+	 * Gets one batch from a stable item ID snapshot when available.
+	 *
+	 * @param BatchExportAdapterInterface $adapter Export adapter.
+	 * @param ExportPayload               $payload Export payload.
+	 * @param ProcessExportBatchMessage   $message Process batch message.
+	 *
+	 * @return iterable<mixed>|WP_Error
+	 */
+	private function get_batch_items(
+		BatchExportAdapterInterface $adapter,
+		ExportPayload $payload,
+		ProcessExportBatchMessage $message
+	): iterable|WP_Error {
+		if ( $adapter instanceof SnapshotExportAdapterInterface && $this->batch_store->has_item_id_snapshot( $message->export_id ) ) {
+			$item_ids = $this->batch_store->load_item_ids( $message->export_id, $message->offset, $message->limit );
+
+			if ( is_wp_error( $item_ids ) ) {
+				return $item_ids;
+			}
+
+			$this->detail_logger->log(
+				$message->export_id,
+				'info',
+				'export_batch_snapshot_loaded',
+				[
+					'message'      => ProcessExportBatchMessage::class,
+					'export_id'    => $message->export_id,
+					'batch_number' => $message->batch_number,
+					'offset'       => $message->offset,
+					'limit'        => $message->limit,
+					'item_count'   => count( $item_ids ),
+				]
+			);
+
+			return $adapter->get_items_by_ids( $payload, $item_ids );
+		}
+
+		return $adapter->get_batch_items( $payload, $message->offset, $message->limit );
 	}
 }

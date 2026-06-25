@@ -27,6 +27,9 @@ final readonly class WordPressFilesystem {
 	/**
 	 * Writes contents through WP_Filesystem.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $path     Absolute file path.
 	 * @param string $contents File contents.
 	 */
@@ -38,6 +41,9 @@ final readonly class WordPressFilesystem {
 
 	/**
 	 * Reads contents through WP_Filesystem.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $path Absolute file path.
 	 *
@@ -52,12 +58,35 @@ final readonly class WordPressFilesystem {
 	/**
 	 * Removes an empty directory through WP_Filesystem.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $path Absolute directory path.
 	 */
 	public static function rmdir( string $path ): bool {
 		$filesystem = self::get_filesystem();
 
 		return null !== $filesystem && (bool) $filesystem->rmdir( $path );
+	}
+
+	/**
+	 * Deletes a file or directory through WP_Filesystem.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
+	 * @param string $path      Absolute file or directory path.
+	 * @param bool   $recursive Whether directories should be deleted recursively.
+	 * @param string $type      Optional filesystem object type, such as 'f' or 'd'.
+	 */
+	public static function delete( string $path, bool $recursive = false, string $type = '' ): bool {
+		$filesystem = self::get_filesystem();
+
+		return null !== $filesystem && (bool) $filesystem->delete(
+			$path,
+			$recursive,
+			'' !== $type ? $type : false
+		);
 	}
 
 	/**

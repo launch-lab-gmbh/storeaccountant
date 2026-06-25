@@ -21,19 +21,17 @@ use StoreAccountant\Admin\AccountingMenu;
 use StoreAccountant\Diagnostic\Admin\DiagnosticIncidentDownloadController;
 use StoreAccountant\Diagnostic\DiagnosticIncident;
 use StoreAccountant\Diagnostic\DiagnosticIncidentLogger;
-use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
+use StoreAccountant\Export\Admin\ExportSettingsFields;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
 use StoreAccountant\Export\Configuration\ExportConfigurationRepository;
 use StoreAccountant\Export\Configuration\ExportConfigurationTabProviderRegistry;
 use StoreAccountant\Export\Contract\ExportConfigurationTabProviderInterface;
-use StoreAccountant\Export\Contract\ExportTypeAwareInterface;
 use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
 use StoreAccountant\Export\ExportAdapterRegistry;
 use StoreAccountant\Export\ExportRendererRegistry;
 use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Export\Filter\ExportFilterFieldProviderRegistry;
 use StoreAccountant\Export\Filter\ExportFilterSelection;
-use StoreAccountant\Tax\Admin\OrderTaxFieldProviderField;
 use StoreAccountant\Tax\Field\Provider\ExtendedOrderTaxFieldProvider;
 use StoreAccountant\Export\Renderer\CsvExportRenderer;
 use StoreAccountant\Export\Download\DownloadPasswordManager;
@@ -46,7 +44,6 @@ use StoreAccountant\Storage\StorageAdapterRegistry;
 use function array_key_first;
 use function array_merge;
 use function is_array;
-use function is_numeric;
 use function sprintf;
 use function str_contains;
 use function str_replace;
@@ -63,16 +60,18 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	/**
 	 * Initializes the page.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportConfigurationPageForm                  $form            Configuration form.
 	 * @param ExportConfigurationRepository                $repository      Configuration repository.
 	 * @param StorageAdapterRegistry                       $storage_adapters storage adapter registry.
 	 * @param ExportAdapterRegistry                        $export_adapters Export adapter registry.
 	 * @param ExportRendererRegistry                       $export_writers  Export writer registry.
-	 * @param ExportConfigurationFormFieldProviderRegistry $field_providers Additional field providers.
 	 * @param ExportFilterFieldProviderRegistry            $filter_field_providers Export filter field providers.
 	 * @param AccountingHeaderBar                          $header_bar      Accounting header bar.
 	 * @param ExportConfigurationTabProviderRegistry       $tab_providers   Tab provider registry.
-	 * @param OrderTaxFieldProviderField                   $tax_field_provider_field Order tax provider field.
+	 * @param ExportSettingsFields                         $settings_fields Shared export settings fields.
 	 * @param PermissionChecker                            $permissions     Permission checker.
 	 * @param DownloadPasswordManager                      $passwords       Download password manager.
 	 * @param DiagnosticIncidentLogger                     $diagnostics     Diagnostic incident logger.
@@ -83,11 +82,10 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		private StorageAdapterRegistry $storage_adapters,
 		private ExportAdapterRegistry $export_adapters,
 		private ExportRendererRegistry $export_writers,
-		private ExportConfigurationFormFieldProviderRegistry $field_providers,
 		private ExportFilterFieldProviderRegistry $filter_field_providers,
 		private AccountingHeaderBar $header_bar,
 		private ExportConfigurationTabProviderRegistry $tab_providers,
-		private OrderTaxFieldProviderField $tax_field_provider_field,
+		private ExportSettingsFields $settings_fields,
 		private PermissionChecker $permissions,
 		private DownloadPasswordManager $passwords,
 		private DiagnosticIncidentLogger $diagnostics
@@ -95,6 +93,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'add_submenu_page' ] );
@@ -107,6 +108,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Adds hidden plugin pages used by the configuration list action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function add_submenu_page(): void {
 		add_submenu_page(
@@ -121,6 +125,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Removes hidden plugin pages from the visible accounting submenu after access checks.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function remove_hidden_submenu_page(): void {
 		remove_submenu_page( AccountingMenu::MENU_SLUG, 'storeaccountant-export-configuration' );
@@ -128,6 +135,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Renders the configuration form page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		$configuration = $this->get_edit_configuration();
@@ -167,6 +177,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	/**
 	 * Uses the current configuration mode for the browser title.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $admin_title Complete admin title.
 	 * @param string $title       Static page title.
 	 */
@@ -182,6 +195,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 	/**
 	 * Handles configuration form submission.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_save(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::CONFIGURATION_CREATE ) && ! $this->permissions->can( PermissionActionIds::CONFIGURATION_EDIT ) ) {
@@ -190,20 +206,20 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 
 		check_admin_referer( 'storeaccountant_save_export_configuration', 'storeaccountant_export_configuration_nonce' );
 
-		$request                 = Request::post_data();
-		$configuration_id        = Request::post_int( 'storeaccountant_export_configuration_id' );
-		$configuration           = null;
-		$title                   = trim( Request::post_text( 'storeaccountant_export_configuration_title' ) );
-		$storage_engine          = '';
-		$export_adapter          = Request::post_key( 'storeaccountant_export_adapter', OrderExportAdapter::ADAPTER_ID );
-		$export_writer           = '';
-			$filters             = [];
-			$tax_provider_id     = ExtendedOrderTaxFieldProvider::PROVIDER_ID;
-			$additional_settings = [];
-		$stored_tax_provider_id  = '';
-		$batch_size              = $this->get_batch_size_from_request( $request );
-		$password                = Request::post_text( 'storeaccountant_configuration_download_password' );
-		$redirect_with_error     = function ( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [] ) use ( $configuration_id ): void {
+		$request                = Request::post_data();
+		$configuration_id       = Request::post_int( 'storeaccountant_export_configuration_id' );
+		$configuration          = null;
+		$title                  = trim( Request::post_text( 'storeaccountant_export_configuration_title' ) );
+		$storage_engine         = '';
+		$export_adapter         = Request::post_key( 'storeaccountant_export_adapter', OrderExportAdapter::ADAPTER_ID );
+		$export_writer          = '';
+		$filters                = [];
+		$tax_provider_id        = ExtendedOrderTaxFieldProvider::PROVIDER_ID;
+		$additional_settings    = [];
+		$stored_tax_provider_id = '';
+		$batch_size             = $this->settings_fields->get_batch_size_from_request( $request );
+		$password               = Request::post_secret( 'storeaccountant_configuration_download_password' );
+		$redirect_with_error    = function ( string $error = '1', string $reason = 'unknown', ?WP_Error $wp_error = null, array $context = [] ) use ( $configuration_id ): void {
 			$incident = $this->log_save_error( $reason, $configuration_id, $wp_error, $context );
 			$this->redirect_with_error( $error, $configuration_id, $incident );
 		};
@@ -220,10 +236,8 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 			$storage_engine         = Request::post_key( 'storeaccountant_storage_engine' );
 			$export_writer          = Request::post_key( 'storeaccountant_export_writer', CsvExportRenderer::RENDERER_ID );
 			$filters                = $this->get_filter_selections_from_request( $export_adapter, $request );
-			$tax_provider_id        = OrderExportAdapter::ADAPTER_ID === $export_adapter
-				? $this->tax_field_provider_field->get_provider_id_from_request( $request )
-				: ExtendedOrderTaxFieldProvider::PROVIDER_ID;
-			$additional_settings    = $this->get_additional_settings( $export_adapter, $request );
+			$tax_provider_id        = $this->settings_fields->get_tax_provider_id_from_request( $export_adapter, $request );
+			$additional_settings    = $this->settings_fields->get_additional_settings_from_request( $export_adapter, $request );
 		} else {
 			if ( ! $this->permissions->can( PermissionActionIds::CONFIGURATION_CREATE ) ) {
 				$redirect_with_error( '1', 'missing_create_permission' );
@@ -344,6 +358,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	/**
 	 * Highlights StoreAccountant while rendering hidden StoreAccountant pages.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $parent_file Parent file.
 	 */
 	public function filter_parent_file( ?string $parent_file ): string {
@@ -357,6 +374,9 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	/**
 	 * Highlights the exports submenu while rendering hidden pages.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $submenu_file Submenu file.
 	 */
 	public function filter_submenu_file( ?string $submenu_file ): string {
@@ -365,35 +385,6 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		}
 
 		return 'edit.php?post_type=' . ExportPostType::POST_TYPE;
-	}
-
-	/**
-	 * Gets and validates additional provider settings.
-	 *
-	 * @param string               $export_type Export adapter identifier.
-	 * @param array<string, mixed> $request Request data.
-	 *
-	 * @return array<string, mixed>|WP_Error
-	 */
-	private function get_additional_settings( string $export_type, array $request ): array|WP_Error {
-		$additional_settings = [];
-
-		foreach ( $this->field_providers->get_all() as $provider ) {
-			if ( $provider instanceof ExportTypeAwareInterface && ! $provider->supports_export_type( $export_type ) ) {
-				continue;
-			}
-
-			$settings = $provider->sanitize_settings( $request );
-			$result   = $provider->validate_settings( $settings );
-
-			if ( is_wp_error( $result ) ) {
-				return $result;
-			}
-
-			$additional_settings[ $provider->get_id() ] = $settings;
-		}
-
-		return $additional_settings;
 	}
 
 	/**
@@ -418,35 +409,6 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 		}
 
 		return $filters;
-	}
-
-	/**
-	 * Gets the batch size from request data.
-	 *
-	 * @param array<string, mixed> $request Request data.
-	 */
-	private function get_batch_size_from_request( array $request ): int|WP_Error {
-		$raw_batch_size = isset( $request['storeaccountant_export_batch_size'] )
-			? wp_unslash( $request['storeaccountant_export_batch_size'] )
-			: ExportPostType::DEFAULT_BATCH_SIZE;
-
-		if ( ! is_numeric( $raw_batch_size ) ) {
-			return new WP_Error(
-				'storeaccountant_export_batch_size_invalid',
-				__( 'Enter a numeric batch size of at least 10.', 'storeaccountant' )
-			);
-		}
-
-		$batch_size = absint( $raw_batch_size );
-
-		if ( $batch_size < ExportPostType::MIN_BATCH_SIZE ) {
-			return new WP_Error(
-				'storeaccountant_export_batch_size_too_small',
-				__( 'Enter a numeric batch size of at least 10.', 'storeaccountant' )
-			);
-		}
-
-		return $batch_size;
 	}
 
 	/**
@@ -846,7 +808,7 @@ final readonly class ExportConfigurationPage implements HookRegistrarInterface {
 	 * @param int $configuration_id Configuration post ID.
 	 */
 	private function get_stored_tax_field_provider( int $configuration_id ): string {
-		return $this->tax_field_provider_field->get_provider_id_from_configuration( $configuration_id );
+		return $this->settings_fields->get_tax_provider_id_from_configuration( $configuration_id );
 	}
 
 	/**

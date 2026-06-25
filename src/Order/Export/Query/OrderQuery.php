@@ -37,6 +37,9 @@ final readonly class OrderQuery {
 	/**
 	 * Initializes the order query service.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFilterRegistry $filters Export filter registry.
 	 */
 	public function __construct(
@@ -45,6 +48,9 @@ final readonly class OrderQuery {
 
 	/**
 	 * Gets WooCommerce orders for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -62,6 +68,9 @@ final readonly class OrderQuery {
 
 	/**
 	 * Counts WooCommerce orders for the export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
@@ -83,6 +92,9 @@ final readonly class OrderQuery {
 	/**
 	 * Gets one deterministic WooCommerce order batch.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportPayload $payload Export payload.
 	 * @param int           $offset  Zero-based item offset.
 	 * @param int           $limit   Batch size.
@@ -102,11 +114,14 @@ final readonly class OrderQuery {
 	/**
 	 * Gets matching WooCommerce order IDs.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportPayload $payload Export payload.
 	 *
 	 * @return array<int, int>|WP_Error
 	 */
-	private function get_order_ids( ExportPayload $payload, int $limit = -1, int $offset = 0 ): array|WP_Error {
+	public function get_order_ids( ExportPayload $payload, int $limit = -1, int $offset = 0 ): array|WP_Error {
 		$query = $this->get_order_query( $payload, $limit, $offset, false );
 
 		if ( is_wp_error( $query ) ) {
@@ -174,11 +189,14 @@ final readonly class OrderQuery {
 	/**
 	 * Gets WooCommerce orders by IDs.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<int, int|string> $ids Order IDs.
 	 *
 	 * @return array<int, WC_Order>
 	 */
-	private function get_orders_by_ids( array $ids ): array {
+	public function get_orders_by_ids( array $ids ): array {
 		return array_values(
 			array_filter(
 				array_map(

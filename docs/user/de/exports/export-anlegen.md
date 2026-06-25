@@ -36,7 +36,7 @@ Im zweiten Schritt konfigurieren Sie die Details:
 3. Wählen Sie den `Speicherort`.
 4. Geben Sie optional ein `Download-Passwort` ein. Wenn Sie das Feld leer lassen, wird das aktuelle globale
    Download-Passwort verwendet.
-5. Prüfen Sie die `Batch-Größe`. Wenn Sie unsicher sind, lassen Sie den Standardwert `100` stehen.
+5. Prüfen Sie die `Batch-Größe`. Wenn Sie unsicher sind, lassen Sie den Standardwert `50` stehen.
 6. Klicken Sie auf `Quick Export starten`.
 
 [Screenshot: Quick Export Details]

@@ -33,6 +33,7 @@ use StoreAccountant\Admin\AdminAssets;
 use StoreAccountant\Admin\AccountingOverviewTabProviderRegistry;
 use StoreAccountant\Export\Admin\AccountingExportPage;
 use StoreAccountant\Export\Admin\AccountingExportPageForm;
+use StoreAccountant\Export\Admin\ExportSettingsFields;
 use StoreAccountant\Admin\AccountingHeaderBar;
 use StoreAccountant\Admin\AccountingMenu;
 use StoreAccountant\Admin\AccountingSupportAccess;
@@ -115,10 +116,14 @@ use StoreAccountant\Product\Export\Query\ProductQuery;
 use StoreAccountant\Export\ExportRepository;
 use StoreAccountant\Export\ExportStoragePathGenerator;
 use StoreAccountant\Export\Queue\BatchExportStore;
+use StoreAccountant\Export\Queue\ExportDetailLogger;
 use StoreAccountant\Export\Queue\ExportQueueCleanup;
+use StoreAccountant\Export\Queue\ExportTemporaryFilesCleanupSubscriber;
+use StoreAccountant\Export\Queue\Handler\FinalizeExportAttachmentsMessageHandler;
 use StoreAccountant\Export\Queue\Handler\FinalizeExportMessageHandler;
 use StoreAccountant\Export\Queue\Handler\ProcessExportBatchMessageHandler;
 use StoreAccountant\Export\Queue\Handler\StartExportMessageHandler;
+use StoreAccountant\Export\Queue\Message\FinalizeExportAttachmentsMessage;
 use StoreAccountant\Export\Queue\Message\FinalizeExportMessage;
 use StoreAccountant\Export\Queue\Message\ProcessExportBatchMessage;
 use StoreAccountant\Export\Queue\Message\StartExportMessage;
@@ -268,6 +273,9 @@ final readonly class ContainerBuilder {
 
 	/**
 	 * Builds the configured container.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function build(): Container {
 		$container = ( new Container(
@@ -299,8 +307,11 @@ final readonly class ContainerBuilder {
 				->addArgument( RolePermissionRepository::class );
 			$container->addShared( ExportEventLogSubscriber::class )
 				->addArgument( ExportRepository::class );
+			$container->addShared( ExportTemporaryFilesCleanupSubscriber::class )
+				->addArgument( BatchExportStore::class );
 			$container->addShared( EventSubscriberRegistrar::class )
-				->addArgument( ExportEventLogSubscriber::class );
+				->addArgument( ExportEventLogSubscriber::class )
+				->addArgument( ExportTemporaryFilesCleanupSubscriber::class );
 			$container->addShared(
 				MessengerTransportSerializerInterface::class,
 				static fn (): MessengerTransportSerializerInterface => new MessengerTransportSerializer()
@@ -347,6 +358,9 @@ final readonly class ContainerBuilder {
 						],
 						FinalizeExportMessage::class     => [
 							$container->get( FinalizeExportMessageHandler::class ),
+						],
+						FinalizeExportAttachmentsMessage::class => [
+							$container->get( FinalizeExportAttachmentsMessageHandler::class ),
 						],
 					]
 				);
@@ -405,6 +419,10 @@ final readonly class ContainerBuilder {
 		$container->addShared( DiagnosticIncidentLogger::class )
 			->addArgument( DiagnosticSettings::class )
 			->addArgument( DiagnosticIncidentRepository::class );
+		$container->addShared( ExportDetailLogger::class )
+			->addArgument( DiagnosticSettings::class )
+			->addArgument( DiagnosticIncidentRepository::class )
+			->addArgument( DiagnosticLogConfiguration::class );
 		$container->addShared( FieldProviderRegistry::class );
 		$container->addShared( FieldValueProviderRegistry::class );
 		$container->addShared( ExportAttachmentProviderRegistry::class );
@@ -530,7 +548,8 @@ final readonly class ContainerBuilder {
 			->addArgument( InvoiceExportAttachmentSettings::class );
 		$container->addShared( InvoiceAttachmentProvider::class )
 			->addArgument( InvoicePluginDetector::class )
-			->addArgument( InvoiceExportAttachmentSettings::class );
+			->addArgument( InvoiceExportAttachmentSettings::class )
+			->addArgument( FieldMappingRepository::class );
 		$container->addShared( InvoiceAttachmentConfigurationFieldProvider::class )
 			->addArgument( InvoicePluginDetector::class );
 		$container->addShared( SimpleOrderTaxFieldProvider::class );
@@ -599,20 +618,21 @@ final readonly class ContainerBuilder {
 			->addArgument( AccountingHeaderBar::class )
 			->addArgument( AccountingSupportAccess::class );
 		$container->addShared( AccountingExportPageForm::class )
-			->addArgument( StorageAdapterRegistry::class )
 			->addArgument( ExportAdapterRegistry::class )
-			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportFilterFieldProviderRegistry::class )
+			->addArgument( ExportSettingsFields::class )
 			->addArgument( DownloadPasswordManager::class )
 			->addArgument( PermissionChecker::class );
-		$container->addShared( ExportConfigurationPageForm::class )
+		$container->addShared( ExportSettingsFields::class )
 			->addArgument( StorageAdapterRegistry::class )
-			->addArgument( ExportAdapterRegistry::class )
 			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportConfigurationFormFieldProviderRegistry::class )
+			->addArgument( OrderTaxFieldProviderField::class );
+		$container->addShared( ExportConfigurationPageForm::class )
+			->addArgument( ExportAdapterRegistry::class )
 			->addArgument( ExportFilterFieldProviderRegistry::class )
 			->addArgument( ExportFilterSelectionSerializer::class )
-			->addArgument( OrderTaxFieldProviderField::class )
+			->addArgument( ExportSettingsFields::class )
 			->addArgument( DownloadPasswordManager::class )
 			->addArgument( PermissionChecker::class );
 		$container->addShared( StorageLocationsForm::class )
@@ -641,7 +661,8 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportRepository::class )
 			->addArgument( ExportStoragePathGenerator::class )
-			->addArgument( ExportFilterSelectionSerializer::class );
+			->addArgument( ExportFilterSelectionSerializer::class )
+			->addArgument( ExportDetailLogger::class );
 		$container->addShared( StartExportMessageHandler::class )
 			->addArgument( MessageBusInterface::class )
 			->addArgument( ExportAdapterRegistry::class )
@@ -649,7 +670,8 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportFilterSelectionSerializer::class )
 			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportDatasetBuilder::class )
-			->addArgument( BatchExportStore::class );
+			->addArgument( BatchExportStore::class )
+			->addArgument( ExportDetailLogger::class );
 		$container->addShared( ProcessExportBatchMessageHandler::class )
 			->addArgument( MessageBusInterface::class )
 			->addArgument( ExportAdapterRegistry::class )
@@ -657,10 +679,19 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportFilterSelectionSerializer::class )
 			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportDatasetBuilder::class )
-			->addArgument( BatchExportStore::class );
+			->addArgument( BatchExportStore::class )
+			->addArgument( ExportDetailLogger::class );
 		$container->addShared( FinalizeExportMessageHandler::class )
+			->addArgument( MessageBusInterface::class )
 			->addArgument( QueuedExportFinalizer::class )
-			->addArgument( ExportRepository::class );
+			->addArgument( ExportRepository::class )
+			->addArgument( ExportDetailLogger::class );
+		$container->addShared( FinalizeExportAttachmentsMessageHandler::class )
+			->addArgument( MessageBusInterface::class )
+			->addArgument( StorageAdapterRegistry::class )
+			->addArgument( ExportRepository::class )
+			->addArgument( BatchExportStore::class )
+			->addArgument( ExportDetailLogger::class );
 		$container->addShared( ExportQueueCleanup::class )
 			->addArgument( ExportRepository::class )
 			->addArgument( BatchExportStore::class );
@@ -710,6 +741,7 @@ final readonly class ContainerBuilder {
 			->addArgument( ExportAdapterRegistry::class )
 			->addArgument( ExportRendererRegistry::class )
 			->addArgument( ExportFilterFieldProviderRegistry::class )
+			->addArgument( ExportSettingsFields::class )
 			->addArgument( ExportFilterSelectionSerializer::class )
 			->addArgument( ExportFilterSnapshotter::class )
 			->addArgument( AccountingHeaderBar::class )
@@ -723,11 +755,10 @@ final readonly class ContainerBuilder {
 			->addArgument( StorageAdapterRegistry::class )
 			->addArgument( ExportAdapterRegistry::class )
 			->addArgument( ExportRendererRegistry::class )
-			->addArgument( ExportConfigurationFormFieldProviderRegistry::class )
 			->addArgument( ExportFilterFieldProviderRegistry::class )
 			->addArgument( AccountingHeaderBar::class )
 			->addArgument( ExportConfigurationTabProviderRegistry::class )
-			->addArgument( OrderTaxFieldProviderField::class )
+			->addArgument( ExportSettingsFields::class )
 			->addArgument( PermissionChecker::class )
 			->addArgument( DownloadPasswordManager::class )
 			->addArgument( DiagnosticIncidentLogger::class );

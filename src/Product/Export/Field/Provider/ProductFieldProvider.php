@@ -35,6 +35,9 @@ final readonly class ProductFieldProvider implements FieldProviderInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -50,6 +53,9 @@ final readonly class ProductFieldProvider implements FieldProviderInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -57,6 +63,9 @@ final readonly class ProductFieldProvider implements FieldProviderInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( ExportContext $context ): bool {
 		return ProductExportAdapter::ADAPTER_ID === $context->export_type;
@@ -64,6 +73,9 @@ final readonly class ProductFieldProvider implements FieldProviderInterface, Hoo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_fields( ExportContext $context ): array {
 		$fields = [

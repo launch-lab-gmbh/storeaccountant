@@ -16,6 +16,7 @@ namespace StoreAccountant\Tests\Unit\Export\Configuration\Admin;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
+use StoreAccountant\Export\Admin\ExportSettingsFields;
 use StoreAccountant\Export\Configuration\Admin\ExportConfigurationPageForm;
 use StoreAccountant\Export\Configuration\ExportConfigurationFormFieldProviderRegistry;
 use StoreAccountant\Export\Configuration\ExportConfigurationPostType;
@@ -132,13 +133,10 @@ final class ExportConfigurationPageFormTest extends TestCase {
 	private function render_form( ?\WP_Post $configuration = null ): string {
 		ob_start();
 		( new ExportConfigurationPageForm(
-			new StorageAdapterRegistry(),
 			new ExportAdapterRegistry(),
-			new ExportRendererRegistry(),
-			new ExportConfigurationFormFieldProviderRegistry(),
 			new ExportFilterFieldProviderRegistry(),
 			new ExportFilterSelectionSerializer(),
-			new OrderTaxFieldProviderField( new OrderTaxFieldProviderRegistry() ),
+			$this->settings_fields(),
 			new DownloadPasswordManager( new ReversibleCrypto() ),
 			new PermissionChecker( new PermissionActionRegistry() )
 		) )->render( $configuration );
@@ -283,5 +281,14 @@ final class ExportConfigurationPageFormTest extends TestCase {
 		$provider->method( 'get_label' )->willReturn( 'Extended Tax Fields' );
 
 		return $provider;
+	}
+
+	private function settings_fields(): ExportSettingsFields {
+		return new ExportSettingsFields(
+			new StorageAdapterRegistry(),
+			new ExportRendererRegistry(),
+			new ExportConfigurationFormFieldProviderRegistry(),
+			new OrderTaxFieldProviderField( new OrderTaxFieldProviderRegistry() )
+		);
 	}
 }

@@ -43,6 +43,8 @@ namespace StoreAccountant\Tests\Unit\Queue\Loopback {
 		/** @var array<int, int> */
 		private array $statuses = [];
 
+		private string $query_var = '1';
+
 		protected function setUp(): void {
 			parent::setUp();
 
@@ -54,6 +56,7 @@ namespace StoreAccountant\Tests\Unit\Queue\Loopback {
 
 			$this->post_values                                     = [];
 			$this->statuses                                        = [];
+			$this->query_var                                       = '1';
 			QueueLoopbackEndpointFunctionMocks::$exception_message = '';
 			$this->mock_wordpress_functions();
 		}
@@ -64,19 +67,47 @@ namespace StoreAccountant\Tests\Unit\Queue\Loopback {
 			parent::tearDown();
 		}
 
-		public function test_register_adds_privileged_and_public_admin_post_hooks(): void {
+	public function test_register_adds_rewrite_query_var_and_request_hook(): void {
 			$endpoint = $this->endpoint();
 
 			Functions\expect( 'add_action' )
 			->once()
-			->with( 'admin_post_' . QueueLoopbackEndpoint::ACTION, [ $endpoint, 'handle' ] );
+			->with( 'init', [ $endpoint, 'register_rewrite_rule' ] );
+			Functions\expect( 'add_filter' )
+			->once()
+			->with( 'query_vars', [ $endpoint, 'register_query_var' ] );
 			Functions\expect( 'add_action' )
 			->once()
-			->with( 'admin_post_nopriv_' . QueueLoopbackEndpoint::ACTION, [ $endpoint, 'handle' ] );
+			->with( 'template_redirect', [ $endpoint, 'handle_request' ] );
 
 			$endpoint->register();
 
 			$this->addToAssertionCount( 1 );
+		}
+
+		public function test_rewrite_rule_and_query_var_are_registered(): void {
+			Functions\expect( 'add_rewrite_rule' )
+			->once()
+			->with(
+				'^' . QueueLoopbackEndpoint::ROUTE_PATH . '/?$',
+				'index.php?storeaccountant_queue_loopback=1',
+				'top'
+			);
+
+			$endpoint = $this->endpoint();
+			$endpoint->register_rewrite_rule();
+
+			self::assertSame( [ 'existing', 'storeaccountant_queue_loopback' ], $endpoint->register_query_var( [ 'existing' ] ) );
+		}
+
+		public function test_handle_request_ignores_non_loopback_requests(): void {
+			$this->query_var = '';
+
+			Functions\expect( 'get_post_type' )->never();
+
+			$this->endpoint()->handle_request();
+
+			self::assertSame( [], $this->statuses );
 		}
 
 		public function test_handle_rejects_invalid_request_with_forbidden_status(): void {
@@ -131,11 +162,16 @@ namespace StoreAccountant\Tests\Unit\Queue\Loopback {
 			Functions\when( 'get_transient' )->alias(
 				static fn ( string $key ): string|false => 'storeaccountant_loopback_token_42' === $key ? 'valid-token' : false
 			);
+			Functions\when( 'get_query_var' )->alias( fn ( string $key ): string => 'storeaccountant_queue_loopback' === $key ? $this->query_var : '' );
+			Functions\when( 'status_header' )->alias(
+				static fn ( int $status ): mixed => QueueLoopbackEndpointFunctionMocks::status_header( $status )
+			);
 			Functions\when( 'delete_transient' )->justReturn( true );
 			Functions\when( 'StoreAccountant\\Queue\\Loopback\\get_post_type' )->alias( static fn ( int $post_id ): string => 42 === $post_id ? ExportPostType::POST_TYPE : 'post' );
 			Functions\when( 'StoreAccountant\\Queue\\Loopback\\get_transient' )->alias(
 				static fn ( string $key ): string|false => 'storeaccountant_loopback_token_42' === $key ? 'valid-token' : false
 			);
+			Functions\when( 'StoreAccountant\\Queue\\Loopback\\get_query_var' )->alias( fn ( string $key ): string => 'storeaccountant_queue_loopback' === $key ? $this->query_var : '' );
 			Functions\when( 'StoreAccountant\\Queue\\Loopback\\delete_transient' )->justReturn( true );
 			Functions\when( '__' )->returnArg( 1 );
 			Functions\when( 'do_action' )->justReturn( null );

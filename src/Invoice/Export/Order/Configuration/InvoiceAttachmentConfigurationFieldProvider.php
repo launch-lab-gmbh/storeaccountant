@@ -37,6 +37,9 @@ final readonly class InvoiceAttachmentConfigurationFieldProvider implements Expo
 	/**
 	 * Initializes the provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param InvoicePluginDetector $detector Invoice plugin detector.
 	 */
 	public function __construct(
@@ -45,6 +48,9 @@ final readonly class InvoiceAttachmentConfigurationFieldProvider implements Expo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -60,6 +66,9 @@ final readonly class InvoiceAttachmentConfigurationFieldProvider implements Expo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return InvoiceExportAttachmentSettings::PROVIDER_ID;
@@ -67,6 +76,9 @@ final readonly class InvoiceAttachmentConfigurationFieldProvider implements Expo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports_export_type( string $export_type ): bool {
 		return OrderExportAdapter::ADAPTER_ID === $export_type;
@@ -74,6 +86,9 @@ final readonly class InvoiceAttachmentConfigurationFieldProvider implements Expo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_fields( array $settings, bool $read_only = false ): void {
 		$plugin = $this->detector->get_enabled();
@@ -114,6 +129,9 @@ final readonly class InvoiceAttachmentConfigurationFieldProvider implements Expo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function sanitize_settings( array $request ): array {
 		$file_types = isset( $request['storeaccountant_invoice_file_types'] ) && is_array( $request['storeaccountant_invoice_file_types'] )
@@ -128,6 +146,9 @@ final readonly class InvoiceAttachmentConfigurationFieldProvider implements Expo
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function validate_settings( array $settings ): true|WP_Error {
 		return true;

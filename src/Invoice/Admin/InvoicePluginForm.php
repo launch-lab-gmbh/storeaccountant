@@ -27,6 +27,9 @@ final readonly class InvoicePluginForm {
 	/**
 	 * Initializes the form.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param InvoicePluginRegistry $invoice_plugins Invoice plugin registry.
 	 */
 	public function __construct(
@@ -35,6 +38,9 @@ final readonly class InvoicePluginForm {
 
 	/**
 	 * Renders the invoice plugin fields.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_fields(): void {
 		$available = $this->invoice_plugins->get_available();

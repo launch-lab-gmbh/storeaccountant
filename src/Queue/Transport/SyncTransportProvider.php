@@ -33,6 +33,9 @@ final readonly class SyncTransportProvider implements QueueTransportProviderInte
 	/**
 	 * Initializes the provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param Closure(): HandlersLocatorInterface $handlers_locator_factory Handler locator factory.
 	 */
 	public function __construct(
@@ -41,6 +44,9 @@ final readonly class SyncTransportProvider implements QueueTransportProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -56,6 +62,9 @@ final readonly class SyncTransportProvider implements QueueTransportProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::PROVIDER_ID;
@@ -63,6 +72,9 @@ final readonly class SyncTransportProvider implements QueueTransportProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_label(): string {
 		return __( 'Synchronous', 'storeaccountant' );
@@ -70,6 +82,9 @@ final readonly class SyncTransportProvider implements QueueTransportProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_description(): string {
 		return __( 'Processes StoreAccountant queue jobs immediately in the current request or cron run. This is useful for small exports, but large exports can take a long time. Use the Action Scheduler transport for larger exports.', 'storeaccountant' );
@@ -77,6 +92,9 @@ final readonly class SyncTransportProvider implements QueueTransportProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_dsn(): string {
 		return 'sync://exports';
@@ -84,6 +102,9 @@ final readonly class SyncTransportProvider implements QueueTransportProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports_manual_loopback(): bool {
 		return false;
@@ -91,6 +112,9 @@ final readonly class SyncTransportProvider implements QueueTransportProviderInte
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function create_transport( SerializerInterface $serializer ): TransportInterface {
 		return new SyncTransport( $this->handlers_locator_factory );

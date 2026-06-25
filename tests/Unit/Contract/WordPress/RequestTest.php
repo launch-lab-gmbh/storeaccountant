@@ -113,6 +113,28 @@ final class RequestTest extends TestCase {
 		self::assertSame( 'fallback', Request::post_text( 'title', 'fallback' ) );
 	}
 
+	public function test_post_secret_preserves_special_characters(): void {
+		$password = '>j(Hq^ENVD Xnz86v/<j/s';
+
+		Functions\expect( 'filter_input' )
+			->once()
+			->with( INPUT_POST, 'password', FILTER_UNSAFE_RAW )
+			->andReturn( $password );
+
+		Functions\expect( 'sanitize_text_field' )->never();
+
+		self::assertSame( $password, Request::post_secret( 'password', 'fallback' ) );
+	}
+
+	public function test_post_secret_returns_fallback_for_non_scalar_post_value(): void {
+		Functions\expect( 'filter_input' )
+			->once()
+			->with( INPUT_POST, 'password', FILTER_UNSAFE_RAW )
+			->andReturn( [ 'not-scalar' ] );
+
+		self::assertSame( 'fallback', Request::post_secret( 'password', 'fallback' ) );
+	}
+
 	public function test_post_key_sanitizes_scalar_post_value(): void {
 		Functions\expect( 'filter_input' )
 			->once()

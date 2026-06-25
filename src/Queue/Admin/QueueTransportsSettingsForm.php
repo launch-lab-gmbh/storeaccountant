@@ -23,12 +23,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Renders queue transport settings.
  */
 final readonly class QueueTransportsSettingsForm {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private QueueTransportRegistry $queue_transports
 	) {}
 
 	/**
 	 * Renders the queue transport fields.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_fields(): void {
 		$active_provider = $this->queue_transports->get_active();
@@ -62,6 +71,9 @@ final readonly class QueueTransportsSettingsForm {
 
 	/**
 	 * Saves the selected queue transport from request data.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, mixed> $request Request data.
 	 */

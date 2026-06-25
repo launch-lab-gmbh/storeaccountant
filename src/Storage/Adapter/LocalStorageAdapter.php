@@ -16,6 +16,7 @@ namespace StoreAccountant\Storage\Adapter;
 use RuntimeException;
 use Throwable;
 use WP_Error;
+use ZipArchive;
 use League\Flysystem\Config;
 use League\Flysystem\FileAttributes;
 use League\Flysystem\Filesystem;
@@ -24,11 +25,14 @@ use League\Flysystem\FilesystemOperator;
 use League\Flysystem\ZipArchive\FilesystemZipArchiveProvider;
 use League\Flysystem\ZipArchive\ZipArchiveAdapter;
 use StoreAccountant\Contract\HookRegistrarInterface;
+use StoreAccountant\Export\Attachment\ExportAttachment;
 use StoreAccountant\Storage\ProtectedUploadDirectory;
+use StoreAccountant\Storage\Contract\ChunkedStorageAdapterInterface;
 use StoreAccountant\Storage\Contract\StorageAdapterInterface;
 use StoreAccountant\Storage\StorageFile;
 use StoreAccountant\Storage\StorageFileConfiguration;
 use function basename;
+use function dirname;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Stream resources are required by Flysystem.
 use function fclose;
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Stream resources are required by Flysystem.
@@ -40,6 +44,8 @@ use function is_file;
 use function is_int;
 use function is_resource;
 use function is_string;
+use function stream_get_contents;
+use function stream_get_meta_data;
 use function strpos;
 use function substr;
 use function wp_delete_file;
@@ -51,9 +57,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Local storage adapter and Flysystem adapter for a protected zip archive.
  */
-final readonly class LocalStorageAdapter implements StorageAdapterInterface, FilesystemAdapter, HookRegistrarInterface {
+final readonly class LocalStorageAdapter implements StorageAdapterInterface, ChunkedStorageAdapterInterface, FilesystemAdapter, HookRegistrarInterface {
 	public const ENGINE_ID = 'local';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private LocalStorageConfiguration $configuration,
 		private ProtectedUploadDirectory $directory = new ProtectedUploadDirectory()
@@ -61,6 +73,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -76,6 +91,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::ENGINE_ID;
@@ -90,11 +108,32 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function persist( StorageFileConfiguration $configuration ): string|WP_Error {
-		$stream = $this->open_read_stream( $configuration->source_path );
+		$storage_path = $this->start_persist( $configuration );
 
-		if ( false === $stream ) {
+		if ( is_wp_error( $storage_path ) ) {
+			return $storage_path;
+		}
+
+		$appended = $this->append_attachments( $storage_path, $configuration->attachments );
+
+		return is_wp_error( $appended ) ? $appended : $storage_path;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
+	public function start_persist( StorageFileConfiguration $configuration ): string|WP_Error {
+		$source_stream = $this->open_read_stream( $configuration->source_path );
+
+		if ( false === $source_stream ) {
 			return new WP_Error(
 				'storeaccountant_storage_source_file_not_readable',
 				__( 'StoreAccountant could not read the generated export file for storage.', 'storeaccountant' )
@@ -102,18 +141,10 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 		}
 
 		try {
-			$target_path = null !== $configuration->internal_path
-				? $configuration->storage_path . '#' . $configuration->internal_path
-				: $configuration->storage_path;
+			$this->close_stream( $source_stream );
+			$source_stream = false;
 
-			$this->get_filesystem()->writeStream( $target_path, $stream );
-
-			foreach ( $configuration->attachments as $attachment ) {
-				$this->get_filesystem()->writeStream(
-					$configuration->storage_path . '#' . $attachment->internal_path,
-					$attachment->stream
-				);
-			}
+			$this->start_zip_archive( $configuration );
 		} catch ( Throwable $exception ) {
 			return new WP_Error(
 				'storeaccountant_storage_persist_failed',
@@ -129,11 +160,7 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 				]
 			);
 		} finally {
-			$this->close_stream( $stream );
-
-			foreach ( $configuration->attachments as $attachment ) {
-				$this->close_stream( $attachment->stream );
-			}
+			$this->close_stream( $source_stream );
 		}
 
 		return $configuration->storage_path;
@@ -141,6 +168,194 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
+	public function append_attachments( string $storage_path, iterable $attachments ): true|WP_Error {
+		try {
+			$this->append_zip_attachments( $storage_path, $attachments );
+		} catch ( Throwable $exception ) {
+			return new WP_Error(
+				'storeaccountant_storage_persist_failed',
+				__( 'StoreAccountant could not persist the generated export file.', 'storeaccountant' ),
+				[
+					'exception' => [
+						'class'   => $exception::class,
+						'message' => $exception->getMessage(),
+						'file'    => $exception->getFile(),
+						'line'    => $exception->getLine(),
+						'trace'   => $exception->getTraceAsString(),
+					],
+				]
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Starts one local zip archive with the rendered export file.
+	 *
+	 * @param StorageFileConfiguration $configuration Storage file configuration.
+	 *
+	 * @throws RuntimeException When the archive cannot be written.
+	 */
+	private function start_zip_archive( StorageFileConfiguration $configuration ): void {
+		$ensured = $this->ensure_archive_directory( $configuration->storage_path );
+
+		if ( is_wp_error( $ensured ) ) {
+			throw new RuntimeException( esc_html( $ensured->get_error_message() ) );
+		}
+
+		$archive_path = $this->configuration->get_archive_path( $configuration->storage_path );
+
+		if ( is_wp_error( $archive_path ) ) {
+			throw new RuntimeException( esc_html( $archive_path->get_error_message() ) );
+		}
+
+		$archive      = new ZipArchive();
+		$archive_open = false;
+		$opened       = $archive->open( $archive_path, ZipArchive::CREATE | ZipArchive::OVERWRITE );
+
+		try {
+			if ( true !== $opened ) {
+				throw new RuntimeException( 'StoreAccountant could not open the local export archive.' );
+			}
+
+			$archive_open  = true;
+			$internal_path = null !== $configuration->internal_path && '' !== $configuration->internal_path
+				? $configuration->internal_path
+				: $configuration->file_name;
+
+			if ( '' === $internal_path || ! $archive->addFile( $configuration->source_path, $internal_path ) ) {
+				throw new RuntimeException( 'StoreAccountant could not add the generated export file to the local archive.' );
+			}
+
+			if ( ! $archive->close() ) {
+				$archive_open = false;
+				throw new RuntimeException( 'StoreAccountant could not close the local export archive.' );
+			}
+
+			$archive_open = false;
+		} finally {
+			if ( $archive_open ) {
+				$archive->close();
+			}
+		}
+	}
+
+	/**
+	 * Appends attachments to an existing local zip archive.
+	 *
+	 * @param string          $storage_path Storage path.
+	 * @param iterable<mixed> $attachments  Export attachments.
+	 *
+	 * @throws RuntimeException When the archive cannot be written.
+	 */
+	private function append_zip_attachments( string $storage_path, iterable $attachments ): void {
+		$ensured = $this->ensure_archive_directory( $storage_path );
+
+		if ( is_wp_error( $ensured ) ) {
+			throw new RuntimeException( esc_html( $ensured->get_error_message() ) );
+		}
+
+		$archive_path = $this->configuration->get_archive_path( $storage_path );
+
+		if ( is_wp_error( $archive_path ) ) {
+			throw new RuntimeException( esc_html( $archive_path->get_error_message() ) );
+		}
+
+		$archive      = new ZipArchive();
+		$archive_open = false;
+		$opened       = $archive->open( $archive_path, ZipArchive::CREATE );
+
+		try {
+			if ( true !== $opened ) {
+				throw new RuntimeException( 'StoreAccountant could not open the local export archive.' );
+			}
+
+			$archive_open = true;
+
+			foreach ( $attachments as $attachment ) {
+				$attachment_stream = $attachment instanceof ExportAttachment ? $attachment->stream : null;
+
+				try {
+					if ( ! $attachment instanceof ExportAttachment ) {
+						continue;
+					}
+
+					$this->add_attachment_to_archive( $archive, $attachment );
+				} finally {
+					$this->close_stream( $attachment_stream );
+				}
+			}
+
+			if ( ! $archive->close() ) {
+				$archive_open = false;
+				throw new RuntimeException( 'StoreAccountant could not close the local export archive.' );
+			}
+
+			$archive_open = false;
+		} finally {
+			if ( $archive_open ) {
+				$archive->close();
+			}
+		}
+	}
+
+	/**
+	 * Adds one attachment to an open zip archive.
+	 *
+	 * @param ZipArchive       $archive    Open zip archive.
+	 * @param ExportAttachment $attachment Export attachment.
+	 *
+	 * @throws RuntimeException When the attachment cannot be added.
+	 */
+	private function add_attachment_to_archive( ZipArchive $archive, ExportAttachment $attachment ): void {
+		$source_path = $this->get_stream_path( $attachment->stream );
+
+		if ( '' === $attachment->internal_path ) {
+			throw new RuntimeException( 'StoreAccountant could not add an export attachment without an archive path.' );
+		}
+
+		if ( false !== $archive->locateName( $attachment->internal_path ) ) {
+			$archive->deleteName( $attachment->internal_path );
+		}
+
+		if ( null !== $source_path && $archive->addFile( $source_path, $attachment->internal_path ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_stream_get_contents -- In-memory attachment streams have no local file path.
+		$contents = stream_get_contents( $attachment->stream );
+
+		if ( false === $contents || ! $archive->addFromString( $attachment->internal_path, $contents ) ) {
+			throw new RuntimeException( 'StoreAccountant could not add an export attachment to the local archive.' );
+		}
+	}
+
+	/**
+	 * Gets a local path for a stream-backed file when available.
+	 *
+	 * @param mixed $stream Potential stream resource.
+	 */
+	private function get_stream_path( mixed $stream ): ?string {
+		if ( ! is_resource( $stream ) ) {
+			return null;
+		}
+
+		$metadata = stream_get_meta_data( $stream );
+		$uri      = is_string( $metadata['uri'] ?? null ) ? $metadata['uri'] : '';
+
+		return '' !== $uri && is_file( $uri ) ? $uri : null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function fileExists( string $path ): bool {
 		$reference = LocalStorageReference::from_storage_path( $path );
@@ -156,6 +371,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function write( string $path, string $contents, Config $config ): void {
 		$reference = $this->get_flysystem_reference( $path );
@@ -165,6 +383,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function writeStream( string $path, $contents, Config $config ): void {
 		$reference = $this->get_flysystem_reference( $path );
@@ -174,6 +395,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function read( string $path ): string {
 		$reference = $this->get_flysystem_reference( $path );
@@ -183,6 +407,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function readStream( string $path ) {
 		$reference = $this->get_flysystem_reference( $path );
@@ -192,6 +419,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function delete( string $path ): void {
 		$this->delete_file( $path );
@@ -199,6 +429,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function delete_file( string $storage_path ): void {
 		if ( ! $this->file_exists( $storage_path ) ) {
@@ -216,6 +449,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function file_exists( string $storage_path ): bool {
 		$reference = LocalStorageReference::from_storage_path( $storage_path );
@@ -231,6 +467,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_file( string $storage_path ): StorageFile|WP_Error {
 		$reference = LocalStorageReference::from_storage_path( $storage_path );
@@ -262,6 +501,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function deleteDirectory( string $path ): void {
 		$this->delete_directory( $path );
@@ -269,6 +511,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function delete_directory( string $storage_path ): void {
 		$reference = $this->get_flysystem_reference( $storage_path );
@@ -278,6 +523,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function createDirectory( string $path, Config $config ): void {
 		$reference = $this->get_flysystem_reference( $path );
@@ -287,6 +535,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function create_directory( string $storage_path ): void {
 		$this->createDirectory( $storage_path, new Config() );
@@ -294,6 +545,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function directoryExists( string $path ): bool {
 		$reference = $this->get_flysystem_reference( $path );
@@ -303,6 +557,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function directory_exists( string $storage_path ): bool {
 		try {
@@ -314,6 +571,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function setVisibility( string $path, string $visibility ): void {
 		$reference = $this->get_flysystem_reference( $path );
@@ -323,6 +583,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function set_visibility( string $storage_path, string $visibility ): void {
 		$this->setVisibility( $storage_path, $visibility );
@@ -330,6 +593,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_visibility( string $storage_path ): string|WP_Error {
 		try {
@@ -346,6 +612,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function visibility( string $path ): FileAttributes {
 		$reference = $this->get_flysystem_reference( $path );
@@ -355,6 +624,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function mimeType( string $path ): FileAttributes {
 		$reference = $this->get_flysystem_reference( $path );
@@ -364,6 +636,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_mime_type( string $storage_path ): string|WP_Error {
 		try {
@@ -380,6 +655,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function lastModified( string $path ): FileAttributes {
 		$reference = $this->get_flysystem_reference( $path );
@@ -389,6 +667,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_last_modified( string $storage_path ): int|WP_Error {
 		try {
@@ -405,6 +686,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function fileSize( string $path ): FileAttributes {
 		$reference = $this->get_flysystem_reference( $path );
@@ -414,6 +698,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_file_size( string $storage_path ): int|WP_Error {
 		try {
@@ -430,6 +717,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function listContents( string $path, bool $deep ): iterable {
 		$reference = $this->get_flysystem_reference( $path );
@@ -439,6 +729,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function move( string $source, string $destination, Config $config ): void {
 		$source_reference      = $this->get_flysystem_reference( $source );
@@ -462,6 +755,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function copy( string $source, string $destination, Config $config ): void {
 		$source_reference      = $this->get_flysystem_reference( $source );
@@ -484,6 +780,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ensure(): true|WP_Error {
 		$path = $this->configuration->get_root_path();
@@ -497,6 +796,9 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 	/**
 	 * Deletes the local archive directory when it contains only managed files.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function delete_if_empty(): void {
 		$path = $this->configuration->get_root_path();
@@ -514,7 +816,7 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 	 * @throws RuntimeException When the local storage adapter is unavailable.
 	 */
 	private function get_adapter( string $archive_file ): ZipArchiveAdapter {
-		$result = $this->ensure();
+		$result = $this->ensure_archive_directory( $archive_file );
 
 		if ( is_wp_error( $result ) ) {
 			throw new RuntimeException( esc_html( $result->get_error_message() ) );
@@ -528,6 +830,32 @@ final readonly class LocalStorageAdapter implements StorageAdapterInterface, Fil
 
 		return new ZipArchiveAdapter(
 			new FilesystemZipArchiveProvider( $archive_path )
+		);
+	}
+
+	/**
+	 * Ensures the local archive parent directory exists and is protected.
+	 *
+	 * @param string $archive_file Relative archive file path.
+	 *
+	 * @return true|WP_Error
+	 */
+	private function ensure_archive_directory( string $archive_file ): true|WP_Error {
+		$root_path = $this->configuration->get_root_path();
+
+		if ( is_wp_error( $root_path ) ) {
+			return $root_path;
+		}
+
+		$relative_directory = dirname( $archive_file );
+
+		if ( '' === $archive_file || '.' === $relative_directory ) {
+			return $this->directory->ensure( $root_path, $this->configuration->display_root_path );
+		}
+
+		return $this->directory->ensure(
+			trailingslashit( $root_path ) . $relative_directory,
+			trailingslashit( $this->configuration->display_root_path ) . $relative_directory
 		);
 	}
 

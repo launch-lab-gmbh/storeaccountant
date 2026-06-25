@@ -21,9 +21,13 @@ use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\Field\Type\DateTimeFieldType;
 use StoreAccountant\Invoice\Export\Order\Field\InvoiceFieldProvider;
+use StoreAccountant\Invoice\InvoiceFileType;
 use StoreAccountant\Invoice\InvoicePluginDetector;
 use StoreAccountant\Invoice\InvoicePluginRegistry;
 use StoreAccountant\Order\Export\Adapter\OrderExportAdapter;
+use function array_keys;
+use function preg_replace;
+use function strtolower;
 
 /**
  * Tests invoice field definitions for order exports.
@@ -33,6 +37,10 @@ final class InvoiceFieldProviderTest extends TestCase {
 		parent::setUp();
 
 		Monkey\setUp();
+
+		Functions\when( 'sanitize_key' )->alias(
+			static fn ( string $key ): string => strtolower( preg_replace( '/[^a-z0-9_-]/', '', $key ) ?? '' )
+		);
 	}
 
 	protected function tearDown(): void {
@@ -69,10 +77,19 @@ final class InvoiceFieldProviderTest extends TestCase {
 		self::assertFalse( $provider->supports( new ExportContext( 'customers' ) ) );
 	}
 
-	public function test_get_fields_returns_invoice_number_date_and_file_name(): void {
+	public function test_get_fields_returns_invoice_number_date_and_typed_file_names(): void {
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'storeaccountant_enabled_invoice_plugin', '' )
+			->andReturn( 'pdf' );
+		Functions\expect( 'apply_filters' )
+			->once()
+			->with( 'storeaccountant_invoice_plugin', [] )
+			->andReturn( [ $this->active_plugin( 'pdf' ) ] );
+
 		$fields = ( new InvoiceFieldProvider( new InvoicePluginDetector( new InvoicePluginRegistry() ) ) )->get_fields( new ExportContext( OrderExportAdapter::ADAPTER_ID ) );
 
-		self::assertSame( [ 'invoice_number', 'invoice_date', 'invoice_file_name' ], array_keys( $fields ) );
+		self::assertSame( [ 'invoice_number', 'invoice_date', 'invoice_file_name_pdf', 'invoice_file_name_xml' ], array_keys( $fields ) );
 		self::assertInstanceOf( DateTimeFieldType::class, $fields['invoice_date']->type );
 	}
 
@@ -80,6 +97,12 @@ final class InvoiceFieldProviderTest extends TestCase {
 		$plugin = $this->createMock( \StoreAccountant\Invoice\Contract\InvoicePluginInterface::class );
 		$plugin->method( 'get_id' )->willReturn( $id );
 		$plugin->method( 'is_active' )->willReturn( true );
+		$plugin->method( 'get_invoice_file_types' )->willReturn(
+			[
+				new InvoiceFileType( 'pdf', 'PDF' ),
+				new InvoiceFileType( 'xml', 'XML' ),
+			]
+		);
 
 		return $plugin;
 	}

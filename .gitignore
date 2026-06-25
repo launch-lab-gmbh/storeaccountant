@@ -3,9 +3,12 @@
 
 /.idea
 /.todo
+/.venv
+/build
 /coverage
 /docs/dist
 /vendor
+/tools/php-scoper/vendor
 
 /.phpcs.xml
 /.phpunit.result.cache

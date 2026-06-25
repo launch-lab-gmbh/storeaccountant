@@ -17,6 +17,16 @@ use StoreAccountant\Export\Event\ExportEventDispatcher;
 use StoreAccountant\Export\Event\ExportEvents;
 use StoreAccountant\Export\ExportPostType;
 use StoreAccountant\Queue\QueueTransportRegistry;
+use function delete_transient;
+use function get_post_type;
+use function get_transient;
+use function hash_equals;
+use function home_url;
+use function is_string;
+use function is_wp_error;
+use function set_transient;
+use function wp_generate_password;
+use function wp_remote_post;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -28,12 +38,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class QueueLoopbackDispatcher {
 	private const TOKEN_TTL = 15 * MINUTE_IN_SECONDS;
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private QueueTransportRegistry $queue_transports
 	) {}
 
 	/**
 	 * Starts the loopback runner if the active transport supports it.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */
@@ -63,6 +82,9 @@ final readonly class QueueLoopbackDispatcher {
 	/**
 	 * Dispatches a loopback continuation request.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int    $export_id Export post ID.
 	 * @param string $token     Loopback token.
 	 */
@@ -72,12 +94,11 @@ final readonly class QueueLoopbackDispatcher {
 		}
 
 		$response = wp_remote_post(
-			admin_url( 'admin-post.php' ),
+			home_url( '/' . QueueLoopbackEndpoint::ROUTE_PATH . '/' ),
 			[
 				'blocking' => false,
 				'timeout'  => 1,
 				'body'     => [
-					'action'    => QueueLoopbackEndpoint::ACTION,
 					'export_id' => (string) $export_id,
 					'token'     => $token,
 				],
@@ -102,6 +123,9 @@ final readonly class QueueLoopbackDispatcher {
 	/**
 	 * Checks whether the provided token is valid for the export.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int    $export_id Export post ID.
 	 * @param string $token     Token from the loopback request.
 	 */
@@ -114,6 +138,9 @@ final readonly class QueueLoopbackDispatcher {
 	/**
 	 * Refreshes an existing token for another chained loopback request.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int    $export_id Export post ID.
 	 * @param string $token     Existing token.
 	 */
@@ -123,6 +150,9 @@ final readonly class QueueLoopbackDispatcher {
 
 	/**
 	 * Deletes the token for a finished export loopback.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $export_id Export post ID.
 	 */

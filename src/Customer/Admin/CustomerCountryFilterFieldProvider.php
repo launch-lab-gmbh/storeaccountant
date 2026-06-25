@@ -47,6 +47,9 @@ final readonly class CustomerCountryFilterFieldProvider implements ExportFilterF
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -62,6 +65,9 @@ final readonly class CustomerCountryFilterFieldProvider implements ExportFilterF
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return CustomerCountryFilter::FILTER_ID;
@@ -69,6 +75,9 @@ final readonly class CustomerCountryFilterFieldProvider implements ExportFilterF
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function supports( string $export_type ): bool {
 		return CustomerExportAdapter::ADAPTER_ID === $export_type;
@@ -76,6 +85,9 @@ final readonly class CustomerCountryFilterFieldProvider implements ExportFilterF
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( ?ExportFilterSelection $selection = null, bool $read_only = false ): void {
 		$country_field      = CustomerCountryFilter::FIELD_BILLING_COUNTRY;
@@ -164,6 +176,9 @@ final readonly class CustomerCountryFilterFieldProvider implements ExportFilterF
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_selection_from_request( array $request ): ExportFilterSelection|WP_Error {
 		$countries          = isset( $request[ self::FIELD_COUNTRIES ] ) && is_array( $request[ self::FIELD_COUNTRIES ] )
@@ -199,6 +214,9 @@ final readonly class CustomerCountryFilterFieldProvider implements ExportFilterF
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_default_selection(): ExportFilterSelection {
 		return new ExportFilterSelection(

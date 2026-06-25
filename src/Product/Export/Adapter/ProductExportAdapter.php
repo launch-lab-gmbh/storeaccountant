@@ -17,13 +17,16 @@ use WC_Product;
 use WP_Error;
 use StoreAccountant\Contract\HookRegistrarInterface;
 use StoreAccountant\Export\Contract\BatchExportAdapterInterface;
+use StoreAccountant\Export\Contract\SnapshotExportAdapterInterface;
 use StoreAccountant\Export\ExportContext;
 use StoreAccountant\Export\ExportPayload;
 use StoreAccountant\Export\Field\FieldCollection;
 use StoreAccountant\Product\Export\Query\ProductQuery;
 use function add_filter;
+use function array_map;
 use function is_array;
 use function is_int;
+use function is_wp_error;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -32,11 +35,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Exports normalized WooCommerce product data.
  */
-final readonly class ProductExportAdapter implements BatchExportAdapterInterface, HookRegistrarInterface {
+final readonly class ProductExportAdapter implements BatchExportAdapterInterface, SnapshotExportAdapterInterface, HookRegistrarInterface {
 	public const ADAPTER_ID = 'products';
 
 	/**
 	 * Initializes the product adapter.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ProductQuery $product_query Product query service.
 	 */
@@ -46,6 +52,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -61,6 +70,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::ADAPTER_ID;
@@ -68,6 +80,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_items( ExportPayload $payload ): iterable|WP_Error {
 		return $this->product_query->get_products( $payload );
@@ -75,6 +90,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function count_items( ExportPayload $payload ): int|WP_Error {
 		return $this->product_query->count_products( $payload );
@@ -82,6 +100,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_batch_items( ExportPayload $payload, int $offset, int $limit ): iterable|WP_Error {
 		return $this->product_query->get_product_batch( $payload, $offset, $limit );
@@ -89,6 +110,31 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
+	public function get_item_ids( ExportPayload $payload ): array|WP_Error {
+		$ids = $this->product_query->get_product_ids( $payload );
+
+		return is_wp_error( $ids ) ? $ids : array_map( 'strval', $ids );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
+	public function get_items_by_ids( ExportPayload $payload, array $item_ids ): iterable|WP_Error {
+		return $this->product_query->get_products_by_ids( $item_ids );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_context( ExportPayload $payload, iterable $items ): ExportContext {
 		return new ExportContext(
@@ -100,6 +146,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_additional_fields( ExportPayload $payload, ExportContext $context ): FieldCollection {
 		return new FieldCollection();
@@ -107,6 +156,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_additional_values( mixed $item, ExportPayload $payload, ExportContext $context ): array {
 		return [];
@@ -114,6 +166,9 @@ final readonly class ProductExportAdapter implements BatchExportAdapterInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_record_id( mixed $item ): string {
 		return $item instanceof WC_Product ? (string) $item->get_id() : '';

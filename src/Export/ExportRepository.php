@@ -33,6 +33,8 @@ use function random_bytes;
 use function time;
 use function trim;
 use function usleep;
+use function wp_cache_delete;
+use function wp_json_encode;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -51,6 +53,9 @@ final readonly class ExportRepository {
 	/**
 	 * Initializes the repository.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param ExportFilterSelectionSerializer $filter_serializer Filter selection serializer.
 	 */
 	public function __construct(
@@ -62,6 +67,9 @@ final readonly class ExportRepository {
 	/**
 	 * Creates a saved export record.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string                            $title            Export title.
 	 * @param array<int, ExportFilterSelection> $filters          Configured export filters.
 	 * @param string                            $storage_engine   storage adapter identifier.
@@ -71,6 +79,8 @@ final readonly class ExportRepository {
 	 * @param int|null                          $configuration_id Export configuration ID, or null for quick exports.
 	 * @param int                               $batch_size       Number of source items to process per batch.
 	 * @param array{encrypted:string, hash:string}|null $password_snapshot Password snapshot, or null to resolve from configuration/global settings.
+	 * @param array<string, mixed>              $additional_settings Additional provider settings snapshotted for quick exports.
+	 * @param string                            $order_tax_field_provider Order tax field provider snapshotted for quick exports.
 	 *
 	 * @return int|WP_Error
 	 */
@@ -83,7 +93,9 @@ final readonly class ExportRepository {
 		int $triggered_by,
 		?int $configuration_id = null,
 		int $batch_size = ExportPostType::DEFAULT_BATCH_SIZE,
-		?array $password_snapshot = null
+		?array $password_snapshot = null,
+		array $additional_settings = [],
+		string $order_tax_field_provider = ''
 	): int|WP_Error {
 		if ( $this->exists_with_title( $title ) ) {
 			return new WP_Error(
@@ -98,45 +110,47 @@ final readonly class ExportRepository {
 			return $password_snapshot;
 		}
 
-			$meta_input = [
-				ExportPostType::META_EXPORTED_AT       => current_time( 'mysql', true ),
-				ExportPostType::META_STATUS            => ExportStatus::SCHEDULED,
-				ExportPostType::META_FILTERS           => $this->filter_serializer->encode( $filters ),
-				ExportPostType::META_STORAGE_ENGINE    => $storage_engine,
-				ExportPostType::META_EXPORT_ADAPTER    => $export_adapter->get_id(),
-				ExportPostType::META_EXPORT_WRITER     => $export_writer->get_id(),
-				ExportPostType::META_BATCH_SIZE        => (string) max( ExportPostType::MIN_BATCH_SIZE, $batch_size ),
-				ExportPostType::META_PATH              => '',
-				ExportPostType::META_TRIGGERED_BY      => (string) $triggered_by,
-				ExportPostType::META_TOTAL_ITEMS       => '0',
-				ExportPostType::META_PROCESSED_ITEMS   => '0',
-				ExportPostType::META_TOTAL_BATCHES     => '1',
-				ExportPostType::META_PROCESSED_BATCHES => '0',
-				ExportPostType::META_FAILED_BATCHES    => '0',
-				ExportPostType::META_CURRENT_STEP      => __( 'Waiting for queue worker.', 'storeaccountant' ),
-				ExportPostType::META_ERROR_MESSAGE     => '',
-				ExportPostType::META_LOG_ENTRIES       => [],
-				ExportPostType::META_STARTED_AT        => '',
-				ExportPostType::META_FINISHED_AT       => '',
-				ExportPostType::META_DOWNLOAD_TOKEN    => $this->generate_unique_download_token(),
-				ExportPostType::META_DOWNLOAD_PASSWORD => $password_snapshot['encrypted'],
-				ExportPostType::META_DOWNLOAD_PASSWORD_HASH => $password_snapshot['hash'],
-			];
+		$meta_input = [
+			ExportPostType::META_EXPORTED_AT              => current_time( 'mysql', true ),
+			ExportPostType::META_STATUS                   => ExportStatus::SCHEDULED,
+			ExportPostType::META_FILTERS                  => $this->filter_serializer->encode( $filters ),
+			ExportPostType::META_STORAGE_ENGINE           => $storage_engine,
+			ExportPostType::META_EXPORT_ADAPTER           => $export_adapter->get_id(),
+			ExportPostType::META_EXPORT_WRITER            => $export_writer->get_id(),
+			ExportPostType::META_ADDITIONAL_SETTINGS      => wp_json_encode( $additional_settings ),
+			ExportPostType::META_ORDER_TAX_FIELD_PROVIDER => $order_tax_field_provider,
+			ExportPostType::META_BATCH_SIZE               => (string) max( ExportPostType::MIN_BATCH_SIZE, $batch_size ),
+			ExportPostType::META_PATH                     => '',
+			ExportPostType::META_TRIGGERED_BY             => (string) $triggered_by,
+			ExportPostType::META_TOTAL_ITEMS              => '0',
+			ExportPostType::META_PROCESSED_ITEMS          => '0',
+			ExportPostType::META_TOTAL_BATCHES            => '1',
+			ExportPostType::META_PROCESSED_BATCHES        => '0',
+			ExportPostType::META_FAILED_BATCHES           => '0',
+			ExportPostType::META_CURRENT_STEP             => __( 'Waiting for queue worker.', 'storeaccountant' ),
+			ExportPostType::META_ERROR_MESSAGE            => '',
+			ExportPostType::META_LOG_ENTRIES              => [],
+			ExportPostType::META_STARTED_AT               => '',
+			ExportPostType::META_FINISHED_AT              => '',
+			ExportPostType::META_DOWNLOAD_TOKEN           => $this->generate_unique_download_token(),
+			ExportPostType::META_DOWNLOAD_PASSWORD        => $password_snapshot['encrypted'],
+			ExportPostType::META_DOWNLOAD_PASSWORD_HASH   => $password_snapshot['hash'],
+		];
 
-			if ( null !== $configuration_id ) {
-				$meta_input[ ExportPostType::META_CONFIGURATION_ID ] = (string) $configuration_id;
-			}
+		if ( null !== $configuration_id ) {
+			$meta_input[ ExportPostType::META_CONFIGURATION_ID ] = (string) $configuration_id;
+		}
 
-			$post_id = wp_insert_post(
-				[
-					'post_type'   => ExportPostType::POST_TYPE,
-					'post_status' => 'publish',
-					'post_title'  => $title,
-					'post_author' => $triggered_by,
-					'meta_input'  => $meta_input,
-				],
-				true
-			);
+		$post_id = wp_insert_post(
+			[
+				'post_type'   => ExportPostType::POST_TYPE,
+				'post_status' => 'publish',
+				'post_title'  => $title,
+				'post_author' => $triggered_by,
+				'meta_input'  => $meta_input,
+			],
+			true
+		);
 
 		return $post_id;
 	}
@@ -178,6 +192,9 @@ final readonly class ExportRepository {
 	/**
 	 * Checks whether a saved export already uses the given title.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $title Export title.
 	 */
 	public function exists_with_title( string $title ): bool {
@@ -204,6 +221,9 @@ final readonly class ExportRepository {
 	/**
 	 * Updates the generated export path.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int    $post_id Export post ID.
 	 * @param string $path    Generated export path.
 	 */
@@ -213,6 +233,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Gets the lifecycle status for an export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $post_id Export post ID.
 	 */
@@ -231,6 +254,9 @@ final readonly class ExportRepository {
 	/**
 	 * Marks an export as queued for background processing.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $post_id Export post ID.
 	 */
 	public function mark_queued( int $post_id ): void {
@@ -241,6 +267,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Marks an export as processing.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int    $post_id      Export post ID.
 	 * @param string $current_step Current processing step.
@@ -257,6 +286,9 @@ final readonly class ExportRepository {
 	/**
 	 * Initializes export progress counters.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $post_id       Export post ID.
 	 * @param int $total_items   Total item count.
 	 * @param int $total_batches Total batch count.
@@ -271,6 +303,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Resets an export for retry.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $post_id Export post ID.
 	 */
@@ -290,6 +325,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Marks one batch as processed.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $post_id Export post ID.
 	 * @param int $items   Processed item count in the batch.
@@ -346,6 +384,8 @@ final readonly class ExportRepository {
 	 * @param int    $amount  Increment amount.
 	 */
 	private function increment_meta_counter( int $post_id, string $key, int $amount ): void {
+		wp_cache_delete( $post_id, 'post_meta' );
+
 		update_post_meta(
 			$post_id,
 			$key,
@@ -355,6 +395,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Checks whether all batches were processed.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int $post_id Export post ID.
 	 */
@@ -370,6 +413,9 @@ final readonly class ExportRepository {
 	/**
 	 * Marks an export as completed.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int $post_id Export post ID.
 	 */
 	public function mark_completed( int $post_id ): void {
@@ -380,6 +426,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Marks an export as failed.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int    $post_id       Export post ID.
 	 * @param string $error_message Error message.
@@ -400,6 +449,9 @@ final readonly class ExportRepository {
 	/**
 	 * Marks an export as failed from a WordPress error and logs its technical data.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int                  $post_id Export post ID.
 	 * @param WP_Error             $error   WordPress error.
 	 * @param array<string, mixed> $context Additional context.
@@ -418,6 +470,9 @@ final readonly class ExportRepository {
 
 	/**
 	 * Adds a technical export log entry.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param int                  $post_id   Export post ID.
 	 * @param string               $level     Log level.
@@ -447,8 +502,17 @@ final readonly class ExportRepository {
 		}
 
 		$entries[] = $entry;
-		$limit     = (int) apply_filters( 'storeaccountant_export_log_entry_limit', self::DEFAULT_LOG_ENTRY_LIMIT, $post_id );
-		$entries   = array_slice( $entries, -max( 1, $limit ) );
+
+		/**
+		 * Filters the maximum number of log entries stored on an export.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $limit   Maximum number of log entries.
+		 * @param int $post_id Export post ID.
+		 */
+		$limit   = (int) apply_filters( 'storeaccountant_export_log_entry_limit', self::DEFAULT_LOG_ENTRY_LIMIT, $post_id );
+		$entries = array_slice( $entries, -max( 1, $limit ) );
 
 		update_post_meta( $post_id, ExportPostType::META_LOG_ENTRIES, $entries );
 	}

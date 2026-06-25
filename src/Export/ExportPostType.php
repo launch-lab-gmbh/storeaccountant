@@ -73,35 +73,40 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	public const POST_TYPE = 'storeacct_export';
 
-	public const META_EXPORTED_AT            = '_storeaccountant_exported_at';
-	public const META_STATUS                 = '_storeaccountant_status';
-	public const META_FILTERS                = '_storeaccountant_filters';
-	public const META_STORAGE_ENGINE         = '_storeaccountant_storage_engine';
-	public const META_EXPORT_ADAPTER         = '_storeaccountant_export_adapter';
-	public const META_EXPORT_WRITER          = '_storeaccountant_export_writer';
-	public const META_BATCH_SIZE             = '_storeaccountant_batch_size';
-	public const META_PATH                   = '_storeaccountant_path';
-	public const META_TRIGGERED_BY           = '_storeaccountant_triggered_by';
-	public const META_CONFIGURATION_ID       = '_storeaccountant_configuration_id';
-	public const META_TOTAL_ITEMS            = '_storeaccountant_total_items';
-	public const META_PROCESSED_ITEMS        = '_storeaccountant_processed_items';
-	public const META_TOTAL_BATCHES          = '_storeaccountant_total_batches';
-	public const META_PROCESSED_BATCHES      = '_storeaccountant_processed_batches';
-	public const META_FAILED_BATCHES         = '_storeaccountant_failed_batches';
-	public const META_CURRENT_STEP           = '_storeaccountant_current_step';
-	public const META_ERROR_MESSAGE          = '_storeaccountant_error_message';
-	public const META_LOG_ENTRIES            = '_storeaccountant_log_entries';
-	public const META_STARTED_AT             = '_storeaccountant_started_at';
-	public const META_FINISHED_AT            = '_storeaccountant_finished_at';
-	public const META_SCHEDULED_FOR          = '_storeaccountant_scheduled_for';
-	public const META_DOWNLOAD_TOKEN         = '_storeaccountant_download_token';
-	public const META_DOWNLOAD_PASSWORD      = '_storeaccountant_download_password';
-	public const META_DOWNLOAD_PASSWORD_HASH = '_storeaccountant_download_password_hash';
-	public const MIN_BATCH_SIZE              = 10;
-	public const DEFAULT_BATCH_SIZE          = 100;
+	public const META_EXPORTED_AT              = '_storeaccountant_exported_at';
+	public const META_STATUS                   = '_storeaccountant_status';
+	public const META_FILTERS                  = '_storeaccountant_filters';
+	public const META_STORAGE_ENGINE           = '_storeaccountant_storage_engine';
+	public const META_EXPORT_ADAPTER           = '_storeaccountant_export_adapter';
+	public const META_EXPORT_WRITER            = '_storeaccountant_export_writer';
+	public const META_ADDITIONAL_SETTINGS      = '_storeaccountant_additional_settings';
+	public const META_ORDER_TAX_FIELD_PROVIDER = '_storeaccountant_order_tax_field_provider';
+	public const META_BATCH_SIZE               = '_storeaccountant_batch_size';
+	public const META_PATH                     = '_storeaccountant_path';
+	public const META_TRIGGERED_BY             = '_storeaccountant_triggered_by';
+	public const META_CONFIGURATION_ID         = '_storeaccountant_configuration_id';
+	public const META_TOTAL_ITEMS              = '_storeaccountant_total_items';
+	public const META_PROCESSED_ITEMS          = '_storeaccountant_processed_items';
+	public const META_TOTAL_BATCHES            = '_storeaccountant_total_batches';
+	public const META_PROCESSED_BATCHES        = '_storeaccountant_processed_batches';
+	public const META_FAILED_BATCHES           = '_storeaccountant_failed_batches';
+	public const META_CURRENT_STEP             = '_storeaccountant_current_step';
+	public const META_ERROR_MESSAGE            = '_storeaccountant_error_message';
+	public const META_LOG_ENTRIES              = '_storeaccountant_log_entries';
+	public const META_STARTED_AT               = '_storeaccountant_started_at';
+	public const META_FINISHED_AT              = '_storeaccountant_finished_at';
+	public const META_SCHEDULED_FOR            = '_storeaccountant_scheduled_for';
+	public const META_DOWNLOAD_TOKEN           = '_storeaccountant_download_token';
+	public const META_DOWNLOAD_PASSWORD        = '_storeaccountant_download_password';
+	public const META_DOWNLOAD_PASSWORD_HASH   = '_storeaccountant_download_password_hash';
+	public const MIN_BATCH_SIZE                = 10;
+	public const DEFAULT_BATCH_SIZE            = 50;
 
 	/**
 	 * Initializes the export post type.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param AccountingHeaderBar              $header_bar               Accounting header bar.
 	 * @param ExportAdapterRegistry            $adapter_registry         Export adapter registry.
@@ -138,6 +143,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_post_type' ] );
@@ -164,6 +172,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Adds the hidden export read page used by list table title links.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function add_submenu_page(): void {
 		add_submenu_page(
@@ -178,6 +189,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Removes the hidden read page from the visible accounting submenu.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function remove_hidden_submenu_page(): void {
 		remove_submenu_page( AccountingMenu::MENU_SLUG, 'storeaccountant-export' );
@@ -185,6 +199,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Registers the saved export post type.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register_post_type(): void {
 		register_post_type(
@@ -227,6 +244,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	/**
 	 * Replaces admin list columns for saved exports.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, string> $columns Registered columns.
 	 *
 	 * @return array<string, string>
@@ -247,6 +267,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Renders custom admin list column values.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $column_name Column name.
 	 * @param int    $post_id     Export post ID.
@@ -361,6 +384,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	/**
 	 * Removes editing actions from the native list table bulk actions.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, string> $actions Bulk actions.
 	 *
 	 * @return array<string, string>
@@ -377,6 +403,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Removes editing actions from saved export row actions.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, string> $actions Row actions.
 	 * @param WP_Post               $post    Current post.
@@ -422,6 +451,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	/**
 	 * Points native export edit links to the custom read view.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string|null $link    Native edit link.
 	 * @param int         $post_id Post ID.
 	 * @param string      $context Link context.
@@ -440,6 +472,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Prevents editing saved export records after creation.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<int, string> $caps    Primitive capabilities.
 	 * @param string             $cap     Requested meta capability.
@@ -469,6 +504,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	/**
 	 * Highlights StoreAccountant while rendering the hidden export read page.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string|null $parent_file Parent file.
 	 */
 	public function filter_parent_file( ?string $parent_file ): string {
@@ -482,6 +520,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	/**
 	 * Highlights the exports submenu while rendering the hidden export read page.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string|null $submenu_file Submenu file.
 	 */
 	public function filter_submenu_file( ?string $submenu_file ): string {
@@ -494,6 +535,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Restores saved export records as published records instead of drafts.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $new_status      New post status.
 	 * @param int    $post_id         Post ID.
@@ -509,6 +553,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Removes native post state labels such as Draft or Private for exports.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param array<string, string> $post_states Native post states.
 	 * @param WP_Post               $post        Current post.
@@ -526,6 +573,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	/**
 	 * Renders plugin action buttons above the native export list table.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<string, string> $views Native list table views.
 	 *
 	 * @return array<string, string>
@@ -538,6 +588,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Renders the export read view.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		$export     = $this->get_read_export();
@@ -565,6 +618,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 	/**
 	 * Uses the current export record for the browser title.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $admin_title Complete admin title.
 	 * @param string $title       Static page title.
 	 */
@@ -590,6 +646,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Redirects native export edit requests to the custom read view.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function redirect_native_edit_screen(): void {
 		$post_id = Request::get_int( 'post' );
@@ -605,6 +664,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Prevents direct access to the native export list without StoreAccountant admin access.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function guard_native_list_screen(): void {
 		$post_type = Request::get_key( 'post_type', 'post' );
@@ -755,6 +817,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Renders export submission notices on the native post type list table.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render_export_notice(): void {
 		$screen = get_current_screen();
@@ -827,6 +892,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Streams a generated export file to the current administrator.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_download_export_file(): void {
 		$post_id = Request::get_int( 'export_id' );
@@ -853,6 +921,9 @@ final readonly class ExportPostType implements HookRegistrarInterface {
 
 	/**
 	 * Retries a failed export.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_retry_export(): void {
 		$post_id = Request::get_int( 'export_id' );

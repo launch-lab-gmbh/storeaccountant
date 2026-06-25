@@ -28,6 +28,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class ExportQueueCleanup implements HookRegistrarInterface {
 	public const HOOK = 'storeaccountant_cleanup_export_queue';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private ExportRepository $repository,
 		private BatchExportStore $batch_store
@@ -35,6 +41,9 @@ final readonly class ExportQueueCleanup implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'ensure_scheduled' ] );
@@ -43,6 +52,9 @@ final readonly class ExportQueueCleanup implements HookRegistrarInterface {
 
 	/**
 	 * Ensures cleanup runs periodically.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ensure_scheduled(): void {
 		if ( ! wp_next_scheduled( self::HOOK ) ) {
@@ -52,6 +64,9 @@ final readonly class ExportQueueCleanup implements HookRegistrarInterface {
 
 	/**
 	 * Marks exports stuck in processing as failed after 24 hours.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function cleanup(): void {
 		$exports = get_posts(

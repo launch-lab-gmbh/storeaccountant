@@ -27,6 +27,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 abstract readonly class Registry implements RegistryInterface {
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get( string $id ): ?RegistryItemInterface {
 		return $this->get_all()[ $id ] ?? null;
@@ -34,8 +37,18 @@ abstract readonly class Registry implements RegistryInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_all(): array {
+		/**
+		 * Filters registered StoreAccountant registry items.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array<int|string, mixed> $items Registry items.
+		 */
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Registry subclasses provide storeaccountant-prefixed extension hooks.
 		$items = apply_filters( $this->get_hook_name(), [] );
 

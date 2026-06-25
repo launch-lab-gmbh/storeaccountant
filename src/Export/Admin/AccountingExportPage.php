@@ -44,7 +44,6 @@ use StoreAccountant\Security\Permission\PermissionChecker;
 use StoreAccountant\Security\Permission\StoreAccountantCapabilities;
 use StoreAccountant\Storage\StorageAdapterRegistry;
 use function is_array;
-use function is_numeric;
 use function sprintf;
 use function str_starts_with;
 use function str_contains;
@@ -68,6 +67,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	/**
 	 * Initializes the page.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param AccountingExportPageForm          $form                   Export form renderer.
 	 * @param ExportRepository                  $repository             Export repository.
 	 * @param MessageBusInterface               $message_bus            Message bus.
@@ -75,6 +77,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	 * @param ExportAdapterRegistry             $export_adapters        Export adapter registry.
 	 * @param ExportRendererRegistry            $export_writers         Export writer registry.
 	 * @param ExportFilterFieldProviderRegistry $filter_field_providers Export filter field providers.
+	 * @param ExportSettingsFields              $settings_fields        Shared export settings fields.
 	 * @param ExportFilterSelectionSerializer   $filter_serializer      Filter selection serializer.
 	 * @param ExportFilterSnapshotter           $filter_snapshotter     Filter snapshotter.
 	 * @param AccountingHeaderBar               $header_bar             Accounting header bar.
@@ -91,6 +94,7 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		private ExportAdapterRegistry $export_adapters,
 		private ExportRendererRegistry $export_writers,
 		private ExportFilterFieldProviderRegistry $filter_field_providers,
+		private ExportSettingsFields $settings_fields,
 		private ExportFilterSelectionSerializer $filter_serializer,
 		private ExportFilterSnapshotter $filter_snapshotter,
 		private AccountingHeaderBar $header_bar,
@@ -102,6 +106,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'add_submenu_page' ] );
@@ -114,6 +121,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Adds hidden plugin pages used by the export list action buttons.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function add_submenu_page(): void {
 		add_submenu_page(
@@ -128,6 +138,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Removes hidden plugin pages from the visible accounting submenu after access checks.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function remove_hidden_submenu_page(): void {
 		remove_submenu_page( AccountingMenu::MENU_SLUG, self::PAGE_SLUG );
@@ -135,6 +148,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Renders the initial accounting export admin page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
@@ -154,6 +170,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Handles the export form submission.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_start_export(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
@@ -199,6 +218,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Handles export creation requests from the export overview selector.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function handle_start_export_from_overview(): void {
 		if ( ! $this->permissions->can( PermissionActionIds::EXPORT_CREATE ) ) {
@@ -259,11 +281,11 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			$this->redirect_overview_with_error( '1', 'invalid_or_unpublished_configuration', null, [ 'configuration_id' => $configuration_id ] );
 		}
 
-		$filters            = $this->filter_serializer->decode( (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_FILTERS, true ) );
-		$storage_engine     = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_STORAGE_ENGINE, true );
-			$export_adapter = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_EXPORT_ADAPTER, true );
-			$export_writer  = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_EXPORT_WRITER, true );
-			$batch_size     = $this->get_batch_size_from_configuration( $configuration_id );
+		$filters        = $this->filter_serializer->decode( (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_FILTERS, true ) );
+		$storage_engine = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_STORAGE_ENGINE, true );
+		$export_adapter = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_EXPORT_ADAPTER, true );
+		$export_writer  = (string) get_post_meta( $configuration_id, ExportConfigurationPostType::META_EXPORT_WRITER, true );
+		$batch_size     = $this->get_batch_size_from_configuration( $configuration_id );
 
 		if ( '' === $export_adapter ) {
 			$export_adapter = OrderExportAdapter::ADAPTER_ID;
@@ -299,16 +321,16 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			);
 		}
 
-			$post_id = $this->repository->create(
-				$title,
-				$filters,
-				$storage_engine,
-				$export_adapter_instance,
-				$export_writer_instance,
-				get_current_user_id(),
-				$configuration_id,
-				$batch_size
-			);
+		$post_id = $this->repository->create(
+			$title,
+			$filters,
+			$storage_engine,
+			$export_adapter_instance,
+			$export_writer_instance,
+			get_current_user_id(),
+			$configuration_id,
+			$batch_size
+		);
 
 		if ( is_wp_error( $post_id ) || $post_id <= 0 ) {
 			$this->redirect_overview_with_error(
@@ -325,16 +347,16 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		try {
 			$this->repository->mark_queued( $post_id );
 			$this->message_bus->dispatch( new StartExportMessage( $post_id, $export_writer ) );
-				ExportEventDispatcher::dispatch(
-					ExportEvents::QUEUED,
-					$post_id,
-					[
-						'action'           => 'storeaccountant_start_export_from_overview',
-						'export_id'        => $post_id,
-						'configuration_id' => $configuration_id,
-						'renderer_id'      => $export_writer,
-					]
-				);
+			ExportEventDispatcher::dispatch(
+				ExportEvents::QUEUED,
+				$post_id,
+				[
+					'action'           => 'storeaccountant_start_export_from_overview',
+					'export_id'        => $post_id,
+					'configuration_id' => $configuration_id,
+					'renderer_id'      => $export_writer,
+				]
+			);
 			$this->loopback_dispatcher->maybe_dispatch_for_manual_export( $post_id );
 		} catch ( Throwable $exception ) {
 			$this->repository->mark_failed(
@@ -374,14 +396,16 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			$this->redirect_to_quick_export_start();
 		}
 
-		$request        = Request::post_data();
-		$title          = trim( Request::post_text( 'storeaccountant_export_title' ) );
-		$storage_engine = Request::post_key( 'storeaccountant_storage_engine' );
-		$export_adapter = $draft['export_adapter'];
-		$export_writer  = Request::post_key( 'storeaccountant_export_writer', CsvExportRenderer::RENDERER_ID );
-		$batch_size     = $this->get_batch_size_from_request( $request );
-		$password       = Request::post_text( 'storeaccountant_export_download_password' );
-		$filters        = $this->get_filter_selections_from_request( $export_adapter, $request );
+		$request             = Request::post_data();
+		$title               = trim( Request::post_text( 'storeaccountant_export_title' ) );
+		$storage_engine      = Request::post_key( 'storeaccountant_storage_engine' );
+		$export_adapter      = $draft['export_adapter'];
+		$export_writer       = Request::post_key( 'storeaccountant_export_writer', CsvExportRenderer::RENDERER_ID );
+		$batch_size          = $this->settings_fields->get_batch_size_from_request( $request );
+		$password            = Request::post_secret( 'storeaccountant_export_download_password' );
+		$filters             = $this->get_filter_selections_from_request( $export_adapter, $request );
+		$tax_provider_id     = $this->settings_fields->get_tax_provider_id_from_request( $export_adapter, $request );
+		$additional_settings = $this->settings_fields->get_additional_settings_from_request( $export_adapter, $request );
 
 		if ( '' !== $title ) {
 			$this->save_quick_export_draft( $title, $export_adapter );
@@ -400,6 +424,14 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 				null,
 				true
 			);
+		}
+
+		if ( OrderExportAdapter::ADAPTER_ID === $export_adapter && '' === $tax_provider_id ) {
+			$this->redirect_with_error( '1', 'quick_export_tax_provider_missing', null, [ 'export_adapter' => $export_adapter ], null, true );
+		}
+
+		if ( is_wp_error( $additional_settings ) ) {
+			$this->redirect_with_error( '1', 'quick_export_additional_settings_invalid', $additional_settings, [ 'export_adapter' => $export_adapter ], null, true );
 		}
 
 		$export_adapter_instance = $this->export_adapters->get( $export_adapter );
@@ -449,7 +481,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 			get_current_user_id(),
 			null,
 			$batch_size,
-			$password_snapshot
+			$password_snapshot,
+			$additional_settings,
+			$tax_provider_id
 		);
 
 		if ( is_wp_error( $post_id ) || $post_id <= 0 ) {
@@ -468,15 +502,15 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		try {
 			$this->repository->mark_queued( $post_id );
 			$this->message_bus->dispatch( new StartExportMessage( $post_id, $export_writer ) );
-				ExportEventDispatcher::dispatch(
-					ExportEvents::QUEUED,
-					$post_id,
-					[
-						'action'      => 'storeaccountant_start_export',
-						'export_id'   => $post_id,
-						'renderer_id' => $export_writer,
-					]
-				);
+			ExportEventDispatcher::dispatch(
+				ExportEvents::QUEUED,
+				$post_id,
+				[
+					'action'      => 'storeaccountant_start_export',
+					'export_id'   => $post_id,
+					'renderer_id' => $export_writer,
+				]
+			);
 			$this->loopback_dispatcher->maybe_dispatch_for_manual_export( $post_id );
 		} catch ( Throwable $exception ) {
 			$this->repository->mark_failed(
@@ -640,35 +674,6 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 		}
 
 		return $this->filter_snapshotter->snapshot( $filters );
-	}
-
-	/**
-	 * Gets the batch size from request data.
-	 *
-	 * @param array<string, mixed> $request Request data.
-	 */
-	private function get_batch_size_from_request( array $request ): int|WP_Error {
-		$raw_batch_size = isset( $request['storeaccountant_export_batch_size'] )
-			? wp_unslash( $request['storeaccountant_export_batch_size'] )
-			: ExportPostType::DEFAULT_BATCH_SIZE;
-
-		if ( ! is_numeric( $raw_batch_size ) ) {
-			return new WP_Error(
-				'storeaccountant_export_batch_size_invalid',
-				__( 'Enter a numeric batch size of at least 10.', 'storeaccountant' )
-			);
-		}
-
-		$batch_size = absint( $raw_batch_size );
-
-		if ( $batch_size < ExportPostType::MIN_BATCH_SIZE ) {
-			return new WP_Error(
-				'storeaccountant_export_batch_size_too_small',
-				__( 'Enter a numeric batch size of at least 10.', 'storeaccountant' )
-			);
-		}
-
-		return $batch_size;
 	}
 
 	/**
@@ -861,6 +866,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 	/**
 	 * Highlights StoreAccountant while rendering hidden StoreAccountant pages.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $parent_file Parent file.
 	 */
 	public function filter_parent_file( ?string $parent_file ): string {
@@ -873,6 +881,9 @@ final readonly class AccountingExportPage implements HookRegistrarInterface {
 
 	/**
 	 * Highlights the accounting exports submenu while rendering hidden StoreAccountant pages.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $submenu_file Submenu file.
 	 */

@@ -25,6 +25,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class Plugin {
 	/**
 	 * Boots plugin services.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function boot(): void {
 		$container = ( new ContainerBuilder() )->build();

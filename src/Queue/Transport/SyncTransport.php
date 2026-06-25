@@ -29,6 +29,9 @@ final readonly class SyncTransport implements TransportInterface {
 	/**
 	 * Initializes the transport.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param Closure(): HandlersLocatorInterface $handlers_locator_factory Handler locator factory.
 	 */
 	public function __construct(
@@ -37,6 +40,9 @@ final readonly class SyncTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function send( Envelope $envelope ): Envelope {
 		$handlers = ( $this->handlers_locator_factory )();
@@ -51,6 +57,9 @@ final readonly class SyncTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get(): iterable {
 		return [];
@@ -58,11 +67,17 @@ final readonly class SyncTransport implements TransportInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function ack( Envelope $envelope ): void {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function reject( Envelope $envelope ): void {}
 }

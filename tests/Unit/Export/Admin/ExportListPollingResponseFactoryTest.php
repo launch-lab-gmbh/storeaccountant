@@ -60,6 +60,10 @@ final class ExportListPollingResponseFactoryTest extends TestCase {
 		Functions\when( 'esc_url_raw' )->alias( static fn ( string $url ): string => $url );
 		Functions\when( 'home_url' )->alias( static fn ( string $path ): string => 'https://example.test' . $path );
 		Functions\when( 'absint' )->alias( static fn ( mixed $value ): int => abs( (int) $value ) );
+		Functions\when( 'current_time' )->alias(
+			static fn ( string $format = 'mysql', bool $gmt = false ): string => 'Y-m-d' === $format ? '2026-06-24' : '2026-06-24 12:00:00'
+		);
+		Functions\when( 'wp_date' )->alias( static fn ( string $format, int $timestamp ): string => gmdate( $format, $timestamp ) );
 		Functions\when( 'apply_filters' )->alias(
 			function ( string $hook, mixed $value, mixed ...$args ): mixed {
 				return match ( $hook ) {
@@ -117,16 +121,31 @@ final class ExportListPollingResponseFactoryTest extends TestCase {
 	}
 
 	public function test_pollability_matches_active_and_terminal_statuses(): void {
-		$this->meta = [ ExportPostType::META_STATUS => ExportStatus::QUEUED ];
+		$this->meta = [
+			ExportPostType::META_STATUS      => ExportStatus::QUEUED,
+			ExportPostType::META_EXPORTED_AT => '2026-06-24 09:00:00',
+		];
 		self::assertTrue( $this->factory()->is_export_pollable( 1 ) );
 
-		$this->meta = [ ExportPostType::META_STATUS => ExportStatus::PROCESSING ];
+		$this->meta = [
+			ExportPostType::META_STATUS      => ExportStatus::PROCESSING,
+			ExportPostType::META_EXPORTED_AT => '2026-06-24 10:00:00',
+		];
 		self::assertTrue( $this->factory()->is_export_pollable( 1 ) );
 
 		$this->meta = [ ExportPostType::META_STATUS => ExportStatus::FAILED ];
 		self::assertFalse( $this->factory()->is_export_pollable( 1 ) );
 
 		$this->meta = [ ExportPostType::META_STATUS => ExportStatus::COMPLETED ];
+		self::assertFalse( $this->factory()->is_export_pollable( 1 ) );
+	}
+
+	public function test_old_active_exports_are_not_pollable(): void {
+		$this->meta = [
+			ExportPostType::META_STATUS      => ExportStatus::PROCESSING,
+			ExportPostType::META_EXPORTED_AT => '2026-06-23 23:59:59',
+		];
+
 		self::assertFalse( $this->factory()->is_export_pollable( 1 ) );
 	}
 

@@ -153,8 +153,8 @@ msgstr "Batch Size"
 
 #: src/Export/Admin/AccountingExportPageForm.php:189
 #: src/Export/Configuration/Admin/ExportConfigurationPageForm.php:222
-msgid "StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 100."
-msgstr "StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 100."
+msgid "StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 50."
+msgstr "StoreAccountant automatically splits the export into batches. This value defines how many items are exported in each batch; it does not limit the total number of exported items. The minimum is 10. If you are unsure, leave it at 50."
 
 #: src/Export/Admin/AccountingExportPageForm.php:196
 msgid "Start Quick Export"
@@ -861,18 +861,22 @@ msgid "invoice_date"
 msgstr "Invoice date"
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:444
-msgid "invoice_file_name"
-msgstr "Invoice file name"
+msgid "invoice_file_name_pdf"
+msgstr "Invoice PDF file name"
 
 #: src/Order/Admin/OrderFieldMappingTabProvider.php:445
+msgid "invoice_file_name_xml"
+msgstr "Invoice XML file name"
+
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:446
 msgid "order_date"
 msgstr "Order date"
 
-#: src/Order/Admin/OrderFieldMappingTabProvider.php:446
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:447
 msgid "order_status"
 msgstr "Order status"
 
-#: src/Order/Admin/OrderFieldMappingTabProvider.php:447
+#: src/Order/Admin/OrderFieldMappingTabProvider.php:448
 msgid "currency"
 msgstr "Currency"
 

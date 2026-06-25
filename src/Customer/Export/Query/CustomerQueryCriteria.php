@@ -31,6 +31,9 @@ final class CustomerQueryCriteria {
 	/**
 	 * Initializes the customer query criteria.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param array<int, string> $countries Selected country codes.
 	 */
 	public function __construct(

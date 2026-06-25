@@ -26,6 +26,9 @@ final readonly class ExportRecord {
 	/**
 	 * Initializes the export record.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string|null            $id      Stable record identifier.
 	 * @param array<int, FieldValue> $values  Record values.
 	 * @param array<string, mixed>   $options Additional record options.
@@ -38,6 +41,9 @@ final readonly class ExportRecord {
 
 	/**
 	 * Gets a value by field identifier.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $field_id Field identifier.
 	 */

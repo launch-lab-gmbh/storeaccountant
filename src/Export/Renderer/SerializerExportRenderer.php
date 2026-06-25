@@ -18,14 +18,23 @@ use WP_Error;
 use Symfony\Component\Serializer\SerializerInterface;
 use StoreAccountant\Export\Contract\ExportRendererInterface;
 use StoreAccountant\Export\Contract\ExportTemplateNormalizerInterface;
+use StoreAccountant\Export\Contract\StreamingExportTemplateNormalizerInterface;
 use StoreAccountant\Export\Dataset\ExportDataset;
 use StoreAccountant\Export\ExportArtifact;
 use StoreAccountant\Export\ExportPayload;
 use StoreAccountant\Contract\WordPress\WordPressFilesystem;
+// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Streaming large exports requires PHP stream resources.
+use function fclose;
+// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Streaming large exports requires PHP stream resources.
+use function fopen;
+// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Streaming large exports requires PHP stream resources.
+use function fwrite;
 use function function_exists;
 use function is_file;
+use function is_resource;
 use function is_string;
 use function wp_delete_file;
+use function wp_json_encode;
 use function wp_tempnam;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -42,6 +51,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * Initializes the serializer export renderer.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param ExportTemplateNormalizerInterface $template_normalizer Template normalizer.
 	 * @param SerializerInterface               $serializer          Serializer.
@@ -61,6 +73,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return $this->renderer_id;
@@ -68,6 +83,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_file_extension(): string {
 		return $this->file_extension;
@@ -75,6 +93,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_mime_type(): string {
 		return $this->mime_type;
@@ -82,6 +103,9 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( ExportDataset $dataset, ExportPayload $payload ): ExportArtifact|WP_Error {
 		$this->load_file_helpers();
@@ -92,6 +116,25 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 			return new WP_Error(
 				'storeaccountant_serializer_temporary_file_failed',
 				__( 'StoreAccountant could not create a temporary serialized export file.', 'storeaccountant' )
+			);
+		}
+
+		if (
+			self::FORMAT_JSON === $this->format
+			&& $this->template_normalizer instanceof StreamingExportTemplateNormalizerInterface
+		) {
+			$streamed = $this->stream_json( $file_path, $dataset, $payload );
+
+			if ( is_wp_error( $streamed ) ) {
+				$this->delete_temporary_file( $file_path );
+
+				return $streamed;
+			}
+
+			return new ExportArtifact(
+				$file_path,
+				$this->get_file_extension(),
+				$this->get_mime_type()
 			);
 		}
 
@@ -148,6 +191,135 @@ final readonly class SerializerExportRenderer implements ExportRendererInterface
 		if ( is_file( $file_path ) ) {
 			$this->load_file_helpers();
 			wp_delete_file( $file_path );
+		}
+	}
+
+	/**
+	 * Streams a JSON export without materializing the full dataset.
+	 *
+	 * @param string        $file_path Temporary file path.
+	 * @param ExportDataset $dataset   Export dataset.
+	 * @param ExportPayload $payload   Export payload.
+	 *
+	 * @return true|WP_Error
+	 */
+	private function stream_json( string $file_path, ExportDataset $dataset, ExportPayload $payload ): true|WP_Error {
+		if ( ! $this->template_normalizer instanceof StreamingExportTemplateNormalizerInterface ) {
+			return new WP_Error(
+				'storeaccountant_serializer_streaming_unavailable',
+				__( 'StoreAccountant could not stream the serialized export data.', 'storeaccountant' )
+			);
+		}
+
+		$rows = $this->template_normalizer->normalize_iterable( $dataset, $payload );
+
+		if ( is_wp_error( $rows ) ) {
+			return $rows;
+		}
+
+		$stream = $this->open_write_stream( $file_path );
+
+		if ( false === $stream ) {
+			return new WP_Error(
+				'storeaccountant_serializer_export_write_failed',
+				__( 'StoreAccountant could not write the serialized export.', 'storeaccountant' )
+			);
+		}
+
+		try {
+			if ( ! $this->write_to_stream( $stream, '[' ) ) {
+				return $this->write_error();
+			}
+
+			$first = true;
+
+			foreach ( $rows as $row ) {
+				$encoded = wp_json_encode( $row );
+
+				if ( ! is_string( $encoded ) ) {
+					return new WP_Error(
+						'storeaccountant_serializer_export_failed',
+						__( 'StoreAccountant could not serialize the export data.', 'storeaccountant' )
+					);
+				}
+
+				if ( ! $first && ! $this->write_to_stream( $stream, ',' ) ) {
+					return $this->write_error();
+				}
+
+				if ( ! $this->write_to_stream( $stream, $encoded ) ) {
+					return $this->write_error();
+				}
+
+				$first = false;
+			}
+
+			if ( ! $this->write_to_stream( $stream, ']' ) ) {
+				return $this->write_error();
+			}
+		} catch ( Throwable $exception ) {
+			return new WP_Error(
+				'storeaccountant_serializer_export_failed',
+				__( 'StoreAccountant could not serialize the export data.', 'storeaccountant' ),
+				[
+					'exception' => [
+						'class'   => $exception::class,
+						'message' => $exception->getMessage(),
+						'file'    => $exception->getFile(),
+						'line'    => $exception->getLine(),
+						'trace'   => $exception->getTraceAsString(),
+					],
+				]
+			);
+		} finally {
+			$this->close_stream( $stream );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Opens a write stream for the generated export.
+	 *
+	 * @param string $file_path Temporary file path.
+	 *
+	 * @return resource|false
+	 */
+	private function open_write_stream( string $file_path ) {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Streaming large exports requires PHP stream resources.
+		return fopen( $file_path, 'wb' );
+	}
+
+	/**
+	 * Writes one chunk to a stream.
+	 *
+	 * @param mixed  $stream   Stream resource.
+	 * @param string $contents Chunk contents.
+	 */
+	private function write_to_stream( mixed $stream, string $contents ): bool {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Streaming large exports requires PHP stream resources.
+		return is_resource( $stream ) && false !== fwrite( $stream, $contents );
+	}
+
+	/**
+	 * Builds a write failure error.
+	 */
+	private function write_error(): WP_Error {
+		return new WP_Error(
+			'storeaccountant_serializer_export_write_failed',
+			__( 'StoreAccountant could not write the serialized export.', 'storeaccountant' )
+		);
+	}
+
+	/**
+	 * Closes a PHP stream resource.
+	 *
+	 * @param mixed $stream Potential stream resource.
+	 */
+	private function close_stream( mixed $stream ): void {
+		if ( is_resource( $stream ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Streaming large exports requires PHP stream resources.
+			fclose( $stream );
 		}
 	}
 

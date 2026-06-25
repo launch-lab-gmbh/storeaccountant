@@ -21,6 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Identifies a stored diagnostic incident.
  */
 final readonly class DiagnosticIncident {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public string $support_id,
 		public string $file_name

@@ -23,6 +23,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Represents a permission-controlled admin action.
  */
 final readonly class PermissionAction implements PermissionActionInterface {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private string $id,
 		private string $label,
@@ -33,6 +39,9 @@ final readonly class PermissionAction implements PermissionActionInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return $this->id;
@@ -40,6 +49,9 @@ final readonly class PermissionAction implements PermissionActionInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_label(): string {
 		return $this->label;
@@ -47,6 +59,9 @@ final readonly class PermissionAction implements PermissionActionInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_group(): string {
 		return $this->group;
@@ -54,6 +69,9 @@ final readonly class PermissionAction implements PermissionActionInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_capability(): string {
 		return $this->capability;
@@ -61,6 +79,9 @@ final readonly class PermissionAction implements PermissionActionInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_description(): string {
 		return $this->description;

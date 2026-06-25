@@ -28,6 +28,9 @@ final readonly class QueueMessageBus implements MessageBusInterface {
 	/**
 	 * Initializes the bus.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param TransportInterface $transport Messenger transport.
 	 */
 	public function __construct(
@@ -36,6 +39,9 @@ final readonly class QueueMessageBus implements MessageBusInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function dispatch( object $message, array $stamps = [] ): Envelope {
 		return $this->transport->send( new Envelope( $message, $stamps ) );

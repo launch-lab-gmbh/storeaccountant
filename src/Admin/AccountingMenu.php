@@ -40,12 +40,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class AccountingMenu implements HookRegistrarInterface {
 	public const MENU_SLUG = 'storeaccountant-accounting';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private PermissionChecker $permissions
 	) {}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'register_menu' ], 9 );
@@ -53,6 +62,9 @@ final readonly class AccountingMenu implements HookRegistrarInterface {
 
 	/**
 	 * Registers the top-level accounting menu and visible export entry.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register_menu(): void {
 		if ( ! current_user_can( StoreAccountantCapabilities::ACCESS_ADMIN ) ) {
@@ -92,6 +104,9 @@ final readonly class AccountingMenu implements HookRegistrarInterface {
 
 	/**
 	 * Renders the top-level fallback page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		if ( $this->permissions->can( PermissionActionIds::EXPORT_LIST ) ) {

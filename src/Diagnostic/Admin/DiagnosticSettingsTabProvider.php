@@ -42,6 +42,9 @@ final readonly class DiagnosticSettingsTabProvider implements HookRegistrarInter
 	/**
 	 * Initializes the tab provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param DiagnosticSettings $settings    Diagnostic settings.
 	 * @param PermissionChecker  $permissions Permission checker.
 	 * @param DiagnosticIncidentRepository $repository  Incident repository.
@@ -54,6 +57,9 @@ final readonly class DiagnosticSettingsTabProvider implements HookRegistrarInter
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_filter(
@@ -69,6 +75,9 @@ final readonly class DiagnosticSettingsTabProvider implements HookRegistrarInter
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_id(): string {
 		return self::TAB_ID;
@@ -76,6 +85,9 @@ final readonly class DiagnosticSettingsTabProvider implements HookRegistrarInter
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_tabs(): array {
 		return [
@@ -85,6 +97,9 @@ final readonly class DiagnosticSettingsTabProvider implements HookRegistrarInter
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render( string $tab ): void {
 		if ( self::TAB_ID !== $tab ) {
@@ -123,6 +138,9 @@ final readonly class DiagnosticSettingsTabProvider implements HookRegistrarInter
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function save( string $tab, array $request ): void {
 		if ( self::TAB_ID !== $tab || ! $this->permissions->can( PermissionActionIds::DIAGNOSTIC_LOGGING_MANAGE ) ) {

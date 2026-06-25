@@ -28,6 +28,9 @@ final readonly class OrderTaxFieldProviderRegistry extends Registry {
 	/**
 	 * Gets the selected tax field provider.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $provider_id Provider identifier.
 	 */
 	public function get_provider( string $provider_id ): ?OrderTaxFieldProviderInterface {

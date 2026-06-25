@@ -79,7 +79,7 @@ final class LocalStorageConfigurationTest extends TestCase {
 		self::assertSame( '/tmp/storeaccountant/', $configuration->get_archive_path( '' ) );
 	}
 
-	public function test_get_archive_path_creates_missing_archive_directory(): void {
+	public function test_get_archive_path_returns_archive_path_without_creating_directory(): void {
 		$root          = sys_get_temp_dir() . '/storeaccountant-unit-root';
 		$configuration = new LocalStorageConfiguration( $root, 'wp-content/uploads/storeaccountant' );
 
@@ -93,10 +93,7 @@ final class LocalStorageConfigurationTest extends TestCase {
 			->with( $root )
 			->andReturn( $root . '/' );
 
-		Functions\expect( 'wp_mkdir_p' )
-			->once()
-			->with( $root . '/exports' )
-			->andReturn( true );
+		Functions\expect( 'wp_mkdir_p' )->never();
 
 		self::assertSame( $root . '/exports/token.zip', $configuration->get_archive_path( 'exports/token.zip' ) );
 	}

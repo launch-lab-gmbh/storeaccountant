@@ -28,6 +28,9 @@ final readonly class ExportPayload {
 	/**
 	 * Initializes the export payload.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param int                               $export_id   Export post ID.
 	 * @param string                            $export_type Export adapter identifier.
 	 * @param array<int, ExportFilterSelection> $filters    Configured export filters.

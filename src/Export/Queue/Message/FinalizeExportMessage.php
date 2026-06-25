@@ -21,6 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Message that finalizes an export after all batches are processed.
  */
 final readonly class FinalizeExportMessage {
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		public int $export_id,
 		public ?string $renderer_id = null

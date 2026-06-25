@@ -30,6 +30,9 @@ final readonly class InvoicePluginRegistry extends Registry {
 	/**
 	 * Gets active invoice plugin integrations.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @return array<string, InvoicePluginInterface>
 	 */
 	public function get_available(): array {
@@ -46,6 +49,9 @@ final readonly class InvoicePluginRegistry extends Registry {
 
 	/**
 	 * Gets the enabled invoice plugin integration.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_enabled(): ?InvoicePluginInterface {
 		$plugin_id = get_option( self::OPTION_NAME, '' );
@@ -66,6 +72,9 @@ final readonly class InvoicePluginRegistry extends Registry {
 	/**
 	 * Checks whether the invoice plugin is enabled.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param string $plugin_id Invoice plugin ID.
 	 */
 	public function is_enabled( string $plugin_id ): bool {
@@ -76,6 +85,9 @@ final readonly class InvoicePluginRegistry extends Registry {
 
 	/**
 	 * Saves the enabled invoice plugin integration.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 *
 	 * @param string $plugin_id Invoice plugin ID.
 	 */

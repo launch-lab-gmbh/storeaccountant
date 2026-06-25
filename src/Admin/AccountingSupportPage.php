@@ -34,6 +34,12 @@ final readonly class AccountingSupportPage implements HookRegistrarInterface {
 
 	private const SUPPORT_EMAIL = 'storeaccountant@launch-lab.de';
 
+	/**
+	 * Internal StoreAccountant method.
+	 *
+	 * @since 1.0.0
+	 * @internal
+	 */
 	public function __construct(
 		private AccountingHeaderBar $header_bar,
 		private AccountingSupportAccess $access
@@ -41,6 +47,9 @@ final readonly class AccountingSupportPage implements HookRegistrarInterface {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'register_page' ], 11 );
@@ -48,6 +57,9 @@ final readonly class AccountingSupportPage implements HookRegistrarInterface {
 
 	/**
 	 * Registers the hidden support page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function register_page(): void {
 		add_submenu_page(
@@ -62,6 +74,9 @@ final readonly class AccountingSupportPage implements HookRegistrarInterface {
 
 	/**
 	 * Renders the support page.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function render(): void {
 		if ( ! $this->access->can_access() ) {

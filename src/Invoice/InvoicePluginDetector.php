@@ -26,6 +26,9 @@ final readonly class InvoicePluginDetector {
 	/**
 	 * Initializes the detector.
 	 *
+	 * @since 1.0.0
+	 * @internal
+	 *
 	 * @param InvoicePluginRegistry $plugins Invoice plugin registry.
 	 */
 	public function __construct(
@@ -34,6 +37,9 @@ final readonly class InvoicePluginDetector {
 
 	/**
 	 * Gets the enabled invoice plugin.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function get_enabled(): ?InvoicePluginInterface {
 		return $this->plugins->get_enabled();
@@ -41,6 +47,9 @@ final readonly class InvoicePluginDetector {
 
 	/**
 	 * Checks whether an invoice plugin is enabled.
+	 *
+	 * @since 1.0.0
+	 * @internal
 	 */
 	public function is_enabled(): bool {
 		return null !== $this->get_enabled();

@@ -75,4 +75,33 @@ final class DefaultExportTemplateNormalizerTest extends TestCase {
 
 		self::assertSame( [], ( new DefaultExportTemplateNormalizer() )->normalize( $dataset, new ExportPayload( 7, 'orders' ) ) );
 	}
+
+	public function test_normalize_iterable_keeps_records_lazy(): void {
+		$opened  = 0;
+		$records = static function () use ( &$opened ): iterable {
+			++$opened;
+
+			yield new ExportRecord(
+				'order-1001',
+				[
+					new FieldValue( 'order_number', '1001' ),
+				]
+			);
+		};
+
+		$dataset = new ExportDataset(
+			new FieldCollection(
+				[
+					new Field( 'order_number', 'Order Number' ),
+				]
+			),
+			$records()
+		);
+
+		$rows = ( new DefaultExportTemplateNormalizer() )->normalize_iterable( $dataset, new ExportPayload( 7, 'orders' ) );
+
+		self::assertSame( 0, $opened );
+		self::assertSame( [ [ 'Order Number' => '1001' ] ], iterator_to_array( $rows, false ) );
+		self::assertSame( 1, $opened );
+	}
 }
