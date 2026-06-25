@@ -33,13 +33,14 @@ $loadWordPressExcludes     = static function ( string $fileName ) use ( $wordpre
 };
 
 return [
-	'prefix'             => 'StoreAccounantVendor',
-	'php-version'        => '8.2',
-	'output-dir'         => dirname( $buildDirectory ) . '/storeaccountant-scoped',
-	'exclude-files'      => [
+	'prefix'                => 'StoreAccounantVendor',
+	'php-version'           => '8.2',
+	'output-dir'            => dirname( $buildDirectory ) . '/storeaccountant-scoped',
+	'expose-global-classes' => false,
+	'exclude-files'         => [
 		$buildDirectory . '/storeaccountant.php',
 	],
-	'finders'            => [
+	'finders'               => [
 		Finder::create()
 			->files()
 			->ignoreVCS( true )
@@ -67,11 +68,11 @@ return [
 			)
 			->in( $buildDirectory ),
 	],
-	'exclude-namespaces' => [
+	'exclude-namespaces'    => [
 		'Automattic\\WooCommerce',
 		'StoreAccountant',
 	],
-	'exclude-classes'    => array_merge(
+	'exclude-classes'       => array_merge(
 		$loadWordPressExcludes( 'exclude-wordpress-classes.json' ),
 		[
 			'ActionScheduler',
@@ -81,7 +82,7 @@ return [
 			'/^WC_.*/',
 		]
 	),
-	'exclude-functions'  => array_merge(
+	'exclude-functions'     => array_merge(
 		$loadWordPressExcludes( 'exclude-wordpress-functions.json' ),
 		[
 			'WC',
@@ -94,7 +95,7 @@ return [
 			'/^wpo_ips_.*/',
 		]
 	),
-	'exclude-constants'  => array_merge(
+	'exclude-constants'     => array_merge(
 		$loadWordPressExcludes( 'exclude-wordpress-constants.json' ),
 		[
 			'/^WC_.*/',

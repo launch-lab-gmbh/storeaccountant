@@ -3,6 +3,7 @@
 
 /.idea
 /.todo
+/build
 /coverage
 /docs/dist
 /vendor

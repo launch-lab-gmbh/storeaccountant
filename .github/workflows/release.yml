@@ -418,6 +418,38 @@ jobs:
             --config=scoper.inc.php \
             --force
 
+          php <<'PHP'
+          <?php
+          $pluginSlug = getenv( 'PLUGIN_SLUG' ) ?: 'storeaccountant';
+          $autoloadFile = getcwd() . '/build/' . $pluginSlug . '-scoped/vendor/scoper-autoload.php';
+          $contents = file_get_contents( $autoloadFile );
+
+          if ( false === $contents ) {
+            fwrite( STDERR, "Unable to read {$autoloadFile}.\n" );
+            exit( 1 );
+          }
+
+          $updatedContents = preg_replace(
+            '/\n\/\/ Class aliases\..*?\n(?=\/\/ Function aliases\.)/s',
+            "\n",
+            $contents,
+            1,
+            $replacementCount
+          );
+
+          if ( null === $updatedContents ) {
+            fwrite( STDERR, "Unable to remove PHP-Scoper class aliases.\n" );
+            exit( 1 );
+          }
+
+          if ( 0 === $replacementCount ) {
+            fwrite( STDERR, "PHP-Scoper class aliases section was not found.\n" );
+            exit( 1 );
+          }
+
+          file_put_contents( $autoloadFile, $updatedContents );
+          PHP
+
           rm -rf "build/${PLUGIN_SLUG}"
           mv "build/${PLUGIN_SLUG}-scoped" "build/${PLUGIN_SLUG}"
 
