@@ -302,10 +302,22 @@ jobs:
     env:
       PLUGIN_SLUG: storeaccountant
       MAIN_PLUGIN_FILE: storeaccountant.php
+      PHP_VERSION: '8.2'
 
     steps:
       - name: Check out source code
         uses: actions/checkout@v6
+
+      - name: Setup PHP ${{ env.PHP_VERSION }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependency prefixing tools
+        run: composer install --working-dir=tools/php-scoper --no-interaction --prefer-dist --no-progress
 
       - name: Download production vendor
         uses: actions/download-artifact@v8
@@ -351,6 +363,24 @@ jobs:
             -name "composer.lock" -o \
             -name "LICENSE-for-cc42c1d" \
             \) -delete
+
+      - name: Prefix release dependencies
+        run: |
+          rm -rf "build/${PLUGIN_SLUG}-scoped"
+
+          STOREACCOUNTANT_SCOPER_BUILD_DIR="${PWD}/build/${PLUGIN_SLUG}" \
+            tools/php-scoper/vendor/bin/php-scoper add-prefix \
+            --config=scoper.inc.php \
+            --force
+
+          rm -rf "build/${PLUGIN_SLUG}"
+          mv "build/${PLUGIN_SLUG}-scoped" "build/${PLUGIN_SLUG}"
+
+          composer dump-autoload \
+            --working-dir="build/${PLUGIN_SLUG}" \
+            --no-dev \
+            --optimize \
+            --classmap-authoritative
 
       - name: Create ZIP archive
         run: |
