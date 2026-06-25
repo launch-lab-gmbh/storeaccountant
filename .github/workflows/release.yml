@@ -480,7 +480,22 @@ jobs:
           name: storeaccountant-docs
           path: build/docs
 
+      - name: Create GitHub Initial Release
+        if: ${{ github.ref_name == '1.0.0' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          name: StoreAccountant ${{ github.ref_name }}
+          body: |
+            ## What's Changed
+
+            Initial Release
+          files: |
+            build/${{ env.PLUGIN_SLUG }}.zip
+            build/docs/storeaccountant-documentation-user.zip
+            build/docs/storeaccountant-documentation-developer.zip
+
       - name: Create GitHub Release
+        if: ${{ github.ref_name != '1.0.0' }}
         uses: softprops/action-gh-release@v2
         with:
           name: StoreAccountant ${{ github.ref_name }}
@@ -537,6 +552,7 @@ jobs:
           SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
         run: |
           svn checkout \
+            --depth immediates \
             "https://plugins.svn.wordpress.org/${PLUGIN_SLUG}" \
             svn \
             --username "$SVN_USERNAME" \
@@ -544,24 +560,22 @@ jobs:
             --non-interactive \
             --trust-server-cert
 
-      - name: Sync plugin files
+          cd svn
+
+          svn update \
+            --set-depth infinity \
+            trunk \
+            assets \
+            --username "$SVN_USERNAME" \
+            --password "$SVN_PASSWORD" \
+            --non-interactive \
+            --trust-server-cert
+
+      - name: Sync trunk files
         run: |
-          VERSION="${GITHUB_REF_NAME}"
-
-          if [[ -d "svn/tags/${VERSION}" ]]; then
-            echo "::error::SVN tag ${VERSION} already exists. WordPress.org tags should not be overwritten."
-            exit 1
-          fi
-
           rsync -av --delete \
             "build/release/${PLUGIN_SLUG}/" \
             svn/trunk/
-
-          mkdir -p "svn/tags/${VERSION}"
-
-          rsync -av --delete \
-            "build/release/${PLUGIN_SLUG}/" \
-            "svn/tags/${VERSION}/"
 
       - name: Sync WordPress.org assets
         run: |
@@ -575,7 +589,7 @@ jobs:
             echo ".wordpress-org directory not found. Skipping WordPress.org assets sync."
           fi
 
-      - name: Commit to SVN
+      - name: Commit trunk and assets
         env:
           SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
           SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
@@ -584,18 +598,64 @@ jobs:
 
           cd svn
 
-          svn add --force . --auto-props --parents --depth infinity || true
+          echo "Adding new trunk/assets files..."
+          svn add --force trunk assets --auto-props --parents --depth infinity -q || true
 
+          echo "Setting asset mime types..."
           find assets -type f -name '*.png' -exec svn propset svn:mime-type image/png {} +
           find assets -type f \( -name '*.jpg' -o -name '*.jpeg' \) -exec svn propset svn:mime-type image/jpeg {} +
 
-          svn status | awk '$1 == "!" {print substr($0, 9)}' | while IFS= read -r path; do
+          echo "Removing deleted files from SVN..."
+          svn status trunk assets | awk '$1 == "!" {print substr($0, 9)}' | while IFS= read -r path; do
             svn rm "$path"
           done
 
-          svn commit \
-            -m "Release ${VERSION}" \
+          echo "SVN status before commit:"
+          svn status trunk assets
+
+          if svn status trunk assets | grep -q '^[AMDR?!~]'; then
+            echo "Starting SVN commit for trunk/assets..."
+            svn commit trunk assets \
+              -m "Update trunk and assets for ${VERSION}" \
+              --username "$SVN_USERNAME" \
+              --password "$SVN_PASSWORD" \
+              --non-interactive \
+              --trust-server-cert
+            echo "SVN trunk/assets commit finished."
+          else
+            echo "No trunk/assets changes to commit."
+          fi
+
+      - name: Create SVN tag
+        env:
+          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+
+          TRUNK_URL="https://plugins.svn.wordpress.org/${PLUGIN_SLUG}/trunk"
+          TAG_URL="https://plugins.svn.wordpress.org/${PLUGIN_SLUG}/tags/${VERSION}"
+
+          echo "Checking whether SVN tag already exists: ${TAG_URL}"
+
+          if svn info "$TAG_URL" \
+            --username "$SVN_USERNAME" \
+            --password "$SVN_PASSWORD" \
+            --non-interactive \
+            --trust-server-cert >/dev/null 2>&1; then
+            echo "::error::SVN tag ${VERSION} already exists. WordPress.org tags should not be overwritten."
+            exit 1
+          fi
+
+          echo "Creating SVN tag ${VERSION} from trunk..."
+
+          svn copy \
+            "$TRUNK_URL" \
+            "$TAG_URL" \
+            -m "Tag ${VERSION}" \
             --username "$SVN_USERNAME" \
             --password "$SVN_PASSWORD" \
             --non-interactive \
             --trust-server-cert
+
+          echo "SVN tag ${VERSION} created."
