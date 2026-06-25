@@ -571,84 +571,11 @@ jobs:
             --non-interactive \
             --trust-server-cert
 
-      - name: Sync trunk files without vendor
+      - name: Sync trunk files
         run: |
           rsync -av --delete \
-            --exclude 'vendor/' \
             "build/release/${PLUGIN_SLUG}/" \
             svn/trunk/
-
-      - name: Commit trunk without vendor
-        env:
-          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
-          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
-        run: |
-          VERSION="${GITHUB_REF_NAME}"
-
-          cd svn
-
-          svn cleanup
-          svn update trunk assets \
-            --username "$SVN_USERNAME" \
-            --password "$SVN_PASSWORD" \
-            --non-interactive \
-            --trust-server-cert
-
-          svn add --force trunk assets --auto-props --parents --depth infinity -q || true
-
-          svn status trunk assets | awk '$1 == "!" {print substr($0, 9)}' | while IFS= read -r path; do
-            svn rm "$path"
-          done
-
-          svn status trunk assets
-
-          if svn status trunk assets | grep -q '^[AMDR?!~]'; then
-            svn commit trunk assets \
-              -m "Initial trunk/assets for ${VERSION}" \
-              --username "$SVN_USERNAME" \
-              --password "$SVN_PASSWORD" \
-              --non-interactive \
-              --trust-server-cert
-          else
-            echo "No trunk/assets changes to commit."
-          fi
-
-      - name: Sync vendor files
-        run: |
-          rsync -av --delete \
-            "build/release/${PLUGIN_SLUG}/vendor/" \
-            svn/trunk/vendor/
-
-      - name: Commit vendor
-        env:
-          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
-          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
-        run: |
-          VERSION="${GITHUB_REF_NAME}"
-
-          cd svn
-
-          svn cleanup
-          svn update trunk \
-            --username "$SVN_USERNAME" \
-            --password "$SVN_PASSWORD" \
-            --non-interactive \
-            --trust-server-cert
-
-          svn add --force trunk/vendor --auto-props --parents --depth infinity -q || true
-
-          svn status trunk/vendor
-
-          if svn status trunk/vendor | grep -q '^[AMDR?!~]'; then
-            svn commit trunk/vendor \
-              -m "Add vendor for ${VERSION}" \
-              --username "$SVN_USERNAME" \
-              --password "$SVN_PASSWORD" \
-              --non-interactive \
-              --trust-server-cert
-          else
-            echo "No vendor changes to commit."
-          fi
 
       - name: Sync WordPress.org assets
         run: |
