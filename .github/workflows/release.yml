@@ -202,7 +202,7 @@ jobs:
 
             while IFS= read -r path; do
               case "$path" in
-                docs/*|mkdocs-*.yml|requirements-docs.txt|README.md)
+                docs/user/*|docs/developer/*|mkdocs-user-*.yml|mkdocs-developer.yml|requirements-docs.txt)
                   DOCS_CHANGED=true
                   break
                   ;;

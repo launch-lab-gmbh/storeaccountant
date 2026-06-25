@@ -3,6 +3,7 @@
 
 /.idea
 /.todo
+/.venv
 /build
 /coverage
 /docs/dist
