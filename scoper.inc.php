@@ -39,6 +39,7 @@ return [
 	'expose-global-classes' => false,
 	'exclude-files'         => [
 		$buildDirectory . '/storeaccountant.php',
+		$buildDirectory . '/uninstall.php',
 	],
 	'finders'               => [
 		Finder::create()

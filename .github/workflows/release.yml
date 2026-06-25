@@ -378,6 +378,7 @@ jobs:
           mkdir -p "build/${PLUGIN_SLUG}"
 
           cp "${MAIN_PLUGIN_FILE}" "build/${PLUGIN_SLUG}/"
+          cp uninstall.php "build/${PLUGIN_SLUG}/"
           cp readme.txt composer.json LICENSE "build/${PLUGIN_SLUG}/"
 
           cp -R src "build/${PLUGIN_SLUG}/"
