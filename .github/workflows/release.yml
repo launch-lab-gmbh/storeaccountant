@@ -488,106 +488,106 @@ jobs:
             build/docs/storeaccountant-documentation-developer.zip
           generate_release_notes: true
 
-      #  wordpress-org-deploy:
-      #    name: Deploy to WordPress.org
-      #    runs-on: ubuntu-latest
-      #    needs:
-      #  - unit
-      #  - build-release
-      #  - production-install
-      #
-      #    env:
-      #      PLUGIN_SLUG: storeaccountant
-      #      MAIN_PLUGIN_FILE: storeaccountant.php
-      #
-      #    steps:
-      #      - name: Check out source code
-      #        uses: actions/checkout@v6
-      #
-      #      - name: Download production vendor
-      #        uses: actions/download-artifact@v8
-      #        with:
-      #          name: vendor-prod-php82
-      #          path: vendor
-      #
-      #      - name: Install SVN
-      #        run: |
-      #          sudo apt-get update
-      #          sudo apt-get install -y subversion rsync
-      #
-      #      - name: Prepare deployment package
-      #        run: |
-      #          VERSION="${GITHUB_REF_NAME}"
-      #
-      #          rm -rf build
-      #          mkdir -p "build/${PLUGIN_SLUG}"
-      #
-      #          cp "${MAIN_PLUGIN_FILE}" "build/${PLUGIN_SLUG}/"
-      #          cp readme.txt "build/${PLUGIN_SLUG}/"
-      #
-      #          cp -R src "build/${PLUGIN_SLUG}/"
-      #          cp -R assets "build/${PLUGIN_SLUG}/"
-      #          cp -R vendor "build/${PLUGIN_SLUG}/"
-      #
-      #          if [ -d languages ]; then
-      #            cp -R languages "build/${PLUGIN_SLUG}/"
-      #          fi
-      #
-      #      - name: Checkout WordPress.org SVN
-      #        env:
-      #          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
-      #          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
-      #        run: |
-      #          svn checkout \
-      #            "https://plugins.svn.wordpress.org/${PLUGIN_SLUG}" \
-      #            svn \
-      #            --username "$SVN_USERNAME" \
-      #            --password "$SVN_PASSWORD" \
-      #            --non-interactive \
-      #            --trust-server-cert
-      #
-      #      - name: Sync plugin files
-      #        run: |
-      #          VERSION="${GITHUB_REF_NAME}"
-      #
-      #          rsync -av --delete \
-      #            "build/${PLUGIN_SLUG}/" \
-      #            svn/trunk/
-      #
-      #          mkdir -p "svn/tags/${VERSION}"
-      #
-      #          rsync -av --delete \
-      #            "build/${PLUGIN_SLUG}/" \
-      #            "svn/tags/${VERSION}/"
-      #
-      #      - name: Sync WordPress.org assets
-      #  run: |
-      #    mkdir -p svn/assets
-      #
-      #    rsync -av --delete \
-      #      .wordpress-org/ \
-      #      svn/assets/
-#
-#      - name: Commit to SVN
-#        env:
-#          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
-#          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
-#        run: |
-#          VERSION="${GITHUB_REF_NAME}"
-#
-#          cd svn
-#
-#          svn add --force . --auto-props --parents --depth infinity || true
-#          find assets -type f -name '*.png' -exec svn propset svn:mime-type image/png {} +
-#          find assets -type f \( -name '*.jpg' -o -name '*.jpeg' \) -exec svn propset svn:mime-type image/jpeg {} +
-#
-#          svn status | awk '$1 == "!" {print substr($0, 9)}' | while IFS= read -r path; do
-#            svn rm "$path"
-#          done
-#
-#          svn commit \
-#            -m "Release ${VERSION}" \
-#            --username "$SVN_USERNAME" \
-#            --password "$SVN_PASSWORD" \
-#            --non-interactive \
-#            --trust-server-cert
+  wordpress-org-deploy:
+    name: Deploy to WordPress.org
+    runs-on: ubuntu-latest
+    needs:
+      - unit
+      - build-release
+      - production-install
+
+    env:
+      PLUGIN_SLUG: storeaccountant
+      MAIN_PLUGIN_FILE: storeaccountant.php
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v6
+
+      - name: Download production vendor
+        uses: actions/download-artifact@v8
+        with:
+          name: vendor-prod-php82
+          path: vendor
+
+      - name: Install SVN
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y subversion rsync
+
+      - name: Prepare deployment package
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          
+          rm -rf build
+          mkdir -p "build/${PLUGIN_SLUG}"
+          
+          cp "${MAIN_PLUGIN_FILE}" "build/${PLUGIN_SLUG}/"
+          cp readme.txt "build/${PLUGIN_SLUG}/"
+          
+          cp -R src "build/${PLUGIN_SLUG}/"
+          cp -R assets "build/${PLUGIN_SLUG}/"
+          cp -R vendor "build/${PLUGIN_SLUG}/"
+          
+          if [ -d languages ]; then
+            cp -R languages "build/${PLUGIN_SLUG}/"
+          fi
+
+      - name: Checkout WordPress.org SVN
+        env:
+          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
+        run: |
+          svn checkout \
+            "https://plugins.svn.wordpress.org/${PLUGIN_SLUG}" \
+            svn \
+            --username "$SVN_USERNAME" \
+            --password "$SVN_PASSWORD" \
+            --non-interactive \
+            --trust-server-cert
+
+      - name: Sync plugin files
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          
+          rsync -av --delete \
+            "build/${PLUGIN_SLUG}/" \
+            svn/trunk/
+          
+          mkdir -p "svn/tags/${VERSION}"
+          
+          rsync -av --delete \
+            "build/${PLUGIN_SLUG}/" \
+            "svn/tags/${VERSION}/"
+
+      - name: Sync WordPress.org assets
+    run: |
+      mkdir -p svn/assets
+      
+      rsync -av --delete \
+        .wordpress-org/ \
+        svn/assets/
+
+    - name: Commit to SVN
+      env:
+        SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
+        SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
+      run: |
+        VERSION="${GITHUB_REF_NAME}"
+        
+        cd svn
+        
+        svn add --force . --auto-props --parents --depth infinity || true
+        find assets -type f -name '*.png' -exec svn propset svn:mime-type image/png {} +
+        find assets -type f \( -name '*.jpg' -o -name '*.jpeg' \) -exec svn propset svn:mime-type image/jpeg {} +
+        
+        svn status | awk '$1 == "!" {print substr($0, 9)}' | while IFS= read -r path; do
+          svn rm "$path"
+        done
+        
+        svn commit \
+          -m "Release ${VERSION}" \
+          --username "$SVN_USERNAME" \
+          --password "$SVN_PASSWORD" \
+          --non-interactive \
+          --trust-server-cert

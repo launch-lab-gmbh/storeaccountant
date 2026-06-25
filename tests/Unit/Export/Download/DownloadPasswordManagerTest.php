@@ -86,7 +86,7 @@ final class DownloadPasswordManagerTest extends TestCase {
 	}
 
 	public function test_save_global_password_preserves_special_characters(): void {
-		$password    = '\'"$&%?>=`j(Hq^ENVD Xnz86v/<j/s';
+		$password    = '\'"$&%?>=`jHq^ENVD Xnz86v/<j/s[.|]()-,*+';
 		$stored_hash = null;
 
 		Functions\expect( 'update_option' )
