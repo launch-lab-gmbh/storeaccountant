@@ -92,8 +92,10 @@ jobs:
 
             check_equals "storeaccountant.php public const PLUGIN_VERSION" "$PLUGIN_CONST_VERSION"
           fi
-          
-          # Fail at the end with a collected error summary          
+
+          #
+          # Fail at the end with a collected error summary
+          #
           if (( ${#errors[@]} > 0 )); then
             {
               echo "## Release version validation failed"
@@ -385,7 +387,7 @@ jobs:
           cp -R assets "build/${PLUGIN_SLUG}/"
           cp -R vendor "build/${PLUGIN_SLUG}/"
           cp -R languages "build/${PLUGIN_SLUG}/"
-          
+
           find "build/${PLUGIN_SLUG}/vendor" -type d \( \
             -name ".git" -o \
             -name ".github" -o \
@@ -398,8 +400,8 @@ jobs:
             -name "example" -o \
             -name "demo" \
             \) -prune -exec rm -rf {} +
-          
-            find "build/${PLUGIN_SLUG}/vendor" -type f \( \
+
+          find "build/${PLUGIN_SLUG}/vendor" -type f \( \
             -name ".gitignore" -o \
             -name ".gitattributes" -o \
             -name "phpunit.xml" -o \
@@ -488,13 +490,15 @@ jobs:
             build/docs/storeaccountant-documentation-developer.zip
           generate_release_notes: true
 
+  ###########################
+  # Deploy to WordPress.org #
+  ###########################
+
   wordpress-org-deploy:
     name: Deploy to WordPress.org
     runs-on: ubuntu-latest
     needs:
-      - unit
       - build-release
-      - production-install
 
     env:
       PLUGIN_SLUG: storeaccountant
@@ -504,34 +508,28 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v6
 
-      - name: Download production vendor
-        uses: actions/download-artifact@v8
-        with:
-          name: vendor-prod-php82
-          path: vendor
-
-      - name: Install SVN
+      - name: Install SVN tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y subversion rsync
+          sudo apt-get install -y subversion rsync unzip
 
-      - name: Prepare deployment package
+      - name: Download release package artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.PLUGIN_SLUG }}
+          path: build/artifact
+
+      - name: Extract release package
         run: |
-          VERSION="${GITHUB_REF_NAME}"
-          
-          rm -rf build
-          mkdir -p "build/${PLUGIN_SLUG}"
-          
-          cp "${MAIN_PLUGIN_FILE}" "build/${PLUGIN_SLUG}/"
-          cp readme.txt "build/${PLUGIN_SLUG}/"
-          
-          cp -R src "build/${PLUGIN_SLUG}/"
-          cp -R assets "build/${PLUGIN_SLUG}/"
-          cp -R vendor "build/${PLUGIN_SLUG}/"
-          
-          if [ -d languages ]; then
-            cp -R languages "build/${PLUGIN_SLUG}/"
-          fi
+          rm -rf build/release
+          mkdir -p build/release
+
+          unzip "build/artifact/${PLUGIN_SLUG}.zip" -d build/release
+
+          test -f "build/release/${PLUGIN_SLUG}/${MAIN_PLUGIN_FILE}"
+          test -f "build/release/${PLUGIN_SLUG}/readme.txt"
+          test -f "build/release/${PLUGIN_SLUG}/vendor/autoload.php"
+          test -f "build/release/${PLUGIN_SLUG}/vendor/scoper-autoload.php"
 
       - name: Checkout WordPress.org SVN
         env:
@@ -549,45 +547,55 @@ jobs:
       - name: Sync plugin files
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          
+
+          if [[ -d "svn/tags/${VERSION}" ]]; then
+            echo "::error::SVN tag ${VERSION} already exists. WordPress.org tags should not be overwritten."
+            exit 1
+          fi
+
           rsync -av --delete \
-            "build/${PLUGIN_SLUG}/" \
+            "build/release/${PLUGIN_SLUG}/" \
             svn/trunk/
-          
+
           mkdir -p "svn/tags/${VERSION}"
-          
+
           rsync -av --delete \
-            "build/${PLUGIN_SLUG}/" \
+            "build/release/${PLUGIN_SLUG}/" \
             "svn/tags/${VERSION}/"
 
       - name: Sync WordPress.org assets
-    run: |
-      mkdir -p svn/assets
-      
-      rsync -av --delete \
-        .wordpress-org/ \
-        svn/assets/
+        run: |
+          mkdir -p svn/assets
 
-    - name: Commit to SVN
-      env:
-        SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
-        SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
-      run: |
-        VERSION="${GITHUB_REF_NAME}"
-        
-        cd svn
-        
-        svn add --force . --auto-props --parents --depth infinity || true
-        find assets -type f -name '*.png' -exec svn propset svn:mime-type image/png {} +
-        find assets -type f \( -name '*.jpg' -o -name '*.jpeg' \) -exec svn propset svn:mime-type image/jpeg {} +
-        
-        svn status | awk '$1 == "!" {print substr($0, 9)}' | while IFS= read -r path; do
-          svn rm "$path"
-        done
-        
-        svn commit \
-          -m "Release ${VERSION}" \
-          --username "$SVN_USERNAME" \
-          --password "$SVN_PASSWORD" \
-          --non-interactive \
-          --trust-server-cert
+          if [[ -d ".wordpress-org" ]]; then
+            rsync -av --delete \
+              .wordpress-org/ \
+              svn/assets/
+          else
+            echo ".wordpress-org directory not found. Skipping WordPress.org assets sync."
+          fi
+
+      - name: Commit to SVN
+        env:
+          SVN_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+
+          cd svn
+
+          svn add --force . --auto-props --parents --depth infinity || true
+
+          find assets -type f -name '*.png' -exec svn propset svn:mime-type image/png {} +
+          find assets -type f \( -name '*.jpg' -o -name '*.jpeg' \) -exec svn propset svn:mime-type image/jpeg {} +
+
+          svn status | awk '$1 == "!" {print substr($0, 9)}' | while IFS= read -r path; do
+            svn rm "$path"
+          done
+
+          svn commit \
+            -m "Release ${VERSION}" \
+            --username "$SVN_USERNAME" \
+            --password "$SVN_PASSWORD" \
+            --non-interactive \
+            --trust-server-cert
