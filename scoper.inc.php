@@ -74,8 +74,10 @@ return [
 	'exclude-classes'    => array_merge(
 		$loadWordPressExcludes( 'exclude-wordpress-classes.json' ),
 		[
+			'ActionScheduler',
 			'StoreAccountant',
 			'WooCommerce',
+			'/^ActionScheduler_.*/',
 			'/^WC_.*/',
 		]
 	),
@@ -83,9 +85,13 @@ return [
 		$loadWordPressExcludes( 'exclude-wordpress-functions.json' ),
 		[
 			'WC',
+			'WPO_WCPDF',
+			'/^as_.*/',
 			'/^is_(woocommerce|shop|product.*|cart|checkout|account_page|wc_endpoint_url)$/',
 			'/^wc_.*/',
+			'/^wcpdf_.*/',
 			'/^woocommerce_.*/',
+			'/^wpo_ips_.*/',
 		]
 	),
 	'exclude-constants'  => array_merge(
