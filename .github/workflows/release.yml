@@ -175,6 +175,48 @@ jobs:
     steps:
       - name: Check out source code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check documentation changes
+        id: docs-changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PREVIOUS_TAG="$(
+            git describe \
+              --tags \
+              --abbrev=0 \
+              "HEAD^" 2>/dev/null \
+              || true
+          )"
+
+          DOCS_CHANGED=false
+
+          if [[ -z "$PREVIOUS_TAG" ]]; then
+            DOCS_CHANGED=true
+            echo "No previous tag found. Documentation deployment will run."
+          else
+            echo "Checking documentation changes since ${PREVIOUS_TAG}."
+
+            while IFS= read -r path; do
+              case "$path" in
+                docs/*|mkdocs-*.yml|requirements-docs.txt|README.md)
+                  DOCS_CHANGED=true
+                  break
+                  ;;
+              esac
+            done < <(git diff --name-only "${PREVIOUS_TAG}..HEAD")
+          fi
+
+          echo "changed=${DOCS_CHANGED}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$DOCS_CHANGED" == "true" ]]; then
+            echo "Documentation deployment enabled."
+          else
+            echo "Documentation deployment skipped; no documentation changes detected."
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -218,6 +260,7 @@ jobs:
           rsync -a --delete "${DOCS_DEVELOPER_DIR}/" deploy-docs/developer/
 
       - name: Deploy German user documentation via SFTP
+        if: ${{ steps.docs-changes.outputs.changed == 'true' }}
         uses: pressidium/lftp-mirror-action@v1
         with:
           host: ${{ secrets.SFTP_HOST }}
@@ -233,6 +276,7 @@ jobs:
             --verbose
 
       - name: Deploy English user documentation via SFTP
+        if: ${{ steps.docs-changes.outputs.changed == 'true' }}
         uses: pressidium/lftp-mirror-action@v1
         with:
           host: ${{ secrets.SFTP_HOST }}
@@ -248,6 +292,7 @@ jobs:
             --verbose
 
       - name: Deploy developer documentation via SFTP
+        if: ${{ steps.docs-changes.outputs.changed == 'true' }}
         uses: pressidium/lftp-mirror-action@v1
         with:
           host: ${{ secrets.SFTP_HOST }}
