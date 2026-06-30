@@ -11,7 +11,7 @@ and this project adheres to Semantic Versioning.
 
 - Initial public release.
 
-## [1.0.05] - 20265-06-30
+## [1.0.05] - 2026-06-30
 
 ### Added
 

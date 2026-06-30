@@ -127,6 +127,6 @@ Update the plugin via the WordPress dashboard.
 
 == Changelog ==
 = 1.0.5 =
-* - added de_DE_formal translations.
+* added de_DE_formal translations.
 = 1.0.4 =
 * Initial release.
