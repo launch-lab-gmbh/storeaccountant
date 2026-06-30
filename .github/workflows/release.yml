@@ -480,18 +480,15 @@ jobs:
           name: storeaccountant-docs
           path: build/docs
 
-      - name: Create GitHub Initial Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: StoreAccountant ${{ github.ref_name }}
-          body: |
-            ## What's Changed
-
-            Initial Release
           files: |
             build/${{ env.PLUGIN_SLUG }}.zip
             build/docs/storeaccountant-documentation-user.zip
             build/docs/storeaccountant-documentation-developer.zip
+          generate_release_notes: true
 
   ###########################
   # Deploy to WordPress.org #
