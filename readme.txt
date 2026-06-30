@@ -4,7 +4,7 @@ Tags: woocommerce, accounting, export, bookkeeping, tax
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -126,5 +126,7 @@ For Manual installation, you download our product from the WordPress directory u
 Update the plugin via the WordPress dashboard.
 
 == Changelog ==
-= 1.0.0 =
+= 1.0.5 =
+* - added de_DE_formal translations.
+= 1.0.4 =
 * Initial release.
